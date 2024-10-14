@@ -1,44 +1,64 @@
 import { Command } from '@root/src/lib/types/Command';
-import { ActionRowBuilder, ChatInputCommandInteraction, ComponentBuilder, InteractionResponse, ModalBuilder, TextInputBuilder, TextInputStyle } from 'discord.js';
+import { ActionRowBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle,
+	ChatInputCommandInteraction, EmbedBuilder, InteractionResponse,
+	ModalBuilder, TextInputBuilder, TextInputStyle } from 'discord.js';
 
-const questions = ['Question 1', 'Question 2'];
+const questions = ['Question 1', 'Question 2', 'Question 3', 'Question 4', 'Question 5'];
 
 export default class extends Command {
 
 	description = 'Form to get your preferences for jobs to be used with the Job Alert System!';
 
 	async run(interaction: ChatInputCommandInteraction): Promise<InteractionResponse<boolean> | void> {
-		const questionNum = 0;
-
 		const modal = new ModalBuilder()
-			.setTitle('Job Form')
-			.setCustomId('modal');
+			.setCustomId('modalInput')
+			.setTitle('Job Form');
 
-		const AnswerInput = new TextInputBuilder()
-			.setCustomId('answerInput')
-			.setLabel(`${questions[questionNum]}`)
-			.setStyle(TextInputStyle.Short).setPlaceholder('Answer: ');
+		const rows = questions.map((question) => this.getAnswerField(questions.indexOf(question)));
 
-		const secondActionRow = new ActionRowBuilder().addComponents(AnswerInput);
+		for (const row of rows) {
+			// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+			// @ts-ignore
+			modal.addComponents(row);
+		}
 
-		// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-		// @ts-ignore
-		modal.addComponents(secondActionRow);
-
-		await interaction.showModal(modal);
-
+		interaction.showModal(modal);
 		return;
+
 		// let questionNum = 0;
 
+		// // Button to go to the next question
 		// const nextButton = new ButtonBuilder()
 		// 	.setCustomId('nextQuestion')
 		// 	.setLabel('Next Question')
 		// 	.setStyle(ButtonStyle.Primary)
 		// 	.setEmoji('▶');
 
-		// let actionRow = new ActionRowBuilder()
-		// 	.addComponents(nextButton);
+		// // Button to change the users answer
+		// const editAnswer = new ButtonBuilder()
+		// 	.setCustomId('editAnswer')
+		// 	.setLabel('Edit Answer')
+		// 	.setStyle(ButtonStyle.Success);
 
+		// let actionRow = new ActionRowBuilder()
+		// 	.addComponents(editAnswer)
+		// 	.addComponents(nextButton);
+		// // The modal that gets shown to the user
+		// const modal = new ModalBuilder().setCustomId('answerModal').setTitle(`Question ${questionNum}`);
+
+		// const userAnswer = new TextInputBuilder()
+		// 	.setCustomId('userInput')
+		// 	.setLabel('Answer')
+		// 	.setStyle(TextInputStyle.Short)
+		// 	.setPlaceholder('Input your answer here');
+
+		// const modalRow = new ActionRowBuilder().addComponents(userAnswer);
+
+		// // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+		// // @ts-ignore
+		// modal.addComponents(modalRow);
+
+		// // Send the initial embed
 		// interaction.reply({
 		// 	embeds: [this.questionGetter(questionNum)],
 		// 	// eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -46,6 +66,7 @@ export default class extends Command {
 		// 	components: [actionRow]
 		// });
 
+		// // Get the ID of the sent message to handle buttons being pushed
 		// let replyId;
 		// interaction.fetchReply().then(reply => { replyId = reply.id; });
 
@@ -53,7 +74,10 @@ export default class extends Command {
 		// 	filter: i => i.message.id === replyId
 		// });
 
+		// interaction.channel.send({ modal, reply: { messageReference: replyId } });
+
 		// collector.on('collect', async (i: ButtonInteraction) => {
+		// 	// If someone else trys pushing a button, tell them no
 		// 	if (interaction.user.id !== i.user.id) {
 		// 		await i.reply({
 		// 			content: 'You cannot respond to a command you did not execute',
@@ -62,11 +86,15 @@ export default class extends Command {
 		// 		return;
 		// 	}
 		// 	i.deferUpdate();
+		// 	// Next question button
 		// 	if (i.customId === 'nextQuestion') {
 		// 		questionNum++;
 		// 		actionRow = questionNum === (questions.length - 1)
-		// 			? new ActionRowBuilder({ components: [nextButton.setDisabled(true)] })
-		// 			: new ActionRowBuilder({ components: [nextButton] });
+		// 			? new ActionRowBuilder({ components: [editAnswer, nextButton.setDisabled(true)] })
+		// 			: new ActionRowBuilder({ components: [editAnswer, nextButton] });
+		// 	// Edit answer button
+		// 	} else if (i.customId === 'editAnswer') {
+		// 		await modalInteraction.showModal(modal);
 		// 	}
 		// 	interaction.editReply({
 		// 		embeds: [this.questionGetter(questionNum)],
@@ -79,13 +107,12 @@ export default class extends Command {
 		// return;
 	}
 
-	// questionGetter(questionNum: number): EmbedBuilder {
-	// 	return new EmbedBuilder()
-	// 		.setTitle('Job Alert Form')
-	// 		.setColor('#000000')
-	// 		.addFields(
-	// 			{ name: 'Question:', value: questions[questionNum] },
-	// 			{ name: 'Answer', value: 'also test', inline: true });
-	// }
+	getAnswerField(questionNum: number): ActionRowBuilder {
+		return new ActionRowBuilder({ components: [new TextInputBuilder()
+			.setCustomId(`question ${questionNum + 1}`)
+			.setLabel(`Question ${questionNum + 1}`)
+			.setStyle(TextInputStyle.Short)
+			.setPlaceholder('Input Answer Here')] });
+	}
 
 }
