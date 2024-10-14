@@ -9,7 +9,6 @@ export default class extends Command {
 		const responseEmbed = new EmbedBuilder()
 			.setTitle('Job Alert Form')
 			.setColor('#000000');
-		
 		return interaction.reply({ embeds: [responseEmbed] });
 	}
 
