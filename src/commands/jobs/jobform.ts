@@ -5,7 +5,7 @@ const questions = ['Question 1', 'Question 2'];
 
 export default class extends Command {
 
-	description = 'Form do get your preferences for jobs to be used with the Job Alert System!';
+	description = 'Form to get your preferences for jobs to be used with the Job Alert System!';
 
 	run(interaction: ChatInputCommandInteraction): Promise<InteractionResponse<boolean> | void> {
 		let questionNum = 0;
@@ -16,7 +16,7 @@ export default class extends Command {
 			.setStyle(ButtonStyle.Primary)
 			.setEmoji('▶');
 
-		const actionRow = new ActionRowBuilder()
+		let actionRow = new ActionRowBuilder()
 			.addComponents(nextButton);
 
 		interaction.reply({
@@ -44,6 +44,9 @@ export default class extends Command {
 			i.deferUpdate();
 			if (i.customId === 'nextQuestion') {
 				questionNum++;
+				actionRow = questionNum === (questions.length - 1)
+					? new ActionRowBuilder({ components: [nextButton.setDisabled(true)] })
+					: new ActionRowBuilder({ components: [nextButton] });
 			}
 			interaction.editReply({
 				embeds: [this.questionGetter(questionNum)],
