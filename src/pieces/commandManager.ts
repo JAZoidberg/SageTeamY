@@ -3,7 +3,8 @@ import { Collection, Client, CommandInteraction, ApplicationCommand,
 	ModalSubmitInteraction, TextChannel, GuildMemberRoleManager,
 	ButtonInteraction, ModalBuilder, TextInputBuilder, ActionRowBuilder,
 	ModalActionRowComponentBuilder, ApplicationCommandType, ApplicationCommandDataResolvable, ChannelType, ApplicationCommandPermissionType, TextInputStyle,
-	ChatInputCommandInteraction } from 'discord.js';
+	ChatInputCommandInteraction,
+	ModalSubmitFields } from 'discord.js';
 import { isCmdEqual, readdirRecursive } from '@root/src/lib/utils/generalUtils';
 import { Command } from '@lib/types/Command';
 import { SageData } from '@lib/types/SageData';
@@ -143,6 +144,14 @@ async function handleModalBuilder(interaction: ModalSubmitInteraction, bot: Clie
 			` go to <#${CHANNELS.ROLE_SELECT}> and use the proper dropdown menu.`
 				: '';
 			interaction.reply({ content: `Thank you for verifying! You can now access the rest of the server. ${enrollStr}`, ephemeral: true });
+			break;
+		}
+		case 'jobModal': {
+			// extracting the input from the modal
+			const questionIDs = [1, 2, 3, 4, 5];
+			const jobAnswers = questionIDs.map((question) => interaction.fields.getTextInputValue(`question${question}`));
+			console.log(jobAnswers);
+			interaction.reply({ content: `Submission successful with answers of {${jobAnswers}}` });
 			break;
 		}
 	}
