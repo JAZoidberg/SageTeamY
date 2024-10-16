@@ -109,7 +109,7 @@ async function handleModalBuilder(interaction: ModalSubmitInteraction, bot: Clie
 	const guild = await bot.guilds.fetch(GUILDS.MAIN);
 	guild.members.fetch();
 
-	switch (customId) {
+	switch (customId.replace(/[0-9]/g, '')) {
 		case 'announce': {
 			const channel = bot.channels.cache.get(fields.getTextInputValue('channel')) as TextChannel;
 			const content = fields.getTextInputValue('content');
@@ -150,6 +150,7 @@ async function handleModalBuilder(interaction: ModalSubmitInteraction, bot: Clie
 			// extracting the input from the modal
 			const questionIDs = [1, 2, 3, 4, 5];
 			const jobAnswers = questionIDs.map((question) => interaction.fields.getTextInputValue(`question${question}`));
+			console.log(interaction.customId);
 			console.log(jobAnswers);
 			interaction.reply({ content: `Submission successful with answers of {${jobAnswers}}` });
 			break;
