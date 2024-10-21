@@ -72,12 +72,24 @@ export default class extends Command {
 				(interaction.options.getString("job-repeat") as
 					| "daily"
 					| "weekly") || null;
-			console.log("----->", jobReminderRepeat);
 
-			return;
+			const jobReminder: Reminder = {
+				owner: interaction.user.id,
+				content: "Job Reminder",
+				mode: "private",
+				expires: new Date(0 + Date.now()),
+				repeat: jobReminderRepeat,
+			};
+			interaction.client.mongo
+				.collection(DB.REMINDERS)
+				.insertOne(jobReminder);
+			return interaction.reply({
+				content: `I'll remind you about job offers at ${reminderTime(
+					jobReminder
+				)}.`,
+				ephemeral: true,
+			});
 		} else {
-			console.log("----->", "you chose misc reminder");
-
 			const content = interaction.options.getString("content");
 			const rawDuration = interaction.options.getString("duration");
 			const duration = parse(rawDuration);
