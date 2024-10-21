@@ -62,7 +62,20 @@ export default class extends Command {
 		},
 	];
 
-	run(
+	async checkJobReminder(
+		interaction: ChatInputCommandInteraction
+	): Promise<boolean> {
+		const reminders: Array<Reminder> = await interaction.client.mongo
+			.collection(DB.REMINDERS)
+			.find({ owner: interaction.user.id })
+			.toArray();
+
+		return reminders.some(
+			(reminder: Reminder) => reminder.content === "Job Reminder"
+		);
+	}
+
+	async run(
 		interaction: ChatInputCommandInteraction
 	): Promise<InteractionResponse<boolean> | void> {
 		const subcommand: string = interaction.options.getSubcommand();
@@ -80,15 +93,27 @@ export default class extends Command {
 				expires: new Date(0 + Date.now()),
 				repeat: jobReminderRepeat,
 			};
-			interaction.client.mongo
-				.collection(DB.REMINDERS)
-				.insertOne(jobReminder);
-			return interaction.reply({
-				content: `I'll remind you about job offers at ${reminderTime(
-					jobReminder
-				)}.`,
-				ephemeral: true,
-			});
+
+			const reminder_exists: boolean = await this.checkJobReminder(
+				interaction
+			);
+			if (reminder_exists) {
+				return interaction.reply({
+					content:
+						"You currently already have a job reminder set. To clear your existing job reminder, run `/cancelreminder` and provide the reminder number.",
+					ephemeral: true,
+				});
+			} else {
+				interaction.client.mongo
+					.collection(DB.REMINDERS)
+					.insertOne(jobReminder);
+				return interaction.reply({
+					content: `I'll remind you about job offers at ${reminderTime(
+						jobReminder
+					)}.`,
+					ephemeral: true,
+				});
+			}
 		} else {
 			const content = interaction.options.getString("content");
 			const rawDuration = interaction.options.getString("duration");
