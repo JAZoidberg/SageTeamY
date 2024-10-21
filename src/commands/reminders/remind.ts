@@ -94,10 +94,7 @@ export default class extends Command {
 				repeat: jobReminderRepeat,
 			};
 
-			const reminder_exists: boolean = await this.checkJobReminder(
-				interaction
-			);
-			if (reminder_exists) {
+			if (await this.checkJobReminder(interaction)) {
 				return interaction.reply({
 					content:
 						"You currently already have a job reminder set. To clear your existing job reminder, run `/cancelreminder` and provide the reminder number.",
