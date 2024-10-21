@@ -6,6 +6,8 @@ src/commands/admin/eval.ts
 # macOS stuff
 .DS_Store
 
+config.ts
+
 # Logs
 logs
 !src/pieces/logs
