@@ -1,19 +1,41 @@
 import { Command } from '@root/src/lib/types/Command';
-import { ActionRowBuilder, ChatInputCommandInteraction, InteractionResponse, ModalBuilder, ModalSubmitFields, TextInputBuilder, TextInputStyle } from 'discord.js';
+import { ActionRowBuilder, ApplicationCommandOptionData, ApplicationCommandOptionType,
+	ChatInputCommandInteraction, InteractionResponse, ModalBuilder, ModalSubmitFields,
+	TextInputBuilder, TextInputStyle } from 'discord.js';
 
-const questions = ['Question 1', 'Question 2', 'Question 3', 'Question 4', 'Question 5'];
+const questions = [
+	['What city are you located in?', 'Are you looking for remote or in person?', 'Job, internship or both?', 'How far are you willing to travel?'],
+	['Interest 1', 'Interest 2', 'Interest 3', 'Interest 4', 'Interest 5']
+];
 
 export default class extends Command {
 
-	name = 'jobform';
+	name: 'jobform'
 	description = 'Form to get your preferences for jobs to be used with the Job Alert System!';
 
-	async run(interaction: ChatInputCommandInteraction): Promise<InteractionResponse<boolean> | void> {
-		const modal = new ModalBuilder()
-			.setCustomId('jobModal')
-			.setTitle('Job Form');
+	options: ApplicationCommandOptionData[] = [
+		{
+			name: 'qset',
+			description: 'Which question set do you want to view (1 or 2).',
+			type: ApplicationCommandOptionType.Number,
+			required: true
+		}
+	]
 
-		const rows = questions.map((question) => this.getAnswerField(questions.indexOf(question)));
+	async run(interaction: ChatInputCommandInteraction): Promise<InteractionResponse<boolean> | void> {
+		const questionSet = interaction.options.getNumber('qset') - 1;
+
+		if (questionSet !== 0 && questionSet !== 1) {
+			interaction.reply({ content: 'Please enter either 1 or 2' });
+			return;
+		}
+
+		const modal = new ModalBuilder()
+			.setCustomId(`jobModal${questionSet}`)
+			.setTitle(`Job Form (${questionSet + 1} of 2)`);
+
+		const askedQuestions = questions[questionSet];
+		const rows = askedQuestions.map((question) => this.getAnswerField(question, askedQuestions.indexOf(question)));
 
 		for (const row of rows) {
 			// eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -23,7 +45,7 @@ export default class extends Command {
 
 		await interaction.showModal(modal);
 
-		// Answers are handled in commandManager.ts on line 149
+		// Answers are handled in src/pieces/commandManager.ts on line 149
 
 		return;
 	}
@@ -34,10 +56,10 @@ export default class extends Command {
 	}
 
 
-	getAnswerField(questionNum: number): ActionRowBuilder {
+	getAnswerField(question: string, questionNum: number): ActionRowBuilder {
 		return new ActionRowBuilder({ components: [new TextInputBuilder()
 			.setCustomId(`question${questionNum + 1}`)
-			.setLabel(`Question ${questionNum + 1}`)
+			.setLabel(`${question}`)
 			.setStyle(TextInputStyle.Short)
 			.setPlaceholder('Input Answer Here')] });
 	}
