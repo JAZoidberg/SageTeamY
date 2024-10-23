@@ -1,13 +1,20 @@
 import { Collection, MongoClient } from 'mongodb';
 import { DB } from '@root/config';
+
 interface JobPreferences {
 	userID: string;
 	answers: {
-		jobType: string;
-		location: string;
-		keywords: string[];
-		experience: string;
-		interests: string;
+		// First question set
+		city: string;
+		workType: string;
+		employmentType: string;
+		travelDistance: string;
+		// Second question set
+		interest1: string;
+		interest2: string;
+		interest3: string;
+		interest4: string;
+		interest5: string;
 	};
 	lastUpdated: Date;
 }
@@ -19,24 +26,35 @@ export class JobPreferenceAPI {
 	constructor(mongo: MongoClient) {
 		this.collection = mongo.db().collection(DB.USERS);
 	}
-	async storeFormResponses(userID: string, answers: string[]): Promise<boolean> {
+
+	async storeFormResponses(userID: string, answers: string[], questionSet: number): Promise<boolean> {
 		try {
-			const formattedAnswers = {
-				jobType: answers[0],
-				location: answers[1],
-				keywords: answers[2].split(',').map(keyword => keyword.trim()),
-				experience: answers[3],
-				interests: answers[4]
-			};
+			let updateObject = {};
+
+			if (questionSet === 0) {
+				updateObject = {
+					'jobPreferences.answers.city': answers[0],
+					'jobPreferences.answers.workType': answers[1],
+					'jobPreferences.answers.employmentType': answers[2],
+					'jobPreferences.answers.travelDistance': answers[3]
+				};
+			} else if (questionSet === 1) {
+				updateObject = {
+					'jobPreferences.answers.interest1': answers[0],
+					'jobPreferences.answers.interest2': answers[1],
+					'jobPreferences.answers.interest3': answers[2],
+					'jobPreferences.answers.interest4': answers[3],
+					'jobPreferences.answers.interest5': answers[4]
+				};
+			}
+
 			await this.collection.updateOne(
 				{ discordId: userID },
 				{
 					$set: {
-						jobPreferences: {
-							userID,
-							answers: formattedAnswers,
-							lastUpdated: new Date()
-						}
+						...updateObject,
+						'jobPreferences.userID': userID,
+						'jobPreferences.lastUpdated': new Date()
 					}
 				},
 				{ upsert: true }
@@ -47,8 +65,9 @@ export class JobPreferenceAPI {
 			return false;
 		}
 	}
-	async getPreference(userID:string, answers: string[]): Promise<boolean> {
-		return this.storeFormResponses(userID, answers);
+
+	async getPreference(userID: string, answers: string[], questionSet: number): Promise<boolean> {
+		return this.storeFormResponses(userID, answers, questionSet);
 	}
 
 	async deletePreference(userID: string): Promise<boolean> {
