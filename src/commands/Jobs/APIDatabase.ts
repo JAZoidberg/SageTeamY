@@ -1,4 +1,4 @@
-import { Collection, MongoClient } from 'mongodb';
+import { Collection, Db, MongoClient } from 'mongodb';
 import { DB } from '@root/config';
 
 interface JobPreferences {
@@ -23,9 +23,12 @@ export class JobPreferenceAPI {
 
 	private collection: Collection;
 
-	constructor(mongo: MongoClient) {
-		this.collection = mongo.db().collection(DB.USERS);
+	constructor(db: Db) {
+		this.collection = db.collection(DB.USERS);
 	}
+	// constructor(mongo: MongoClient) {
+	// 	this.collection = mongo.db().collection(DB.USERS);
+	// }
 
 	async storeFormResponses(userID: string, answers: string[], questionSet: number): Promise<boolean> {
 		try {
