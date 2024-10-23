@@ -4,12 +4,12 @@ import { DB } from '@root/config';
 interface JobPreferences {
 	userID: string;
 	answers: {
-		// First question set
+		// Questions
 		city: string;
 		workType: string;
 		employmentType: string;
 		travelDistance: string;
-		// Second question set
+		// Interests
 		interest1: string;
 		interest2: string;
 		interest3: string;
