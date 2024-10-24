@@ -240,15 +240,7 @@ async function handleModalBuilder(
 		}
 		case "jobModal": {
 			// extracting the input from the modal
-			const questionIDs = [1, 2, 3, 4, 5];
-			const jobAnswers = questionIDs.map((question) =>
-				interaction.fields.getTextInputValue(`question${question}`)
-			);
-			console.log(jobAnswers);
-			jobSearchAlgorithm(jobAnswers);
-			interaction.reply({
-				content: `Submission successful with answers of {${jobAnswers}}`,
-			});
+
 			const qSet = customId.slice(-1);
 			const questionIDs = [
 				[1, 2, 3, 4],
@@ -258,6 +250,9 @@ async function handleModalBuilder(
 			const jobAnswers = questionIDs[qSet].map((question) =>
 				interaction.fields.getTextInputValue(`question${question}`)
 			);
+
+			console.log(jobAnswers);
+			jobSearchAlgorithm(jobAnswers);
 
 			// qSet contains either 0 or 1 depending if it is the first or second set of questions
 			// the array of answers is stored in jobAnswers
