@@ -10,6 +10,7 @@ import parse from "parse-duration";
 import { reminderTime } from "@root/src/lib/utils/generalUtils";
 import { Command } from "@lib/types/Command";
 
+// prettier-ignore
 export default class extends Command {
 	description = `Have ${BOT.NAME} give you a reminder.`;
 	extendedHelp = "Reminders can be set to repeat daily or weekly.";
@@ -39,9 +40,9 @@ export default class extends Command {
 						{ name: "Weekly", value: "weekly" },
 					],
 					type: ApplicationCommandOptionType.String,
-					required: false,
-				},
-			],
+					required: false
+				}
+			]
 		},
 		{
 			name: "jobs",
@@ -56,10 +57,10 @@ export default class extends Command {
 						{ name: "Weekly", value: "weekly" },
 					],
 					type: ApplicationCommandOptionType.String,
-					required: true,
-				},
-			],
-		},
+					required: true
+				}
+			]
+		}
 	];
 
 	async checkJobReminder(
