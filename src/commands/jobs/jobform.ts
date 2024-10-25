@@ -1,4 +1,4 @@
-import { Command } from "@root/src/lib/types/Command";
+import { Command } from '@root/src/lib/types/Command';
 import {
 	ActionRowBuilder,
 	ApplicationCommandOptionData,
@@ -9,29 +9,29 @@ import {
 	ModalSubmitFields,
 	TextInputBuilder,
 	TextInputStyle,
-} from "discord.js";
+} from 'discord.js';
 
 // prettier-ignore
 const questions = [
 	[
-		"What city are you located in?",
-		"Are you looking for remote or in person?",
-		"Job, internship or both?",
-		"How far are you willing to travel?",
+		'What city are you located in?',
+		'Are you looking for remote or in person?',
+		'Job, internship or both?',
+		'How far are you willing to travel?',
 	],
-	["Interest 1", "Interest 2", "Interest 3", "Interest 4", "Interest 5"]
+	['Interest 1', 'Interest 2', 'Interest 3', 'Interest 4', 'Interest 5']
 ];
 
 // prettier-ignore
 export default class extends Command {
-	name: "jobform";
+	name: 'jobform';
 	description =
-		"Form to get your preferences for jobs to be used with the Job Alert System!";
+		'Form to get your preferences for jobs to be used with the Job Alert System!';
 
 	options: ApplicationCommandOptionData[] = [
 		{
-			name: "qset",
-			description: "Which question set do you want to view (1 or 2).",
+			name: 'qset',
+			description: 'Which question set do you want to view (1 or 2).',
 			type: ApplicationCommandOptionType.Number,
 			required: true
 		}
@@ -40,10 +40,10 @@ export default class extends Command {
 	async run(
 		interaction: ChatInputCommandInteraction
 	): Promise<InteractionResponse<boolean> | void> {
-		const questionSet = interaction.options.getNumber("qset") - 1;
+		const questionSet = interaction.options.getNumber('qset') - 1;
 
 		if (questionSet !== 0 && questionSet !== 1) {
-			interaction.reply({ content: "Please enter either 1 or 2" });
+			interaction.reply({ content: 'Please enter either 1 or 2' });
 			return;
 		}
 
@@ -80,7 +80,7 @@ export default class extends Command {
 					.setCustomId(`question${questionNum + 1}`)
 					.setLabel(`${question}`)
 					.setStyle(TextInputStyle.Short)
-					.setPlaceholder("Input Answer Here")
+					.setPlaceholder('Input Answer Here')
 			]
 		});
 	}
