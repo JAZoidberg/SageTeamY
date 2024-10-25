@@ -11,6 +11,7 @@ import {
 	TextInputStyle,
 } from "discord.js";
 
+// prettier-ignore
 const questions = [
 	[
 		"What city are you located in?",
@@ -18,9 +19,10 @@ const questions = [
 		"Job, internship or both?",
 		"How far are you willing to travel?",
 	],
-	["Interest 1", "Interest 2", "Interest 3", "Interest 4", "Interest 5"],
+	["Interest 1", "Interest 2", "Interest 3", "Interest 4", "Interest 5"]
 ];
 
+// prettier-ignore
 export default class extends Command {
 	name: "jobform";
 	description =
@@ -31,8 +33,8 @@ export default class extends Command {
 			name: "qset",
 			description: "Which question set do you want to view (1 or 2).",
 			type: ApplicationCommandOptionType.Number,
-			required: true,
-		},
+			required: true
+		}
 	];
 
 	async run(
@@ -78,8 +80,8 @@ export default class extends Command {
 					.setCustomId(`question${questionNum + 1}`)
 					.setLabel(`${question}`)
 					.setStyle(TextInputStyle.Short)
-					.setPlaceholder("Input Answer Here"),
-			],
+					.setPlaceholder("Input Answer Here")
+			]
 		});
 	}
 }
