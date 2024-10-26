@@ -13,6 +13,7 @@ import { Course } from '../lib/types/Course';
 import { SageUser } from '../lib/types/SageUser';
 import { CommandError } from '../lib/types/errors';
 import { verify } from '../pieces/verification';
+import { Job } from '../lib/types/Job';
 
 const DELETE_DELAY = 10000;
 
@@ -152,6 +153,16 @@ async function handleModalBuilder(interaction: ModalSubmitInteraction, bot: Clie
 			const jobAnswers = questionIDs.map((question) => interaction.fields.getTextInputValue(`question${question}`));
 			console.log(jobAnswers);
 			interaction.reply({ content: `Submission successful with answers of {${jobAnswers}}` });
+
+			const answerResponse: Job = {
+				owner: interaction.user.id,
+				content: '',
+				location: '',
+				answers: jobAnswers,
+				mode: 'public' // temporary
+			};
+
+			interaction.client.mongo.collection(DB.JOB_FORMS).insertOne(answerResponse);
 			break;
 		}
 	}
