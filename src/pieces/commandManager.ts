@@ -162,6 +162,7 @@ async function handleModalBuilder(interaction: ModalSubmitInteraction, bot: Clie
 				owner: interaction.user.id,
 				content: '',
 				location: '',
+				questionSet: qSet,
 				answers: jobAnswers,
 				mode: 'public' // temporary
 			};
