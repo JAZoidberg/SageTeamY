@@ -5,6 +5,8 @@ import { Collection, Client, CommandInteraction, ApplicationCommand,
 	ModalActionRowComponentBuilder, ApplicationCommandType, ApplicationCommandDataResolvable, ChannelType, ApplicationCommandPermissionType, TextInputStyle,
 	ChatInputCommandInteraction,
 	ModalSubmitFields } from 'discord.js';
+	ChatInputCommandInteraction,
+	ModalSubmitFields } from 'discord.js';
 import { isCmdEqual, readdirRecursive } from '@root/src/lib/utils/generalUtils';
 import { Command } from '@lib/types/Command';
 import { SageData } from '@lib/types/SageData';
@@ -110,6 +112,7 @@ async function handleModalBuilder(interaction: ModalSubmitInteraction, bot: Clie
 	const guild = await bot.guilds.fetch(GUILDS.MAIN);
 	guild.members.fetch();
 
+	switch (customId.replace(/[0-9]/g, '')) {
 	switch (customId.replace(/[0-9]/g, '')) {
 		case 'announce': {
 			const channel = bot.channels.cache.get(fields.getTextInputValue('channel')) as TextChannel;
