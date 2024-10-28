@@ -1,5 +1,6 @@
 import { Collection, Db, MongoClient } from 'mongodb';
 import { DB } from '@root/config';
+import { Command } from '@root/src/lib/types/Command';
 
 interface JobPreferences {
 	userID: string;
@@ -18,6 +19,7 @@ interface JobPreferences {
 	};
 	lastUpdated: Date;
 }
+
 
 export class JobPreferenceAPI {
 

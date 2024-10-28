@@ -24,7 +24,11 @@ jobs:
     # Add this step to copy config.example.ts to config.ts
     - name: Set config file
       run: cp config.example.ts config.ts
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 2fc35a1b74bdadac6dcbbd192883384abe8e81e7
     - name: build
       run: |
         npm run build 2>&1 | tee build-output.log
