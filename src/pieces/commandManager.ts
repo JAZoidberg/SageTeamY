@@ -13,6 +13,7 @@ import { Course } from '../lib/types/Course';
 import { SageUser } from '../lib/types/SageUser';
 import { CommandError } from '../lib/types/errors';
 import { verify } from '../pieces/verification';
+import { Job } from '../lib/types/Job';
 
 const DELETE_DELAY = 10000;
 
@@ -109,7 +110,7 @@ async function handleModalBuilder(interaction: ModalSubmitInteraction, bot: Clie
 	const guild = await bot.guilds.fetch(GUILDS.MAIN);
 	guild.members.fetch();
 
-	switch (customId) {
+	switch (customId.replace(/[0-9]/g, '')) {
 		case 'announce': {
 			const channel = bot.channels.cache.get(fields.getTextInputValue('channel')) as TextChannel;
 			const content = fields.getTextInputValue('content');
@@ -148,10 +149,25 @@ async function handleModalBuilder(interaction: ModalSubmitInteraction, bot: Clie
 		}
 		case 'jobModal': {
 			// extracting the input from the modal
-			const questionIDs = [1, 2, 3, 4, 5];
-			const jobAnswers = questionIDs.map((question) => interaction.fields.getTextInputValue(`question${question}`));
-			console.log(jobAnswers);
+			const qSet = customId.slice(-1);
+			const questionIDs = [[1, 2, 3, 4], [1, 2, 3, 4, 5]];
+
+			const jobAnswers = questionIDs[qSet].map((question) => interaction.fields.getTextInputValue(`question${question}`));
+
+			// qSet contains either 0 or 1 depending if it is the first or second set of questions
+			// the array of answers is stored in jobAnswers
 			interaction.reply({ content: `Submission successful with answers of {${jobAnswers}}` });
+
+			const answerResponse: Job = {
+				owner: interaction.user.id,
+				content: '',
+				location: '',
+				questionSet: qSet,
+				answers: jobAnswers,
+				mode: 'public' // temporary
+			};
+
+			interaction.client.mongo.collection(DB.JOB_FORMS).insertOne(answerResponse);
 			break;
 		}
 	}
