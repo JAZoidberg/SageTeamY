@@ -85,11 +85,12 @@ export default class extends Command {
 					| 'daily'
 					| 'weekly') || null;
 
+			const currentDate = new Date();
 			const jobReminder: Reminder = {
 				owner: interaction.user.id,
 				content: 'Job Reminder',
 				mode: 'private',
-				expires: new Date(),
+				expires: new Date(currentDate.setFullYear(currentDate.getFullYear() + 1)), // expires a year from now
 				repeat: jobReminderRepeat
 			};
 
