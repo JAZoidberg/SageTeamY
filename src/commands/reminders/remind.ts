@@ -89,7 +89,7 @@ export default class extends Command {
 				owner: interaction.user.id,
 				content: 'Job Reminder',
 				mode: 'private',
-				expires: new Date(0 + Date.now()),
+				expires: new Date(),
 				repeat: jobReminderRepeat
 			};
 
