@@ -1,5 +1,5 @@
 import { APP_ID, APP_KEY } from '@root/config';
-import axios from 'axios';
+// import axios from 'axios';
 
 
 // Questions: how to pull it? Do I need to pull it?
@@ -9,7 +9,7 @@ import axios from 'axios';
 
 const JOB_TITLE = 'software engineer';
 const LOCATION = 'us';
-const SALARY_MIN = 50000;
+// const SALARY_MIN = 50000;
 
 const URL = `https://api.adzuna.com/v1/api/jobs/${LOCATION}/search/1?app_id=${APP_ID}&app_key=${APP_KEY}
 &results_per_page=10&what=${encodeURIComponent(JOB_TITLE)}&where=${encodeURIComponent(LOCATION)}`;
