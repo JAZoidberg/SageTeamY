@@ -90,7 +90,8 @@ export default class extends Command {
 				owner: interaction.user.id,
 				content: 'Job Reminder',
 				mode: 'private',
-				expires: new Date(currentDate.setFullYear(currentDate.getFullYear() + 1)), // expires a year from now
+				expires: new Date(currentDate.setFullYear(currentDate.getFullYear() + 1)
+				), // expires a year from now
 				repeat: jobReminderRepeat
 			};
 
