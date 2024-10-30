@@ -28,14 +28,11 @@ export class JobPreferenceAPI {
 	constructor(db: Db) {
 		this.collection = db.collection(DB.USERS);
 	}
-	// constructor(mongo: MongoClient) {
-	// 	this.collection = mongo.db().collection(DB.USERS);
-	// }
 
 	async storeFormResponses(userID: string, answers: string[], questionSet: number): Promise<boolean> {
 		try {
 			let updateObject = {};
-
+			// Adds answers to questions.
 			if (questionSet === 0) {
 				updateObject = {
 					'jobPreferences.answers.city': answers[0],
@@ -43,6 +40,7 @@ export class JobPreferenceAPI {
 					'jobPreferences.answers.employmentType': answers[2],
 					'jobPreferences.answers.travelDistance': answers[3]
 				};
+			// Adds answers to interests.
 			} else if (questionSet === 1) {
 				updateObject = {
 					'jobPreferences.answers.interest1': answers[0],
@@ -52,7 +50,7 @@ export class JobPreferenceAPI {
 					'jobPreferences.answers.interest5': answers[4]
 				};
 			}
-
+			// Updates preferences with new answers and the new date inputted.
 			await this.collection.updateOne(
 				{ discordId: userID },
 				{
@@ -74,7 +72,7 @@ export class JobPreferenceAPI {
 	async getPreference(userID: string, answers: string[], questionSet: number): Promise<boolean> {
 		return this.storeFormResponses(userID, answers, questionSet);
 	}
-
+	// Deletes the preferences answers to an empty string.
 	async deletePreference(userID: string): Promise<boolean> {
 		try {
 			const result = await this.collection.updateOne(
