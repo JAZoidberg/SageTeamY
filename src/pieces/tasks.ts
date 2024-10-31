@@ -87,7 +87,15 @@ async function checkReminders(bot: Client): Promise<void> {
 		// TODO - need to find a way to check if the user has set their job preferences. If they haven't, find a way to check it and display the message advising them where in order to get
 		// personalized job recommendations, they'll need to fill out the job form (by default they're getting a list of jobs from anywhere)
 
-		const message = reminder.mode === 'private' ? `## Hey <@${reminder.owner}>! \n ## Here's your list of job recommendations! \n 1. A \n 2. B \n 3. C`
+		const message = reminder.mode === 'private'
+			? `## Hey <@${reminder.owner}>! \n` +
+		`### Here's your list of job recommendations! \n` +
+		`1. A \n` +
+		`2. B \n` +
+		`3. C \n` +
+		`-# Please note that if you would like a more personalized job recommendations ` +
+		`(i.e. local computer science internships/jobs with more personal preferences), please fill out the jobform ` +
+		`(use the command: \`/jobform\`).`
 			: `<@${reminder.owner}>, here's the reminder you asked for: **${reminder.content}**`;
 
 		if (reminder.mode === 'public') {
