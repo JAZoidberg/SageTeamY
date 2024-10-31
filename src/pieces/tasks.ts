@@ -93,9 +93,9 @@ async function checkReminders(bot: Client): Promise<void> {
 		`1. A \n` +
 		`2. B \n` +
 		`3. C \n` +
-		`-# Please note that if you would like a more personalized job recommendations ` +
+		`-# Please note that if you would like more personalized job recommendations ` +
 		`(i.e. local computer science internships/jobs with more personal preferences), please fill out the jobform ` +
-		`(use the command: \`/jobform\`).`
+		`(use the command: \`/jobform\` in the server).`
 			: `<@${reminder.owner}>, here's the reminder you asked for: **${reminder.content}**`;
 
 		if (reminder.mode === 'public') {
