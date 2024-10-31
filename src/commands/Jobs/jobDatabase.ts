@@ -24,6 +24,7 @@ interface JobPreferences {
 export class JobPreferenceAPI {
 
 	private collection: Collection;
+	mode: string;
 
 	constructor(db: Db) {
 		this.collection = db.collection(DB.USERS);
