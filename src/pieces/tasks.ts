@@ -79,7 +79,6 @@ async function checkPolls(bot: Client): Promise<void> {
 
 async function checkReminders(bot: Client): Promise<void> {
 	const reminders: Reminder[] = await bot.mongo.collection(DB.REMINDERS).find({ expires: { $lte: new Date() } }).toArray();
-
 	const pubChan = (await bot.channels.fetch(CHANNELS.SAGE)) as TextChannel;
 
 	reminders.forEach((reminder) => {
