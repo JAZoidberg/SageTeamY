@@ -85,13 +85,11 @@ export default class extends Command {
 					| 'daily'
 					| 'weekly') || null;
 
-			const currentDate = new Date();
 			const jobReminder: Reminder = {
 				owner: interaction.user.id,
 				content: 'Job Reminder',
 				mode: 'private',
-				expires: new Date(currentDate.setFullYear(currentDate.getFullYear() + 1)
-				), // expires a year from now
+				expires: new Date(),
 				repeat: jobReminderRepeat
 			};
 
@@ -106,7 +104,7 @@ export default class extends Command {
 					.collection(DB.REMINDERS)
 					.insertOne(jobReminder);
 				return interaction.reply({
-					content: `I'll remind you about job offers at ${reminderTime(
+					content: `I'll remind you about job offers ${jobReminderRepeat} at ${reminderTime(
 						jobReminder
 					)}.`,
 					ephemeral: true
