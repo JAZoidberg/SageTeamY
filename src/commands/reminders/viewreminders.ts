@@ -1,17 +1,18 @@
-import { DB } from "@root/config";
-import { Reminder } from "@lib/types/Reminder";
+import { DB } from '@root/config';
+import { Reminder } from '@lib/types/Reminder';
 import {
 	ChatInputCommandInteraction,
 	EmbedBuilder,
-	InteractionResponse,
-} from "discord.js";
-import { reminderTime } from "@root/src/lib/utils/generalUtils";
-import { Command } from "@lib/types/Command";
+	InteractionResponse
+} from 'discord.js';
+import { reminderTime } from '@root/src/lib/utils/generalUtils';
+import { Command } from '@lib/types/Command';
 
 export default class extends Command {
-	description = "See your upcoming reminders.";
+
+	description = 'See your upcoming reminders.';
 	extendedHelp =
-		"Don't worry, private reminders will be hidden if you use this command publicly.";
+	"Don't worry, private reminders will be hidden if you use this command publicly.";
 
 	async run(
 		interaction: ChatInputCommandInteraction
@@ -25,7 +26,7 @@ export default class extends Command {
 		if (reminders.length < 1) {
 			interaction.reply({
 				content: "You don't have any pending reminders!",
-				ephemeral: true,
+				ephemeral: true
 			});
 		}
 
@@ -35,25 +36,26 @@ export default class extends Command {
 			if (i % 25 === 0) {
 				embeds.push(
 					new EmbedBuilder()
-						.setTitle("Pending reminders")
-						.setColor("DarkAqua")
+						.setTitle('Pending reminders')
+						.setColor('DarkAqua')
 				);
 			}
-			const hidden = reminder.mode === "private";
+			const hidden = reminder.mode === 'private';
 			embeds[Math.floor(i / 25)].addFields({
 				name: `${i + 1}. ${
 					hidden
-						? reminder.content === "Job Reminder"
-							? "[Job Reminder]"
-							: "Private reminder"
+						? reminder.content === 'Job Reminder'
+							? '[Job Reminder]'
+							: 'Private reminder'
 						: reminder.content
 				}`,
 				value: hidden
-					? "Some time in the future."
-					: reminderTime(reminder),
+					? 'Some time in the future.'
+					: reminderTime(reminder)
 			});
 		});
 
 		interaction.reply({ embeds });
 	}
+
 }
