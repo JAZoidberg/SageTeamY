@@ -1,7 +1,5 @@
-import {
-	Collection,
+import { Collection,
 	Client,
-	CommandInteraction,
 	ApplicationCommand,
 	GuildMember,
 	SelectMenuInteraction,
@@ -18,18 +16,15 @@ import {
 	ChannelType,
 	ApplicationCommandPermissionType,
 	TextInputStyle,
-	ChatInputCommandInteraction,
-	ModalSubmitFields,
-} from "discord.js";
-import { isCmdEqual, readdirRecursive } from "@root/src/lib/utils/generalUtils";
-import { Command } from "@lib/types/Command";
-import { SageData } from "@lib/types/SageData";
-import { DB, GUILDS, MAINTAINERS, CHANNELS } from "@root/config";
-import { Course } from "../lib/types/Course";
-import { SageUser } from "../lib/types/SageUser";
-import { CommandError } from "../lib/types/errors";
-import { verify } from "../pieces/verification";
-import jobSearchAlgorithm from "./job-algorithm";
+	ChatInputCommandInteraction } from 'discord.js';
+import { isCmdEqual, readdirRecursive } from '@root/src/lib/utils/generalUtils';
+import { Command } from '@lib/types/Command';
+import { SageData } from '@lib/types/SageData';
+import { DB, GUILDS, MAINTAINERS, CHANNELS } from '@root/config';
+import { Course } from '../lib/types/Course';
+import { SageUser } from '../lib/types/SageUser';
+import { CommandError } from '../lib/types/errors';
+import { verify } from '../pieces/verification';
 
 const DELETE_DELAY = 10000;
 
@@ -37,11 +32,11 @@ async function register(bot: Client): Promise<void> {
 	try {
 		await loadCommands(bot);
 	} catch (error) {
-		bot.emit("error", error);
+		bot.emit('error', error);
 	}
 
-	bot.on("messageCreate", async (msg) => {
-		if (msg.content.substring(0, 2).toLowerCase().includes("s;")) {
+	bot.on('messageCreate', async (msg) => {
+		if (msg.content.substring(0, 2).toLowerCase().includes('s;')) {
 			// eslint-disable-next-line max-len
 			msg.reply(
 				`If you're trying to run a Sage command, we've moved over to using slash commands. If you're trying to enroll in a course, please use the dropdowns in <#${CHANNELS.ROLE_SELECT}> instead!`
@@ -55,25 +50,24 @@ async function register(bot: Client): Promise<void> {
 		}
 	});
 
-	bot.on("interactionCreate", async (interaction) => {
+	bot.on('interactionCreate', async (interaction) => {
 		if (
-			interaction.isChatInputCommand() ||
-			interaction.isContextMenuCommand()
-		)
-			runCommand(interaction as ChatInputCommandInteraction, bot);
+			interaction.isChatInputCommand()
+			|| interaction.isContextMenuCommand()
+		) { runCommand(interaction as ChatInputCommandInteraction, bot); }
 		if (interaction.isSelectMenu()) handleDropdown(interaction);
 		if (interaction.isModalSubmit()) handleModalBuilder(interaction, bot);
 		if (interaction.isButton()) handleButton(interaction);
 	});
 
-	bot.on("messageCreate", async (msg) => {
+	bot.on('messageCreate', async (msg) => {
 		const lcMessage = msg.content.toLowerCase();
-		const thankCheck =
-			(lcMessage.includes("thank") || lcMessage.includes("thx")) &&
-			lcMessage.includes(" sage");
+		const thankCheck
+			= (lcMessage.includes('thank') || lcMessage.includes('thx'))
+			&& lcMessage.includes(' sage');
 
 		if (thankCheck) {
-			msg.react("<:steve_peace:883541149032267816>");
+			msg.react('<:steve_peace:883541149032267816>');
 		}
 	});
 }
@@ -85,7 +79,7 @@ async function handleDropdown(interaction: SelectMenuInteraction) {
 		.toArray();
 	const { customId, values, member } = interaction;
 	let responseContent = `Your roles have been updated.`;
-	if (customId === "roleselect" && member instanceof GuildMember) {
+	if (customId === 'roleselect' && member instanceof GuildMember) {
 		const { component } = interaction;
 		const removed = component.options.filter(
 			(option) => !values.includes(option.value)
@@ -97,16 +91,16 @@ async function handleDropdown(interaction: SelectMenuInteraction) {
 				(r) => r.id === id.value
 			);
 			if (
-				!role.name.includes("CISC") &&
-				member.roles.cache.some((r) => r.id === id.value)
+				!role.name.includes('CISC')
+				&& member.roles.cache.some((r) => r.id === id.value)
 			) {
 				member.roles.remove(id.value);
 				removedRoleNames.push(role.name);
 				responseContent = `Your enrollments have been updated.`;
 			}
 			if (
-				role.name.includes("CISC") &&
-				member.roles.cache.some((r) => r.id === id.value)
+				role.name.includes('CISC')
+				&& member.roles.cache.some((r) => r.id === id.value)
 			) {
 				// does user have this role?
 				const course = courses.find(
@@ -131,15 +125,15 @@ async function handleDropdown(interaction: SelectMenuInteraction) {
 		for (const id of values) {
 			const role = interaction.guild.roles.cache.find((r) => r.id === id);
 			if (
-				!role.name.includes("CISC") &&
-				!member.roles.cache.some((r) => r.id === id)
+				!role.name.includes('CISC')
+				&& !member.roles.cache.some((r) => r.id === id)
 			) {
 				member.roles.add(id);
 				addedRoleNames.push(role.name);
 			}
 			if (
-				role.name.includes("CISC") &&
-				!member.roles.cache.some((r) => r.id === id)
+				role.name.includes('CISC')
+				&& !member.roles.cache.some((r) => r.id === id)
 			) {
 				// does user not have this role?
 				const course = courses.find(
@@ -164,15 +158,15 @@ async function handleDropdown(interaction: SelectMenuInteraction) {
 		interaction.reply({
 			content: `${responseContent} The following changes have been applied to your roles:
 			${
-				addedRoleNames.length !== 0
-					? `**Added: **${addedRoleNames.join(", ")}\n\t\t\t`
-					: ""
-			}${
-				removedRoleNames.length !== 0
-					? `**Removed: **${removedRoleNames.join(", ")}`
-					: ""
-			}`,
-			ephemeral: true,
+	addedRoleNames.length !== 0
+		? `**Added: **${addedRoleNames.join(', ')}\n\t\t\t`
+		: ''
+}${
+	removedRoleNames.length !== 0
+		? `**Removed: **${removedRoleNames.join(', ')}`
+		: ''
+}`,
+			ephemeral: true
 		});
 	}
 }
@@ -185,37 +179,37 @@ async function handleModalBuilder(
 	const guild = await bot.guilds.fetch(GUILDS.MAIN);
 	guild.members.fetch();
 
-	switch (customId.replace(/[0-9]/g, "")) {
-		case "announce": {
+	switch (customId.replace(/[0-9]/g, '')) {
+		case 'announce': {
 			const channel = bot.channels.cache.get(
-				fields.getTextInputValue("channel")
+				fields.getTextInputValue('channel')
 			) as TextChannel;
-			const content = fields.getTextInputValue("content");
-			const file = fields.getTextInputValue("file");
+			const content = fields.getTextInputValue('content');
+			const file = fields.getTextInputValue('file');
 			await channel.send({
 				content: content,
-				files: file !== "" ? [file] : null,
-				allowedMentions: { parse: ["everyone", "roles"] },
+				files: file !== '' ? [file] : null,
+				allowedMentions: { parse: ['everyone', 'roles'] }
 			});
 			interaction.reply({
-				content: `Your announcement was posted in ${channel}.`,
+				content: `Your announcement was posted in ${channel}.`
 			});
 			break;
 		}
-		case "edit": {
-			const content = fields.getTextInputValue("content");
+		case 'edit': {
+			const content = fields.getTextInputValue('content');
 			const channel = bot.channels.cache.get(
-				fields.getTextInputValue("channel")
+				fields.getTextInputValue('channel')
 			) as TextChannel;
 			const message = await channel.messages.fetch(
-				fields.getTextInputValue("message")
+				fields.getTextInputValue('message')
 			);
 			await message.edit(content);
 			interaction.reply({ content: `Your message was edited.` });
 			break;
 		}
-		case "verify": {
-			const givenHash = fields.getTextInputValue("verifyPrompt");
+		case 'verify': {
+			const givenHash = fields.getTextInputValue('verifyPrompt');
 			const entry: SageUser = await interaction.client.mongo
 				.collection(DB.USERS)
 				.findOne({ hash: givenHash });
@@ -227,38 +221,27 @@ async function handleModalBuilder(
 				break;
 			}
 			await verify(interaction, bot, guild, entry, givenHash);
-			const enrollStr =
-				entry.courses.length > 0
+			const enrollStr
+				= entry.courses.length > 0
 					? `You have been automatically enrolled in CISC ${entry.courses[0]}. To enroll in more courses or to unenroll from your current course,` +
-					  ` go to <#${CHANNELS.ROLE_SELECT}> and use the proper dropdown menu.`
-					: "";
+					` go to <#${CHANNELS.ROLE_SELECT}> and use the proper dropdown menu.`
+					: '';
 			interaction.reply({
 				content: `Thank you for verifying! You can now access the rest of the server. ${enrollStr}`,
-				ephemeral: true,
+				ephemeral: true
 			});
 			break;
 		}
-		case "jobModal": {
+		case 'jobModal': {
 			// extracting the input from the modal
-
 			const qSet = customId.slice(-1);
-			const questionIDs = [
-				[1, 2, 3, 4],
-				[1, 2, 3, 4, 5],
-			];
+			const questionIDs = [[1, 2, 3, 4], [1, 2, 3, 4, 5]];
 
-			const jobAnswers = questionIDs[qSet].map((question) =>
-				interaction.fields.getTextInputValue(`question${question}`)
-			);
-
-			console.log(jobAnswers);
-			jobSearchAlgorithm(jobAnswers);
+			const jobAnswers = questionIDs[qSet].map((question) => interaction.fields.getTextInputValue(`question${question}`));
 
 			// qSet contains either 0 or 1 depending if it is the first or second set of questions
 			// the array of answers is stored in jobAnswers
-			interaction.reply({
-				content: `Submission successful with answers of {${jobAnswers}}`,
-			});
+			interaction.reply({ content: `Submission successful with answers of {${jobAnswers}}` });
 			break;
 		}
 	}
@@ -270,19 +253,19 @@ export async function handleButton(
 	const { customId } = interaction;
 
 	switch (customId) {
-		case "verify": {
+		case 'verify': {
 			const verifyModal = new ModalBuilder()
-				.setTitle("User Verification")
-				.setCustomId("verify");
+				.setTitle('User Verification')
+				.setCustomId('verify');
 			const verifyPrompt = new TextInputBuilder()
-				.setCustomId("verifyPrompt")
-				.setLabel("Please enter your unigue hash code here: ")
+				.setCustomId('verifyPrompt')
+				.setLabel('Please enter your unigue hash code here: ')
 				.setStyle(TextInputStyle.Short)
 				.setMinLength(44)
 				.setMaxLength(44)
 				.setRequired(true);
-			const verifyActionRow =
-				new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
+			const verifyActionRow
+				= new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
 					verifyPrompt
 				);
 
@@ -307,7 +290,7 @@ export async function loadCommands(bot: Client): Promise<void> {
 		numEdited = 0;
 
 	const commandFiles = readdirRecursive(`${__dirname}/../commands`).filter(
-		(file) => file.endsWith(".js")
+		(file) => file.endsWith('.js')
 	);
 
 	const awaitedCmds: Promise<ApplicationCommand>[] = [];
@@ -315,11 +298,11 @@ export async function loadCommands(bot: Client): Promise<void> {
 	for (const file of commandFiles) {
 		const commandModule = await import(file);
 
-		const dirs = file.split("/");
-		const name = dirs[dirs.length - 1].split(".")[0];
+		const dirs = file.split('/');
+		const name = dirs[dirs.length - 1].split('.')[0];
 
 		// semi type-guard, typeof returns function for classes
-		if (!(typeof commandModule.default === "function")) {
+		if (!(typeof commandModule.default === 'function')) {
 			console.log(`Invalid command ${name}`);
 			continue;
 		}
@@ -330,10 +313,10 @@ export async function loadCommands(bot: Client): Promise<void> {
 		command.name = name;
 
 		if (
-			(!command.description ||
-				command.description.length >= 100 ||
-				command.description.length <= 0) &&
-			command.type === ApplicationCommandType.ChatInput
+			(!command.description
+				|| command.description.length >= 100
+				|| command.description.length <= 0)
+			&& command.type === ApplicationCommandType.ChatInput
 		) {
 			throw `Command ${command.name}'s description must be between 1 and 100 characters.`;
 		}
@@ -349,7 +332,7 @@ export async function loadCommands(bot: Client): Promise<void> {
 			description: command.description,
 			options: command?.options || [],
 			type: command.type || ApplicationCommandType.ChatInput,
-			defaultPermission: false,
+			defaultPermission: false
 		} as ApplicationCommandDataResolvable;
 
 		if (!guildCmd) {
@@ -403,12 +386,12 @@ async function runCommand(
 	const command = bot.commands.get(interaction.commandName);
 
 	if (
-		interaction.channel.type === ChannelType.GuildText &&
-		command.runInGuild === false
+		interaction.channel.type === ChannelType.GuildText
+		&& command.runInGuild === false
 	) {
 		return interaction.reply({
-			content: "This command must be run in DMs, not public channels",
-			ephemeral: true,
+			content: 'This command must be run in DMs, not public channels',
+			ephemeral: true
 		});
 	}
 
@@ -416,8 +399,8 @@ async function runCommand(
 		let success = false;
 		for (const user of command.permissions) {
 			if (
-				user.id === interaction.user.id &&
-				user.type === ApplicationCommandPermissionType.User
+				user.id === interaction.user.id
+				&& user.type === ApplicationCommandPermissionType.User
 			) {
 				// the user is able to use this command (most likely admin-only)
 				success = true;
@@ -438,15 +421,16 @@ async function runCommand(
 		}
 
 		const failMessages = [
-			"HTTP 401: Unauthorized",
+			'HTTP 401: Unauthorized',
 			`I'm sorry ${interaction.user.username}, I'm afraid I can't do that.`,
-			"Username is not in the sudoers file. This incident will be reported.",
-			`I'm sorry ${interaction.user.username}, but you need sigma nine clearance for that.`,
+			'Username is not in the sudoers file. This incident will be reported.',
+			`I'm sorry ${interaction.user.username}, but you need sigma nine clearance for that.`
 		];
-		if (!success)
+		if (!success) {
 			return interaction.reply(
 				failMessages[Math.floor(Math.random() * failMessages.length)]
 			);
+		}
 
 		try {
 			bot.commands
@@ -454,17 +438,17 @@ async function runCommand(
 				.run(interaction)
 				?.catch(async (error: Error) => {
 					// Idk if this is needed now, but keeping in case removing it breaks stuff...
-					bot.emit("error", new CommandError(error, interaction));
+					bot.emit('error', new CommandError(error, interaction));
 					interaction.reply({
 						content: `An error occurred. ${MAINTAINERS} have been notified.`,
-						ephemeral: true,
+						ephemeral: true
 					});
 				});
 		} catch (error) {
-			bot.emit("error", new CommandError(error, interaction));
+			bot.emit('error', new CommandError(error, interaction));
 			interaction.reply({
 				content: `An error occurred. ${MAINTAINERS} have been notified.`,
-				ephemeral: true,
+				ephemeral: true
 			});
 			console.log(error.errors);
 		}
