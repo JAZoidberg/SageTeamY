@@ -57,4 +57,5 @@ export default class extends Command {
 
 		interaction.reply({ embeds });
 	}
+
 }
