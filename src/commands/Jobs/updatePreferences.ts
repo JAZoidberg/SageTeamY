@@ -10,13 +10,13 @@ const questions = [
 
 export default class extends Command {
 
-	name: 'updateJobForm'
-	description = 'Update your preferences for jobs to be used with the Job Alert System!';
+	name: 'update_prefereces'
+	description = 'View and update your preferences for jobs to be used with the Job Alert System!';
 
 	options: ApplicationCommandOptionData[] = [
 		{
 			name: 'qset',
-			description: 'Which question set do you want to view (1 or 2).',
+			description: 'Which question set do you want to view and update(1 or 2)?',
 			type: ApplicationCommandOptionType.Number,
 			required: true
 		}
@@ -27,6 +27,19 @@ export default class extends Command {
 
 		if (questionSet !== 0 && questionSet !== 1) {
 			interaction.reply({ content: 'Please enter either 1 or 2' });
+			return;
+		}
+
+		const existingAnswers = await interaction.client.mongo.collection(DB.USERS).findOne({
+			discordId: interaction.user.id,
+			jobPreferences: { $exists: true }
+		});
+
+		if (!existingAnswers) {
+			interaction.reply({
+				content: 'No preferences found, enter preferences by using the command /jobform',
+				ephemeral: true
+			});
 			return;
 		}
 
