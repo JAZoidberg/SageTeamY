@@ -167,7 +167,14 @@ async function handleModalBuilder(interaction: ModalSubmitInteraction, bot: Clie
 				mode: 'public' // temporary
 			};
 
-			interaction.client.mongo.collection(DB.JOB_FORMS).insertOne(answerResponse);
+			// interaction.client.mongo.collection(DB.JOB_FORMS).insertOne(answerResponse);
+			if (answerResponse.questionSet === '0') {
+				interaction.client.mongo.collection(DB.JOB_FORMS).update(
+					{ questionSet: 0 }, answerResponse, { upsert: true });
+			} else if (answerResponse.questionSet === '1') {
+				interaction.client.mongo.collection(DB.JOB_FORMS).update(
+					{ questionSet: 1 }, answerResponse, { upsert: true });
+			}
 			break;
 		}
 	}
