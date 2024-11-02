@@ -161,14 +161,19 @@ async function handleModalBuilder(interaction: ModalSubmitInteraction, bot: Clie
 					discordId: interaction.user.id,
 					jobPreferences: { $exists: true }
 				});
-				const mess = existingPref ? 
+				const mess = existingPref ? `Success: Your preferences have been updated! ${formNumber === 0
+					? 'Please use /updateform qset:2 to complete your interests.' : ''}`
+					: `Success: Form ${formNumber + 1} submitted! ${formNumber === 0 ? 'Please use /jobform qset:2 to complete your interests.' : ''}`;
 				// Takes user to questions, then interests. If submitted correctly, the answers will be stored.
+				// await interaction.reply({
+				// 	content: success
+				// 		? `Form ${formNumber + 1} submitted successfully! ${formNumber === 0 ? 'Please use /jobform qset:2 to complete your interests.' : ''}`
+				// 		: 'Error saving preferences. Please try again.',
+				// 	ephemeral: true
+				// });
 				await interaction.reply({
-					content: success
-						? `Form ${formNumber + 1} submitted successfully! ${formNumber === 0 ? 'Please use /jobform qset:2 to complete your interests.' : ''}`
-						: 'Error saving preferences. Please try again.',
-					ephemeral: true
-				});
+					
+				})
 			} catch (error) {
 				console.error('update form error:', error);
 				await interaction.reply({ content: 'An error occurred. Please try again.', ephemeral: true });
