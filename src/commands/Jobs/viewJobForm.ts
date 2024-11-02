@@ -3,7 +3,7 @@ import { ChatInputCommandInteraction, Embed, EmbedBuilder, InteractionResponse }
 import { reminderTime } from '@root/src/lib/utils/generalUtils';
 import { Command } from '@lib/types/Command';
 import jobform from './jobform';
-import { JobPreferenceAPI, JobPreferences } from './jobDatabase';
+import { JobPreferenceAPI } from './jobDatabase';
 
 export default class extends Command {
 
@@ -27,8 +27,8 @@ export default class extends Command {
 				{ name: 'Preffered City', value: preferences.city },
 				{ name: 'Preffered Job Type', value: preferences.jobType },
 				{ name: 'Preffered Job Title', value: preferences.jobTitle },
-				{ name: 'Preffered Job Description', value: preferences.jobDescription },
-			)
+				{ name: 'Preffered Job Description', value: preferences.jobDescription }
+			);
 		}
 	}
 

@@ -170,29 +170,29 @@ async function handleModalBuilder(interaction: ModalSubmitInteraction, bot: Clie
 			}
 			break;
 		}
-		case 'updateJobModal': {
-			try {
-				// extracting the input from the modal
-				const formNumber = parseInt(customId.slice(-1));
-				const answers = [1, 2, 3, 4, 5].slice(0, formNumber === 0 ? 4 : 5).map(num => fields.getTextInputValue(`question${num}`));
+		// case 'updateJobModal': {
+		// 	try {
+		// 		// extracting the input from the modal
+		// 		const formNumber = parseInt(customId.slice(-1));
+		// 		const answers = [1, 2, 3, 4, 5].slice(0, formNumber === 0 ? 4 : 5).map(num => fields.getTextInputValue(`question${num}`));
 
-				// Create API instance with the database instance directly
-				const jobPreferenceAPI = new JobPreferenceAPI(interaction.client.mongo);
-				const success = await jobPreferenceAPI.storeFormResponses(interaction.user.id, answers, formNumber);
+		// 		// Create API instance with the database instance directly
+		// 		const jobPreferenceAPI = new JobPreferenceAPI(interaction.client.mongo);
+		// 		const success = await jobPreferenceAPI.storeFormResponses(interaction.user.id, answers, formNumber);
 
-				// Takes user to questions, then interests. If submitted correctly, the answers will be stored.
-				await interaction.reply({
-					content: success
-						? `Form ${formNumber + 1} submitted successfully! ${formNumber === 0 ? 'Please use /jobform qset:2 to complete your interests.' : ''}`
-						: 'Error saving preferences. Please try again.',
-					ephemeral: true
-				});
-			} catch (error) {
-				console.error('Job form error:', error);
-				await interaction.reply({ content: 'An error occurred. Please try again.', ephemeral: true });
-			}
-			break;
-		}
+		// 		// Takes user to questions, then interests. If submitted correctly, the answers will be stored.
+		// 		await interaction.reply({
+		// 			content: success
+		// 				? `Form ${formNumber + 1} submitted successfully! ${formNumber === 0 ? 'Please use /jobform qset:2 to complete your interests.' : ''}`
+		// 				: 'Error saving preferences. Please try again.',
+		// 			ephemeral: true
+		// 		});
+		// 	} catch (error) {
+		// 		console.error('Job form error:', error);
+		// 		await interaction.reply({ content: 'An error occurred. Please try again.', ephemeral: true });
+		// 	}
+		// 	break;
+		// }
 	}
 }
 
