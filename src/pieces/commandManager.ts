@@ -169,10 +169,10 @@ async function handleModalBuilder(interaction: ModalSubmitInteraction, bot: Clie
 
 			// interaction.client.mongo.collection(DB.JOB_FORMS).insertOne(answerResponse);
 			if (answerResponse.questionSet === '0') {
-				interaction.client.mongo.collection(DB.JOB_FORMS).update(
+				interaction.client.mongo.collection(DB.JOB_FORMS).updateOne(
 					{ questionSet: 0 }, answerResponse, { upsert: true });
 			} else if (answerResponse.questionSet === '1') {
-				interaction.client.mongo.collection(DB.JOB_FORMS).update(
+				interaction.client.mongo.collection(DB.JOB_FORMS).updateOne(
 					{ questionSet: 1 }, answerResponse, { upsert: true });
 			}
 			break;
