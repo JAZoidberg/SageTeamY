@@ -1,3 +1,4 @@
+import { DB } from '@root/config';
 import { Command } from '@root/src/lib/types/Command';
 import { ActionRowBuilder, ApplicationCommandOptionData, ApplicationCommandOptionType,
 	ChatInputCommandInteraction, InteractionResponse, ModalBuilder, ModalSubmitFields,
@@ -29,7 +30,7 @@ export default class extends Command {
 			interaction.reply({ content: 'Please enter either 1 or 2' });
 			return;
 		}
-
+		// Checks if ansers already exists.
 		const existingAnswers = await interaction.client.mongo.collection(DB.USERS).findOne({
 			discordId: interaction.user.id,
 			jobPreferences: { $exists: true }
@@ -44,7 +45,7 @@ export default class extends Command {
 		}
 
 		const modal = new ModalBuilder()
-			.setCustomId(`updateJobModal${questionSet}`)
+			.setCustomId(`jobModal${questionSet}`)
 			.setTitle(`Update Job Preferences (${questionSet + 1} of 2)`);
 
 		const askedQuestions = questions[questionSet];

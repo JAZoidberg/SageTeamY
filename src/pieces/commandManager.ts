@@ -157,6 +157,11 @@ async function handleModalBuilder(interaction: ModalSubmitInteraction, bot: Clie
 				const jobPreferenceAPI = new JobPreferenceAPI(interaction.client.mongo);
 				const success = await jobPreferenceAPI.storeFormResponses(interaction.user.id, answers, formNumber);
 
+				const existingPref = await interaction.client.mongo.collection(DB.USERS).findOne({
+					discordId: interaction.user.id,
+					jobPreferences: { $exists: true }
+				});
+				const mess = existingPref ? 
 				// Takes user to questions, then interests. If submitted correctly, the answers will be stored.
 				await interaction.reply({
 					content: success
@@ -165,7 +170,7 @@ async function handleModalBuilder(interaction: ModalSubmitInteraction, bot: Clie
 					ephemeral: true
 				});
 			} catch (error) {
-				console.error('Job form error:', error);
+				console.error('update form error:', error);
 				await interaction.reply({ content: 'An error occurred. Please try again.', ephemeral: true });
 			}
 			break;
