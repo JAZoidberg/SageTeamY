@@ -11,7 +11,7 @@ const questions = [
 
 export default class extends Command {
 
-	name: 'update_prefereces'
+	name: 'update_preferences'
 	description = 'View and update your preferences for jobs to be used with the Job Alert System!';
 
 	options: ApplicationCommandOptionData[] = [
@@ -45,7 +45,7 @@ export default class extends Command {
 		}
 
 		const modal = new ModalBuilder()
-			.setCustomId(`jobModal${questionSet}`)
+			.setCustomId(`updateModal${questionSet}`)
 			.setTitle(`Update Job Preferences (${questionSet + 1} of 2)`);
 
 		const askedQuestions = questions[questionSet];
