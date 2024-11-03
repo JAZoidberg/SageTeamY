@@ -11,7 +11,7 @@ const questions = [
 
 export default class extends Command {
 
-	name: 'update_preferences'
+	name: 'updatePreferences'
 	description = 'View and update your preferences for jobs to be used with the Job Alert System!';
 
 	options: ApplicationCommandOptionData[] = [
@@ -19,7 +19,11 @@ export default class extends Command {
 			name: 'qset',
 			description: 'Which question set do you want to view and update(1 or 2)?',
 			type: ApplicationCommandOptionType.Number,
-			required: true
+			required: true,
+			choices: [
+				{ name: 'qset 1', value: 1 },
+				{ name: 'qset 2', value: 2 }
+			]
 		}
 	]
 
