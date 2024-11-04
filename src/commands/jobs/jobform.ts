@@ -18,7 +18,11 @@ export default class extends Command {
 			name: 'qset',
 			description: 'Which question set do you want to view (1 or 2).',
 			type: ApplicationCommandOptionType.Number,
-			required: true
+			required: true,
+			choices: [
+				{ name: 'qset 1', value: 1 },
+				{ name: 'qset 2', value: 2 }
+			]
 		}
 	]
 

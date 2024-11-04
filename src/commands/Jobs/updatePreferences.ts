@@ -11,7 +11,7 @@ const questions = [
 
 export default class extends Command {
 
-	name: 'updatepreferences'
+	name: 'update preferences'
 	description = 'View and update your preferences for jobs to be used with the Job Alert System!';
 
 	options: ApplicationCommandOptionData[] = [
