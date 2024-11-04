@@ -177,29 +177,30 @@ async function handleModalBuilder(interaction: ModalSubmitInteraction, bot: Clie
 						: 'Error saving preferences. Please try again.',
 					ephemeral: true
 				});
+
+				const answerResponse: Job = {
+					owner: interaction.user.id,
+					content: '',
+					location: '',
+					questionSet: formNumber,
+					answers: answers,
+					mode: 'public' // temporary
+				};
+
+
+				// interaction.client.mongo.collection(DB.JOB_FORMS).insertOne(answerResponse);
+				if (answerResponse.questionSet === '0') {
+					interaction.client.mongo.collection(DB.JOB_FORMS).replaceOne(
+						{ questionSet: 0 }, answerResponse, { upsert: true });
+				} else if (answerResponse.questionSet === '1') {
+					interaction.client.mongo.collection(DB.JOB_FORMS).replaceOne(
+						{ questionSet: 1 }, answerResponse, { upsert: true });
+				}
+				break;
 			} catch (error) {
 				console.error('Job form error:', error);
 				await interaction.reply({ content: 'An error occurred. Please try again.', ephemeral: true });
 			}
-
-			const answerResponse: Job = {
-				owner: interaction.user.id,
-				content: '',
-				location: '',
-				questionSet: qSet,
-				answers: jobAnswers,
-				mode: 'public' // temporary
-			};
-
-			// interaction.client.mongo.collection(DB.JOB_FORMS).insertOne(answerResponse);
-			if (answerResponse.questionSet === '0') {
-				interaction.client.mongo.collection(DB.JOB_FORMS).replaceOne(
-					{ questionSet: 0 }, answerResponse, { upsert: true });
-			} else if (answerResponse.questionSet === '1') {
-				interaction.client.mongo.collection(DB.JOB_FORMS).replaceOne(
-					{ questionSet: 1 }, answerResponse, { upsert: true });
-			}
-			break;
 		}
 	}
 }
