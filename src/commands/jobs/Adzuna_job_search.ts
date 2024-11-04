@@ -2,11 +2,6 @@ import { APP_ID, APP_KEY } from '@root/config';
 // import axios from 'axios';
 
 
-// Questions: how to pull it? Do I need to pull it?
-// how to work on the next part of the project?
-// Task 3.5: Store fetched job listings temporarily for job matching
-// Create a local cache or temporary storage to hold job listings for processing.
-
 const JOB_TITLE = 'software engineer';
 const LOCATION = 'us';
 // const SALARY_MIN = 50000;
@@ -27,3 +22,5 @@ fetch(URL)
 	.catch((error) => {
 		console.error('Fetch error:', error);
 	});
+	//interaction.client.mongo.collection(DB.JOB_FORMS).insertOne(responseData);
+	//const jobAnswers = questionIDs[qSet].map((question) => interaction.fields.getTextInputValue(`question${question}`));
