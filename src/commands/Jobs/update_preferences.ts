@@ -3,6 +3,7 @@ import { Command } from '@root/src/lib/types/Command';
 import { ActionRowBuilder, ApplicationCommandOptionData, ApplicationCommandOptionType,
 	ChatInputCommandInteraction, InteractionResponse, ModalBuilder, ModalSubmitFields,
 	TextInputBuilder, TextInputStyle } from 'discord.js';
+import { JobPreferenceAPI } from './jobDatabase';
 
 const questions = [
 	['What city are you located in?', 'Are you looking for remote or in person?', 'Job, internship or both?', 'How far are you willing to travel?'],
@@ -11,7 +12,7 @@ const questions = [
 
 export default class extends Command {
 
-	name: 'update preferences'
+	name: 'update_preferences'
 	description = 'View and update your preferences for jobs to be used with the Job Alert System!';
 
 	options: ApplicationCommandOptionData[] = [
@@ -47,6 +48,9 @@ export default class extends Command {
 			});
 			return;
 		}
+
+		// const currentAnswers = existingAnswers.jobPreferences[questionSet];
+		// let prefDisplay =
 
 		const modal = new ModalBuilder()
 			.setCustomId(`updateModal${questionSet}`)
