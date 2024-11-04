@@ -1,17 +1,32 @@
 import { Command } from '@root/src/lib/types/Command';
-import { ActionRowBuilder, ApplicationCommandOptionData, ApplicationCommandOptionType,
-	ChatInputCommandInteraction, InteractionResponse, ModalBuilder, ModalSubmitFields,
-	TextInputBuilder, TextInputStyle } from 'discord.js';
+import {
+	ActionRowBuilder,
+	ApplicationCommandOptionData,
+	ApplicationCommandOptionType,
+	ChatInputCommandInteraction,
+	InteractionResponse,
+	ModalBuilder,
+	ModalSubmitFields,
+	TextInputBuilder,
+	TextInputStyle,
+} from 'discord.js';
 
+// prettier-ignore
 const questions = [
-	['What city are you located in?', 'Are you looking for remote or in person?', 'Job, internship or both?', 'How far are you willing to travel?'],
+	[
+		'What city are you located in?',
+		'Are you looking for remote or in person?',
+		'Job, internship or both?',
+		'How far are you willing to travel?',
+	],
 	['Interest 1', 'Interest 2', 'Interest 3', 'Interest 4', 'Interest 5']
 ];
 
+// prettier-ignore
 export default class extends Command {
-
-	name: 'jobform'
-	description = 'Form to get your preferences for jobs to be used with the Job Alert System!';
+	name: 'jobform';
+	description =
+		'Form to get your preferences for jobs to be used with the Job Alert System!';
 
 	options: ApplicationCommandOptionData[] = [
 		{
@@ -24,9 +39,11 @@ export default class extends Command {
 				{ name: 'qset 2', value: 2 }
 			]
 		}
-	]
+	];
 
-	async run(interaction: ChatInputCommandInteraction): Promise<InteractionResponse<boolean> | void> {
+	async run(
+		interaction: ChatInputCommandInteraction
+	): Promise<InteractionResponse<boolean> | void> {
 		const questionSet = interaction.options.getNumber('qset') - 1;
 
 		if (questionSet !== 0 && questionSet !== 1) {
@@ -39,7 +56,9 @@ export default class extends Command {
 			.setTitle(`Job Form (${questionSet + 1} of 2)`);
 
 		const askedQuestions = questions[questionSet];
-		const rows = askedQuestions.map((question) => this.getAnswerField(question, askedQuestions.indexOf(question)));
+		const rows = askedQuestions.map((question) =>
+			this.getAnswerField(question, askedQuestions.indexOf(question))
+		);
 
 		for (const row of rows) {
 			// eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -54,18 +73,19 @@ export default class extends Command {
 		return;
 	}
 
-
 	getAnswer(fields: ModalSubmitFields, questionNum: number): string {
 		return fields.getField(`question${questionNum + 1}`).value;
 	}
 
-
 	getAnswerField(question: string, questionNum: number): ActionRowBuilder {
-		return new ActionRowBuilder({ components: [new TextInputBuilder()
-			.setCustomId(`question${questionNum + 1}`)
-			.setLabel(`${question}`)
-			.setStyle(TextInputStyle.Short)
-			.setPlaceholder('Input Answer Here')] });
+		return new ActionRowBuilder({
+			components: [
+				new TextInputBuilder()
+					.setCustomId(`question${questionNum + 1}`)
+					.setLabel(`${question}`)
+					.setStyle(TextInputStyle.Short)
+					.setPlaceholder('Input Answer Here')
+			]
+		});
 	}
-
 }
