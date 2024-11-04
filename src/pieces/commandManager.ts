@@ -14,6 +14,7 @@ import { SageUser } from '../lib/types/SageUser';
 import { CommandError } from '../lib/types/errors';
 import { verify } from '../pieces/verification';
 import { Job } from '../lib/types/Job';
+import { JobPreferenceAPI } from '../commands/Jobs/APIDatabase';
 
 const DELETE_DELAY = 10000;
 
@@ -147,16 +148,39 @@ async function handleModalBuilder(interaction: ModalSubmitInteraction, bot: Clie
 			interaction.reply({ content: `Thank you for verifying! You can now access the rest of the server. ${enrollStr}`, ephemeral: true });
 			break;
 		}
+		// case 'jobModal': {
+		// 	// extracting the input from the modal
+		// 	const qSet = customId.slice(-1);
+		// 	const questionIDs = [[1, 2, 3, 4], [1, 2, 3, 4, 5]];
+
+		// 	const jobAnswers = questionIDs[qSet].map((question) => interaction.fields.getTextInputValue(`question${question}`));
+
+		// 	// qSet contains either 0 or 1 depending if it is the first or second set of questions
+		// 	// the array of answers is stored in jobAnswers
+		// 	interaction.reply({ content: `Submission successful with answers of {${jobAnswers}}` });
+		// 	break;
+		// }
 		case 'jobModal': {
-			// extracting the input from the modal
-			const qSet = customId.slice(-1);
-			const questionIDs = [[1, 2, 3, 4], [1, 2, 3, 4, 5]];
+			try {
+				// extracting the input from the modal
+				const formNumber = parseInt(customId.slice(-1));
+				const answers = [1, 2, 3, 4, 5].slice(0, formNumber === 0 ? 4 : 5).map(num => fields.getTextInputValue(`question${num}`));
 
-			const jobAnswers = questionIDs[qSet].map((question) => interaction.fields.getTextInputValue(`question${question}`));
+				// Create API instance with the database instance directly
+				const jobPreferenceAPI = new JobPreferenceAPI(interaction.client.mongo);
+				const success = await jobPreferenceAPI.storeFormResponses(interaction.user.id, answers, formNumber);
 
-			// qSet contains either 0 or 1 depending if it is the first or second set of questions
-			// the array of answers is stored in jobAnswers
-			interaction.reply({ content: `Submission successful with answers of {${jobAnswers}}` });
+				// Takes user to questions, then interests. If submitted correctly, the answers will be stored.
+				await interaction.reply({
+					content: success
+						? `Form ${formNumber + 1} submitted successfully! ${formNumber === 0 ? 'Please use /jobform qset:2 to complete your interests.' : ''}`
+						: 'Error saving preferences. Please try again.',
+					ephemeral: true
+				});
+			} catch (error) {
+				console.error('Job form error:', error);
+				await interaction.reply({ content: 'An error occurred. Please try again.', ephemeral: true });
+			}
 
 			const answerResponse: Job = {
 				owner: interaction.user.id,
