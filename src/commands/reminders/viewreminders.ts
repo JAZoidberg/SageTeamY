@@ -12,7 +12,7 @@ export default class extends Command {
 
 	description = 'See your upcoming reminders.';
 	extendedHelp =
-	"Don't worry, private reminders will be hidden if you use this command publicly.";
+	'Don\'t worry, private reminders will be hidden if you use this command publicly.';
 
 	async run(
 		interaction: ChatInputCommandInteraction
@@ -25,7 +25,7 @@ export default class extends Command {
 
 		if (reminders.length < 1) {
 			interaction.reply({
-				content: "You don't have any pending reminders!",
+				content: 'You don\'t have any pending reminders!',
 				ephemeral: true
 			});
 		}
@@ -50,7 +50,7 @@ export default class extends Command {
 						: reminder.content
 				}`,
 				value: hidden
-					? 'Some time in the future.'
+					? `This is a **${reminder.repeat}** job reminder`
 					: reminderTime(reminder)
 			});
 		});

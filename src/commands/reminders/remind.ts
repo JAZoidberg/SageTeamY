@@ -9,7 +9,6 @@ import { Reminder } from '@lib/types/Reminder';
 import parse from 'parse-duration';
 import { reminderTime } from '@root/src/lib/utils/generalUtils';
 import { Command } from '@lib/types/Command';
-
 export default class extends Command {
 
 	description = `Have ${BOT.NAME} give you a reminder.`;
@@ -22,13 +21,13 @@ export default class extends Command {
 			options: [
 				{
 					name: 'content',
-					description: "What you'd like to be reminded of",
+					description: 'What you\'d like to be reminded of',
 					type: ApplicationCommandOptionType.String,
 					required: true
 				},
 				{
 					name: 'duration',
-					description: "When you'd like to be reminded",
+					description: 'When you\'d like to be reminded',
 					type: ApplicationCommandOptionType.String,
 					required: true
 				},
@@ -82,8 +81,7 @@ export default class extends Command {
 		const subcommand: string = interaction.options.getSubcommand();
 
 		if (subcommand === 'jobs') {
-			const jobReminderRepeat
-				= (interaction.options.getString('job-repeat') as
+			const jobReminderRepeat = (interaction.options.getString('job-repeat') as
 					| 'daily'
 					| 'weekly') || null;
 
@@ -91,7 +89,7 @@ export default class extends Command {
 				owner: interaction.user.id,
 				content: 'Job Reminder',
 				mode: 'private',
-				expires: new Date(0 + Date.now()),
+				expires: new Date(),
 				repeat: jobReminderRepeat
 			};
 
@@ -106,7 +104,7 @@ export default class extends Command {
 					.collection(DB.REMINDERS)
 					.insertOne(jobReminder);
 				return interaction.reply({
-					content: `I'll remind you about job offers at ${reminderTime(
+					content: `I'll remind you about job offers ${jobReminderRepeat} at ${reminderTime(
 						jobReminder
 					)}.`,
 					ephemeral: true
@@ -116,8 +114,7 @@ export default class extends Command {
 			const content = interaction.options.getString('content');
 			const rawDuration = interaction.options.getString('duration');
 			const duration = parse(rawDuration);
-			const repeat
-				= (interaction.options.getString('repeat') as
+			const repeat = (interaction.options.getString('repeat') as
 					| 'daily'
 					| 'weekly') || null;
 

@@ -8,24 +8,25 @@ import {
 	ModalBuilder,
 	ModalSubmitFields,
 	TextInputBuilder,
-	TextInputStyle
+	TextInputStyle,
 } from 'discord.js';
 
+// prettier-ignore
 const questions = [
 	[
 		'What city are you located in?',
 		'Are you looking for remote or in person?',
 		'Job, internship or both?',
-		'How far are you willing to travel?'
+		'How far are you willing to travel?',
 	],
 	['Interest 1', 'Interest 2', 'Interest 3', 'Interest 4', 'Interest 5']
 ];
 
+// prettier-ignore
 export default class extends Command {
-
 	name: 'jobform';
 	description =
-	'Form to get your preferences for jobs to be used with the Job Alert System!';
+		'Form to get your preferences for jobs to be used with the Job Alert System!';
 
 	options: ApplicationCommandOptionData[] = [
 		{
@@ -83,5 +84,4 @@ export default class extends Command {
 			]
 		});
 	}
-
 }
