@@ -195,7 +195,8 @@ async function handleModalBuilder(interaction: ModalSubmitInteraction, bot: Clie
 						{ questionSet: 1 }, answerResponse, { upsert: true });
 					console.log('after mongodb');
 				}
-				break;
+
+				console.log('out of question set branches');
 
 				// Takes user to questions, then interests. If submitted correctly, the answers will be stored.
 				await interaction.reply({
