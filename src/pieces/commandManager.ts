@@ -181,22 +181,14 @@ async function handleModalBuilder(interaction: ModalSubmitInteraction, bot: Clie
 					mode: 'private' // temporary - switch to private before final submission
 				};
 
-				console.log('after answerResponse, before mongo handling');
-
 				// interaction.client.mongo.collection(DB.JOB_FORMS).insertOne(answerResponse);
 				if (answerResponse.questionSet === 0) {
-					console.log('in qset 1 branch, before mongo insertion');
 					interaction.client.mongo.collection(DB.JOB_FORMS).findOneAndReplace(
 						{ questionSet: 0 }, answerResponse, { upsert: true });
-					console.log('after mongo insertion');
 				} else if (answerResponse.questionSet === 1) {
-					console.log('before mongodb');
 					interaction.client.mongo.collection(DB.JOB_FORMS).findOneAndReplace(
 						{ questionSet: 1 }, answerResponse, { upsert: true });
-					console.log('after mongodb');
 				}
-
-				console.log('out of question set branches');
 
 				// Takes user to questions, then interests. If submitted correctly, the answers will be stored.
 				await interaction.reply({
