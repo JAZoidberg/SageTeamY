@@ -14,7 +14,7 @@ import { SageUser } from '../lib/types/SageUser';
 import { CommandError } from '../lib/types/errors';
 import { verify } from '../pieces/verification';
 import { Job } from '../lib/types/Job';
-import { JobPreferenceAPI } from '../commands/Jobs/APIDatabase';
+import { JobPreferenceAPI } from '../commands/jobs/APIDatabase';
 
 const DELETE_DELAY = 10000;
 
@@ -170,13 +170,7 @@ async function handleModalBuilder(interaction: ModalSubmitInteraction, bot: Clie
 				const jobPreferenceAPI = new JobPreferenceAPI(interaction.client.mongo);
 				const success = await jobPreferenceAPI.storeFormResponses(interaction.user.id, answers, formNumber);
 
-				// Takes user to questions, then interests. If submitted correctly, the answers will be stored.
-				await interaction.reply({
-					content: success
-						? `Form ${formNumber + 1} submitted successfully! ${formNumber === 0 ? 'Please use /jobform qset:2 to complete your interests.' : ''}`
-						: 'Error saving preferences. Please try again.',
-					ephemeral: true
-				});
+				console.log('before answerResponse');
 
 				const answerResponse: Job = {
 					owner: interaction.user.id,
@@ -184,19 +178,32 @@ async function handleModalBuilder(interaction: ModalSubmitInteraction, bot: Clie
 					location: '',
 					questionSet: formNumber,
 					answers: answers,
-					mode: 'public' // temporary
+					mode: 'private' // temporary - switch to private before final submission
 				};
 
+				console.log('after answerResponse, before mongo handling');
 
 				// interaction.client.mongo.collection(DB.JOB_FORMS).insertOne(answerResponse);
-				if (answerResponse.questionSet === '0') {
-					interaction.client.mongo.collection(DB.JOB_FORMS).replaceOne(
+				if (answerResponse.questionSet === 0) {
+					console.log('in qset 1 branch, before mongo insertion');
+					interaction.client.mongo.collection(DB.JOB_FORMS).findOneAndReplace(
 						{ questionSet: 0 }, answerResponse, { upsert: true });
-				} else if (answerResponse.questionSet === '1') {
-					interaction.client.mongo.collection(DB.JOB_FORMS).replaceOne(
+					console.log('after mongo insertion');
+				} else if (answerResponse.questionSet === 1) {
+					console.log('before mongodb');
+					interaction.client.mongo.collection(DB.JOB_FORMS).findOneAndReplace(
 						{ questionSet: 1 }, answerResponse, { upsert: true });
+					console.log('after mongodb');
 				}
 				break;
+
+				// Takes user to questions, then interests. If submitted correctly, the answers will be stored.
+				await interaction.reply({
+					content: success
+						? `Form ${formNumber + 1} submitted successfully! ${formNumber === 0 ? 'Please use /jobform qset:2 to complete your interests.' : ''}`
+						: 'Error saving preferences. Please try again.',
+					ephemeral: true
+				});
 			} catch (error) {
 				console.error('Job form error:', error);
 				await interaction.reply({ content: 'An error occurred. Please try again.', ephemeral: true });
