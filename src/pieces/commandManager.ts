@@ -193,7 +193,8 @@ async function handleModalBuilder(interaction: ModalSubmitInteraction, bot: Clie
 				// Takes user to questions, then interests. If submitted correctly, the answers will be stored.
 				await interaction.reply({
 					content: success
-						? `Form ${formNumber + 1} submitted successfully! ${formNumber === 0 ? 'Please use /jobform qset:2 to complete your interests.' : ''}`
+						? `Form ${formNumber + 1} submitted successfully! Your answers are {${answers}}.' ${formNumber === 0 ? 'Please use /jobform qset:2 to complete your interests.' : ''} 
+						To change your answers do /update_preferences.`
 						: 'Error saving preferences. Please try again.',
 					ephemeral: true
 				});
