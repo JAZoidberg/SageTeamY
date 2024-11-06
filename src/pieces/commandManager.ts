@@ -244,6 +244,7 @@ async function handleModalBuilder(
 			// qSet contains either 0 or 1 depending if it is the first or second set of questions
 			// the array of answers is stored in jobAnswers
 			jobSearchAlgorithm(jobAnswers, interaction.user.id);
+			console.log('Sent to algorithm!');
 			interaction.reply({ content: `Submission successful with answers of {${jobAnswers}}` });
 			break;
 		}
