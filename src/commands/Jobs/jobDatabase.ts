@@ -33,6 +33,11 @@ export class JobPreferenceAPI {
 	async storeFormResponses(userID: string, answers: string[], questionSet: number): Promise<boolean> {
 		try {
 			let updateObject = {};
+			const filterAnswers = answers.map(answer => answer.trim()).map((answer, index) => ({
+				index,
+				answer
+			})).filter(item => item.answer !== '');
+
 			// Adds answers to questions.
 			if (questionSet === 0) {
 				updateObject = {

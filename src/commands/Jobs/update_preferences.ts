@@ -3,7 +3,7 @@ import { Command } from '@root/src/lib/types/Command';
 import { ActionRowBuilder, ApplicationCommandOptionData, ApplicationCommandOptionType,
 	ChatInputCommandInteraction, InteractionResponse, ModalBuilder, ModalSubmitFields,
 	TextInputBuilder, TextInputStyle } from 'discord.js';
-import { JobPreferenceAPI } from './jobDatabase';
+
 
 const questions = [
 	['What city are you located in?', 'Are you looking for remote or in person?', 'Job, internship or both?', 'How far are you willing to travel?'],
@@ -38,7 +38,7 @@ export default class extends Command {
 		// Checks if ansers already exists.
 		const existingAnswers = await interaction.client.mongo.collection(DB.USERS).findOne({
 			discordId: interaction.user.id,
-			jobPreferences: { $exists: true }
+			jobPreference: { $exists: true }
 		});
 
 		if (!existingAnswers) {
