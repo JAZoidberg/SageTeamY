@@ -173,7 +173,8 @@ async function handleModalBuilder(interaction: ModalSubmitInteraction, bot: Clie
 				// 	ephemeral: true
 				// });
 				await interaction.reply({
-					content: success ? mess : 'Error saving preferences. Please try again'
+					content: success ? mess : 'Error saving preferences. Please try again',
+					ephemeral: true
 				});
 			} catch (error) {
 				console.error('update form error:', error);

@@ -83,7 +83,8 @@ export default class extends Command {
 			.setCustomId(`question${questionNum + 1}`)
 			.setLabel(`${question}`)
 			.setStyle(TextInputStyle.Short)
-			.setPlaceholder('Input Updated Answer Here')] });
+			.setPlaceholder('Input Updated Answer Here')
+			.setRequired(false)] });
 	}
 
 }
