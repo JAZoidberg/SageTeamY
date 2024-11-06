@@ -34,19 +34,9 @@ export class JobPreferenceAPI {
 	async storeFormResponses(userID: string, answers: string[], questionSet: number): Promise<boolean> {
 		try {
 			const updateObject = {};
-			// const filterAnswers = answers.map(answer => answer.trim()).map((answer, index) => ({
-			// 	index,
-			// 	answer
-			// })).filter(item => item.answer !== '');
 
 			// Adds answers to questions.
 			if (questionSet === 0) {
-				// updateObject = {
-				// 	'jobPreferences.answers.city': answers[0],
-				// 	'jobPreferences.answers.workType': answers[1],
-				// 	'jobPreferences.answers.employmentType': answers[2],
-				// 	'jobPreferences.answers.travelDistance': answers[3]
-				// };
 				const [city, workType, employmentType, travelDistance] = answers;
 				if (city?.trim()) updateObject['jobPreferences.answers.city'] = city;
 				if (workType?.trim()) updateObject['jobPreferences.answers.workType'] = workType;
@@ -54,13 +44,6 @@ export class JobPreferenceAPI {
 				if (travelDistance?.trim()) updateObject['jobPreferences.answers.travelDistance'] = travelDistance;
 			// Adds answers to interests.
 			} else if (questionSet === 1) {
-				// updateObject = {
-				// 	'jobPreferences.answers.interest1': answers[0],
-				// 	'jobPreferences.answers.interest2': answers[1],
-				// 	'jobPreferences.answers.interest3': answers[2],
-				// 	'jobPreferences.answers.interest4': answers[3],
-				// 	'jobPreferences.answers.interest5': answers[4]
-				// };
 				const [interest1, interest2, interest3, interest4, interest5] = answers;
 				if (interest1?.trim()) updateObject['jobPreferences.answers.interest1'] = interest1;
 				if (interest2?.trim()) updateObject['jobPreferences.answers.interest2'] = interest2;
@@ -97,7 +80,6 @@ export class JobPreferenceAPI {
 			console.error('Error getting job form responses', error);
 			return false;
 		}
-		// return this.storeFormResponses(userID, answers, questionSet);
 	}
 	// Deletes the preferences answers to an empty string.
 	async deletePreference(userID: string): Promise<boolean> {

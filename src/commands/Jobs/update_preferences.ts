@@ -12,7 +12,7 @@ const questions = [
 
 export default class extends Command {
 
-	name: 'update_preferences'
+	name = 'update_preferences'
 	description = 'View and update your preferences for jobs to be used with the Job Alert System!';
 
 	options: ApplicationCommandOptionData[] = [
@@ -38,7 +38,7 @@ export default class extends Command {
 		// Checks if ansers already exists.
 		const existingAnswers = await interaction.client.mongo.collection(DB.USERS).findOne({
 			discordId: interaction.user.id,
-			jobPreference: { $exists: true }
+			jobPreferences: { $exists: true }
 		});
 
 		if (!existingAnswers) {
@@ -48,16 +48,24 @@ export default class extends Command {
 			});
 			return;
 		}
+		const currentAns = existingAnswers.jobPreferences?.answers;
+		const askedQuestions = questions[questionSet];
+		const quesChoices = questionSet === 0
+			? ['city', 'workType', 'employmentType', 'travelDistance']
+			: ['interest1', 'interest2', 'interest3', 'interest4', 'interest5'];
 
-		// const currentAnswers = existingAnswers.jobPreferences[questionSet];
-		// let prefDisplay =
+		const rows = askedQuestions.map((question) => {
+			let value = '';
+			if (currentAns) {
+				value = currentAns[quesChoices[askedQuestions.indexOf(question)]] || '';
+			}
+			return this.getAnswerField(question, askedQuestions.indexOf(question), value);
+		});
 
 		const modal = new ModalBuilder()
 			.setCustomId(`updateModal${questionSet}`)
 			.setTitle(`Update Job Preferences (${questionSet + 1} of 2)`);
 
-		const askedQuestions = questions[questionSet];
-		const rows = askedQuestions.map((question) => this.getAnswerField(question, askedQuestions.indexOf(question)));
 
 		for (const row of rows) {
 			// eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -78,12 +86,12 @@ export default class extends Command {
 	}
 
 
-	getAnswerField(question: string, questionNum: number): ActionRowBuilder {
+	getAnswerField(question: string, questionNum: number, value: string): ActionRowBuilder {
 		return new ActionRowBuilder({ components: [new TextInputBuilder()
 			.setCustomId(`question${questionNum + 1}`)
 			.setLabel(`${question}`)
 			.setStyle(TextInputStyle.Short)
-			.setPlaceholder('Input Updated Answer Here')
+			.setPlaceholder(`Current value: ${value || 'Not Set'}`)
 			.setRequired(false)] });
 	}
 
