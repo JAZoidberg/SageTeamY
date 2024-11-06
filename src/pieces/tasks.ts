@@ -77,6 +77,44 @@ async function checkPolls(bot: Client): Promise<void> {
 	});
 }
 
+// NOTE: MAKE SURE YOU TAKE INTO CONSIDERATION THAT DISCORD HAS A CHARACTER LIMIT!
+function jobMessage(reminder:Reminder):string {
+	return `## Hey <@${reminder.owner}>!  
+## Here's your list of job/internship recommendations:  
+Based on your interests in data visualization, cybersecurity, web development, AI ethics, and automation, I've found these jobs you may find of interest:
+
+1. **Junior Data Visualization Engineer**  
+   * **Salary**: $60,000 - $75,000 annually  
+   * **Location**: San Francisco, CA  
+   * **Job Type**: Full-time  
+   * **Work Mode**: Hybrid  
+   * **Job Description**:  
+     As a Junior Data Visualization Engineer, you will work closely with the data science team to design and implement visually compelling dashboards and data presentations. The role involves 
+	 using tools like Tableau and D3.js to communicate data insights in ways that are accessible and engaging for various stakeholders.  
+   * **Apply here**: [application](https://www.techjobportal.com/apply-junior-dve)
+
+2. **Cybersecurity Intern**  
+   * **Salary**: $20 - $30 per hour  
+   * **Location**: Arlington, VA  
+   * **Job Type**: Internship  
+   * **Work Mode**: In-person  
+   * **Job Description**:  
+     This internship offers hands-on experience in network security, ethical hacking, and threat assessment. The intern will support the security team in identifying and mitigating vulnerabilities, 
+	 responding to incidents, and learning security protocols.  
+   - **Apply here**: [application](https://www.cybersecureintern.com/apply)
+
+3. **Front-End Web Developer (Contract)**  
+   * **Salary**: $45 - $55 per hour  
+   * **Location**: Remote  
+   * **Job Type**: Contract (3 months)  
+   * **Work Mode**: Online  
+   * **Job Description**:  
+     We are looking for a talented Front-End Developer to help enhance our company's website and improve user experience. You'll work on creating responsive, interactive, and dynamic 
+	 interfaces using React and CSS frameworks.  
+   * **Apply here**: [application](https://www.devhubjobs.com/frontend-developer)
+`;
+}
+
 async function checkReminders(bot: Client): Promise<void> {
 	const reminders: Reminder[] = await bot.mongo.collection(DB.REMINDERS).find({ expires: { $lte: new Date() } }).toArray();
 	const pubChan = (await bot.channels.fetch(CHANNELS.SAGE)) as TextChannel;
@@ -87,21 +125,15 @@ async function checkReminders(bot: Client): Promise<void> {
 		// personalized job recommendations, they'll need to fill out the job form (by default they're getting a list of jobs from anywhere)
 
 		const message = reminder.mode === 'private'
-			? `## Hey <@${reminder.owner}>! \n` +
-		`### Here's your list of job recommendations! \n` +
-		`1. A \n` +
-		`2. B \n` +
-		`3. C \n` +
-		`-# Please note that if you would like more personalized job recommendations ` +
-		`(i.e. local computer science internships/jobs with more personal preferences), please fill out the jobform ` +
-		`(use the command: \`/jobform\` in the server).`
+			? jobMessage(reminder)
 			: `<@${reminder.owner}>, here's the reminder you asked for: **${reminder.content}**`;
 
 		if (reminder.mode === 'public') {
 			pubChan.send(message);
 		} else {
 			bot.users.fetch(reminder.owner).then((user) =>
-				user.send(message).catch(() => {
+				user.send(message).catch((err) => {
+					console.log('ERROR', err);
 					pubChan.send(
 						`<@${reminder.owner}>, I tried to send you a DM about your private reminder but it looks like you have DMs closed. Please enable DMs in the future if you'd like to get private reminders.`
 					);
