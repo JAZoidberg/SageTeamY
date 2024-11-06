@@ -2,7 +2,7 @@ import { Collection, Db, MongoClient } from 'mongodb';
 import { DB } from '@root/config';
 import { Command } from '@root/src/lib/types/Command';
 
-interface JobPreferences {
+export interface JobPreferences {
 	userID: string;
 	answers: {
 		// Questions

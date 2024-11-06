@@ -26,6 +26,7 @@ import { SageUser } from '../lib/types/SageUser';
 import { CommandError } from '../lib/types/errors';
 import { verify } from '../pieces/verification';
 import { JobPreferenceAPI } from '../commands/jobs/APIDatabase';
+import jobSearchAlgorithm from './job-algorithm';
 
 const DELETE_DELAY = 10000;
 
@@ -242,6 +243,7 @@ async function handleModalBuilder(
 
 			// qSet contains either 0 or 1 depending if it is the first or second set of questions
 			// the array of answers is stored in jobAnswers
+			jobSearchAlgorithm(jobAnswers, interaction.user.id);
 			interaction.reply({ content: `Submission successful with answers of {${jobAnswers}}` });
 			break;
 		}
