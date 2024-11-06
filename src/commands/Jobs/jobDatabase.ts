@@ -33,7 +33,7 @@ export class JobPreferenceAPI {
 
 	async storeFormResponses(userID: string, answers: string[], questionSet: number): Promise<boolean> {
 		try {
-			let updateObject = {};
+			const updateObject = {};
 			// const filterAnswers = answers.map(answer => answer.trim()).map((answer, index) => ({
 			// 	index,
 			// 	answer
@@ -89,8 +89,15 @@ export class JobPreferenceAPI {
 		}
 	}
 
-	async getPreference(userID: string, answers: string[], questionSet: number): Promise<boolean> {
-		return this.storeFormResponses(userID, answers, questionSet);
+	async getPreference(userID: string): Promise<boolean> {
+		try {
+			const user = await this.collection.findOne({ discordId: userID });
+			return user?.jobPreferences || null;
+		} catch (error) {
+			console.error('Error getting job form responses', error);
+			return false;
+		}
+		// return this.storeFormResponses(userID, answers, questionSet);
 	}
 	// Deletes the preferences answers to an empty string.
 	async deletePreference(userID: string): Promise<boolean> {
