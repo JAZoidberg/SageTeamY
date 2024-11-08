@@ -14,6 +14,7 @@ import { SageUser } from '../lib/types/SageUser';
 import { CommandError } from '../lib/types/errors';
 import { verify } from '../pieces/verification';
 import { JobPreferenceAPI } from '../commands/jobs/jobDatabase';
+import { Job } from '../lib/types/Job';
 
 const DELETE_DELAY = 10000;
 
@@ -153,6 +154,24 @@ async function handleModalBuilder(interaction: ModalSubmitInteraction, bot: Clie
 				// extracting the input from the modal
 				const formNumber = parseInt(customId.slice(-1));
 				const answers = [1, 2, 3, 4, 5].slice(0, formNumber === 0 ? 4 : 5).map(num => fields.getTextInputValue(`question${num}`));
+
+				const answerResponse: Job = {
+					owner: interaction.user.id,
+					content: '',
+					location: '',
+					questionSet: formNumber,
+					answers: answers,
+					mode: 'private' // temporary - switch to private before final submission
+				};
+
+				// interaction.client.mongo.collection(DB.JOB_FORMS).insertOne(answerResponse);
+				if (answerResponse.questionSet === 0) {
+					interaction.client.mongo.collection(DB.JOB_FORMS).findOneAndReplace(
+						{ questionSet: 0 }, answerResponse, { upsert: true });
+				} else if (answerResponse.questionSet === 1) {
+					interaction.client.mongo.collection(DB.JOB_FORMS).findOneAndReplace(
+						{ questionSet: 1 }, answerResponse, { upsert: true });
+				}
 
 				// Create API instance with the database instance directly
 				const jobPreferenceAPI = new JobPreferenceAPI(interaction.client.mongo);
