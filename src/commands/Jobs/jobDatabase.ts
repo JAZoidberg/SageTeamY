@@ -47,7 +47,7 @@ export class JobPreferenceAPI {
 				const [interest1, interest2, interest3, interest4, interest5] = answers;
 				if (interest1?.trim()) updateObject['jobPreferences.answers.interest1'] = interest1;
 				if (interest2?.trim()) updateObject['jobPreferences.answers.interest2'] = interest2;
-				if (interest3?.trim()) updateObject['jobPreferences.asnwers.interest3'] = interest3;
+				if (interest3?.trim()) updateObject['jobPreferences.answers.interest3'] = interest3;
 				if (interest4?.trim()) updateObject['jobPreferences.answers.interest4'] = interest4;
 				if (interest5?.trim()) updateObject['jobPreferences.answers.interest5'] = interest5;
 			}
