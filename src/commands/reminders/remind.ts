@@ -9,6 +9,7 @@ import { Reminder } from '@lib/types/Reminder';
 import parse from 'parse-duration';
 import { reminderTime } from '@root/src/lib/utils/generalUtils';
 import { Command } from '@lib/types/Command';
+import { MongoClient } from 'mongodb';
 export default class extends Command {
 
 	description = `Have ${BOT.NAME} give you a reminder.`;
@@ -62,6 +63,22 @@ export default class extends Command {
 		}
 	];
 
+	// TODO - change return type from any
+	async getFormQuestionSets(interaction: ChatInputCommandInteraction):Promise<any[]> {
+		const userID = interaction.user.id;
+		const client = await MongoClient.connect(DB.CONNECTION, { useUnifiedTopology: true });
+		const db = client.db(BOT.NAME).collection(DB.JOB_FORMS);
+		const formAnswers = await db.find({
+			owner: userID,
+			$or: [
+				{ questionSet: 0 },
+				{ questionSet: 1 }
+			]
+		}).toArray();
+
+		return formAnswers;
+	}
+
 	async checkJobReminder(
 		interaction: ChatInputCommandInteraction
 	): Promise<boolean> {
@@ -73,6 +90,16 @@ export default class extends Command {
 		return reminders.some(
 			(reminder: Reminder) => reminder.content === 'Job Reminder'
 		);
+	}
+
+	async checkRemainingQuestionSets(interaction: ChatInputCommandInteraction):Promise<number> {
+		// TODO - remove any[] type
+		const questionSets: any[] = await this.getFormQuestionSets(interaction);
+
+		const completedQuestionSet1 = questionSets.some((qSet) => qSet.questionSet === 0);
+
+		return questionSets.length === 0 ? 0 : !completedQuestionSet1 ? 1
+			: 2;
 	}
 
 	async run(
@@ -93,20 +120,34 @@ export default class extends Command {
 				repeat: jobReminderRepeat
 			};
 
-			if (await this.checkJobReminder(interaction)) {
-				return interaction.reply({
-					content:
-						'You currently already have a job reminder set. To clear your existing job reminder, run `/cancelreminder` and provide the reminder number.',
-					ephemeral: true
-				});
+			// check if the user has submitted both job forms
+			if ((await this.getFormQuestionSets(interaction)).length === 2) {
+				if (await this.checkJobReminder(interaction)) {
+					return interaction.reply({
+						content:
+							'You currently already have a job reminder set. To clear your existing job reminder, run `/cancelreminder` and provide the reminder number.',
+						ephemeral: true
+					});
+				} else {
+					interaction.client.mongo
+						.collection(DB.REMINDERS)
+						.insertOne(jobReminder);
+					return interaction.reply({
+						content: `I'll remind you about job offers ${jobReminderRepeat} at ${reminderTime(
+							jobReminder
+						)}.`,
+						ephemeral: true
+					});
+				}
 			} else {
-				interaction.client.mongo
-					.collection(DB.REMINDERS)
-					.insertOne(jobReminder);
+				const remainingQuestionSets = await this.checkRemainingQuestionSets(interaction);
 				return interaction.reply({
-					content: `I'll remind you about job offers ${jobReminderRepeat} at ${reminderTime(
-						jobReminder
-					)}.`,
+					content: `To make your job/internship search easier and more personalized, please make sure you fill out ${remainingQuestionSets === 0
+						? '**both** job form question sets'
+						: `job form question set **${remainingQuestionSets}**`} before setting a job reminder. ` +
+					`To do so, run the \`/jobform\` command and ${remainingQuestionSets === 0
+						? 'fill out both question sets 1 and 2'
+						: `type number **${remainingQuestionSets}**`} before setting a job reminder. Once done, try this command again!`,
 					ephemeral: true
 				});
 			}
