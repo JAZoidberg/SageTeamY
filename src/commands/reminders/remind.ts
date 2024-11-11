@@ -10,6 +10,8 @@ import parse from 'parse-duration';
 import { reminderTime } from '@root/src/lib/utils/generalUtils';
 import { Command } from '@lib/types/Command';
 import { MongoClient } from 'mongodb';
+import { JobForm } from '@root/src/lib/types/JobForm';
+
 export default class extends Command {
 
 	description = `Have ${BOT.NAME} give you a reminder.`;
@@ -63,12 +65,11 @@ export default class extends Command {
 		}
 	];
 
-	// TODO - change return type from any
-	async getFormQuestionSets(interaction: ChatInputCommandInteraction):Promise<any[]> {
+	async getFormQuestionSets(interaction: ChatInputCommandInteraction):Promise<JobForm[]> {
 		const userID = interaction.user.id;
 		const client = await MongoClient.connect(DB.CONNECTION, { useUnifiedTopology: true });
 		const db = client.db(BOT.NAME).collection(DB.JOB_FORMS);
-		const formAnswers = await db.find({
+		const formAnswers: JobForm[] = await db.find({
 			owner: userID,
 			$or: [
 				{ questionSet: 0 },
@@ -93,8 +94,7 @@ export default class extends Command {
 	}
 
 	async checkRemainingQuestionSets(interaction: ChatInputCommandInteraction):Promise<number> {
-		// TODO - remove any[] type
-		const questionSets: any[] = await this.getFormQuestionSets(interaction);
+		const questionSets: JobForm[] = await this.getFormQuestionSets(interaction);
 
 		const completedQuestionSet1 = questionSets.some((qSet) => qSet.questionSet === 0);
 
