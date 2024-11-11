@@ -1,6 +1,5 @@
-import { Collection, Db, MongoClient } from 'mongodb';
+import { Collection, Db } from 'mongodb';
 import { DB } from '@root/config';
-import { Command } from '@root/src/lib/types/Command';
 
 export interface JobPreferences {
 	userID: string;
@@ -28,9 +27,6 @@ export class JobPreferenceAPI {
 	constructor(db: Db) {
 		this.collection = db.collection(DB.USERS);
 	}
-	// constructor(mongo: MongoClient) {
-	// 	this.collection = mongo.db().collection(DB.USERS);
-	// }
 
 	async storeFormResponses(userID: string, answers: string[], questionSet: number): Promise<boolean> {
 		try {
