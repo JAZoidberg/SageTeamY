@@ -118,7 +118,6 @@ async function getJobFormData(userID:string):Promise<[JobData, Interest]> {
 	return [jobData, interests];
 }
 
-// NOTE: MAKE SURE YOU TAKE INTO CONSIDERATION THAT DISCORD HAS A CHARACTER LIMIT!
 async function jobMessage(reminder:Reminder, userID:string):Promise<string> {
 	const jobFormData:[JobData, Interest] = await getJobFormData(userID);
 	return `## Hey <@${reminder.owner}>!  
@@ -145,16 +144,9 @@ ${jobFormData[1].interest3}, ${jobFormData[1].interest4}, and ${jobFormData[1].i
      This internship offers hands-on experience in network security, ethical hacking, and threat assessment. The intern will support the security team in identifying and mitigating vulnerabilities, 
 	 responding to incidents, and learning security protocols.  
    - **Apply here**: [application](https://www.cybersecureintern.com/apply)
-
-3. **Front-End Web Developer (Contract)**  
-   * **Salary**: $45 - $55 per hour  
-   * **Location**: Remote  
-   * **Job Type**: Contract (3 months)  
-   * **Work Mode**: Online  
-   * **Job Description**:  
-     We are looking for a talented Front-End Developer to help enhance our company's website and improve user experience. You'll work on creating responsive, interactive, and dynamic 
-	 interfaces using React and CSS frameworks.  
-   * **Apply here**: [application](https://www.devhubjobs.com/frontend-developer)
+	\n
+-# **Disclaimer:**
+-# Please note that the job listings provided are sourced from a third-party API and we cannot guarantee the legitimacy or security of all postings. Exercise caution when submitting personal information, resumes, or signing up on external sites. Always verify the authenticity of a job application before proceeding. Stay safe and mindful while applying!
 `;
 }
 
