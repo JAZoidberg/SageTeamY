@@ -14,7 +14,7 @@ import { SageUser } from '../lib/types/SageUser';
 import { CommandError } from '../lib/types/errors';
 import { verify } from '../pieces/verification';
 import { JobPreferenceAPI } from '../commands/jobs/jobDatabase';
-import { Job } from '../lib/types/Job';
+import { JobForm } from '../lib/types/JobForm';
 
 const DELETE_DELAY = 10000;
 
@@ -155,7 +155,7 @@ async function handleModalBuilder(interaction: ModalSubmitInteraction, bot: Clie
 				const formNumber = parseInt(customId.slice(-1));
 				const answers = [1, 2, 3, 4, 5].slice(0, formNumber === 0 ? 4 : 5).map(num => fields.getTextInputValue(`question${num}`));
 
-				const answerResponse: Job = {
+				const answerResponse: JobForm = {
 					owner: interaction.user.id,
 					content: '',
 					location: '',
