@@ -1,8 +1,10 @@
-import { CHANNELS, DB } from '@root/config';
+import { BOT, CHANNELS, DB } from '@root/config';
 import { ChannelType, Client, EmbedBuilder, TextChannel } from 'discord.js';
 import { schedule } from 'node-cron';
 import { Reminder } from '@lib/types/Reminder';
 import { Poll, PollResult } from '@lib/types/Poll';
+import { MongoClient } from 'mongodb';
+import { Job } from '../lib/types/Job';
 
 async function register(bot: Client): Promise<void> {
 	schedule('0/30 * * * * *', () => {
@@ -77,11 +79,52 @@ async function checkPolls(bot: Client): Promise<void> {
 	});
 }
 
+interface JobData {
+	city: string,
+	preference: string,
+	jobType: string,
+	distance: string
+}
+
+interface Interest {
+	interest1: string,
+	interest2: string,
+	interest3: string,
+	interest4: string,
+	interest5: string
+}
+
+// eslint-disable-next-line no-warning-comments
+async function getJobFormData(userID:string):Promise<[JobData, Interest]> {
+	const client = await MongoClient.connect(DB.CONNECTION, { useUnifiedTopology: true });
+	const db = client.db(BOT.NAME).collection(DB.JOB_FORMS);
+	const jobformAnswers:Job[] = await db.find({ owner: userID }).toArray();
+
+	const jobData:JobData = {
+		city: jobformAnswers[0].answers[0],
+		preference: jobformAnswers[0].answers[1],
+		jobType: jobformAnswers[0].answers[2],
+		distance: jobformAnswers[0].answers[3]
+	};
+
+	const interests:Interest = {
+		interest1: jobformAnswers[1].answers[0],
+		interest2: jobformAnswers[1].answers[1],
+		interest3: jobformAnswers[1].answers[2],
+		interest4: jobformAnswers[1].answers[3],
+		interest5: jobformAnswers[1].answers[4]
+	};
+
+	return [jobData, interests];
+}
+
 // NOTE: MAKE SURE YOU TAKE INTO CONSIDERATION THAT DISCORD HAS A CHARACTER LIMIT!
-function jobMessage(reminder:Reminder):string {
+async function jobMessage(reminder:Reminder, userID:string):Promise<string> {
+	const jobFormData:[JobData, Interest] = await getJobFormData(userID);
 	return `## Hey <@${reminder.owner}>!  
 ## Here's your list of job/internship recommendations:  
-Based on your interests in data visualization, cybersecurity, web development, AI ethics, and automation, I've found these jobs you may find of interest:
+Based on your interests in ${jobFormData[1].interest1}, ${jobFormData[1].interest2}, 
+${jobFormData[1].interest3}, ${jobFormData[1].interest4}, and ${jobFormData[1].interest5}, I've found these jobs you may find of interest:
 
 1. **Junior Data Visualization Engineer**  
    * **Salary**: $60,000 - $75,000 annually  
@@ -120,25 +163,20 @@ async function checkReminders(bot: Client): Promise<void> {
 	const pubChan = (await bot.channels.fetch(CHANNELS.SAGE)) as TextChannel;
 
 	reminders.forEach((reminder) => {
-		// eslint-disable-next-line no-warning-comments
-		// TODO - need to find a way to check if the user has set their job preferences. If they haven't, find a way to check it and display the message advising them where in order to get
-		// personalized job recommendations, they'll need to fill out the job form (by default they're getting a list of jobs from anywhere)
-
-		const message = reminder.mode === 'private'
-			? jobMessage(reminder)
-			: `<@${reminder.owner}>, here's the reminder you asked for: **${reminder.content}**`;
-
 		if (reminder.mode === 'public') {
-			pubChan.send(message);
+			pubChan.send(`<@${reminder.owner}>, here's the reminder you asked for: **${reminder.content}**`);
 		} else {
-			bot.users.fetch(reminder.owner).then((user) =>
+			bot.users.fetch(reminder.owner).then(async (user) => {
+				const message = await jobMessage(reminder, user.id);
 				user.send(message).catch((err) => {
-					console.log('ERROR', err);
+					console.log('ERROR:', err);
 					pubChan.send(
 						`<@${reminder.owner}>, I tried to send you a DM about your private reminder but it looks like you have DMs closed. Please enable DMs in the future if you'd like to get private reminders.`
 					);
-				})
-			);
+				});
+			}).catch((error) => {
+				console.error(`Failed to fetch user with ID: ${reminder.owner}`, error);
+			});
 		}
 
 		const newReminder: Reminder = {
