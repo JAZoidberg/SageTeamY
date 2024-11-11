@@ -43,6 +43,7 @@ interface Config {
 	MAINTAINERS: string;
 	SEMESTER_ID: string;
 	BLACKLIST: string;
+	JOB_FORM: string;
 }
 
 function getEnvVar(name: keyof Config): string {
@@ -97,7 +98,8 @@ export const config: Config = {
 	PREFIX: getEnvVar('PREFIX'),
 	MAINTAINERS: getEnvVar('MAINTAINERS'),
 	SEMESTER_ID: getEnvVar('SEMESTER_ID'),
-	BLACKLIST: getEnvVar('BLACKLIST')
+	BLACKLIST: getEnvVar('BLACKLIST'),
+	JOB_FORM: getEnvVar('JOB_FORM')
 };
 /*
 export const { DB_CONNECTION } = process.env.DB_CONNECTION;
