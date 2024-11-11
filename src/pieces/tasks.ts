@@ -146,7 +146,9 @@ ${jobFormData[1].interest3}, ${jobFormData[1].interest4}, and ${jobFormData[1].i
    - **Apply here**: [application](https://www.cybersecureintern.com/apply)
 	\n
 -# **Disclaimer:**
--# Please note that the job listings provided are sourced from a third-party API and we cannot guarantee the legitimacy or security of all postings. Exercise caution when submitting personal information, resumes, or signing up on external sites. Always verify the authenticity of a job application before proceeding. Stay safe and mindful while applying!
+-# Please note that the job listings provided are sourced from a third-party API  and we cannot guarantee the legitimacy or security of all postings.  Exercise caution when submitting personal 
+-# information, resumes, or signing up  on external sites. Always verify the authenticity of a job application 
+-# before proceeding. Stay safe and mindful while applying!
 `;
 }
 
