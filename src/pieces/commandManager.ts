@@ -1,22 +1,7 @@
-import { Collection,
-	Client,
-	ApplicationCommand,
-	GuildMember,
-	SelectMenuInteraction,
-	ModalSubmitInteraction,
-	TextChannel,
-	GuildMemberRoleManager,
-	ButtonInteraction,
-	ModalBuilder,
-	TextInputBuilder,
-	ActionRowBuilder,
-	ModalActionRowComponentBuilder,
-	ApplicationCommandType,
-	ApplicationCommandDataResolvable,
-	ChannelType,
-	ApplicationCommandPermissionType,
-	TextInputStyle,
-	ChatInputCommandInteraction } from 'discord.js';
+import { Collection, Client, ApplicationCommand, GuildMember, SelectMenuInteraction, ModalSubmitInteraction, TextChannel,
+	GuildMemberRoleManager, ButtonInteraction, ModalBuilder, TextInputBuilder, ActionRowBuilder,
+	ModalActionRowComponentBuilder, ApplicationCommandType, ApplicationCommandDataResolvable,
+	ChannelType, ApplicationCommandPermissionType, TextInputStyle, ChatInputCommandInteraction } from 'discord.js';
 import { isCmdEqual, readdirRecursive } from '@root/src/lib/utils/generalUtils';
 import { Command } from '@lib/types/Command';
 import { SageData } from '@lib/types/SageData';

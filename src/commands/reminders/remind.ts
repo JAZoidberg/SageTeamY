@@ -1,4 +1,5 @@
 import { BOT, DB } from '@root/config';
+import { BOT, DB } from '@root/config';
 import {
 	ApplicationCommandOptionData,
 	ApplicationCommandOptionType,
@@ -11,10 +12,14 @@ import { reminderTime } from '@root/src/lib/utils/generalUtils';
 import { Command } from '@lib/types/Command';
 export default class extends Command {
 
+
 	description = `Have ${BOT.NAME} give you a reminder.`;
+	extendedHelp = 'Reminders can be set to repeat daily or weekly.';
 	extendedHelp = 'Reminders can be set to repeat daily or weekly.';
 	options: ApplicationCommandOptionData[] = [
 		{
+			name: 'create',
+			description: 'Create a reminder',
 			name: 'create',
 			description: 'Create a reminder',
 			type: ApplicationCommandOptionType.Subcommand,
@@ -24,17 +29,23 @@ export default class extends Command {
 					description: 'What you\'d like to be reminded of',
 					type: ApplicationCommandOptionType.String,
 					required: true
+					required: true
 				},
 				{
 					name: 'duration',
 					description: 'When you\'d like to be reminded',
 					type: ApplicationCommandOptionType.String,
 					required: true
+					required: true
 				},
 				{
 					name: 'repeat',
 					description: 'How often you want the reminder to repeat',
+					name: 'repeat',
+					description: 'How often you want the reminder to repeat',
 					choices: [
+						{ name: 'Daily', value: 'daily' },
+						{ name: 'Weekly', value: 'weekly' }
 						{ name: 'Daily', value: 'daily' },
 						{ name: 'Weekly', value: 'weekly' }
 					],
@@ -42,8 +53,13 @@ export default class extends Command {
 					required: false
 				}
 			]
+					required: false
+				}
+			]
 		},
 		{
+			name: 'jobs',
+			description: 'Create a job reminder',
 			name: 'jobs',
 			description: 'Create a job reminder',
 			type: ApplicationCommandOptionType.Subcommand,
@@ -51,11 +67,19 @@ export default class extends Command {
 				{
 					name: 'job-repeat',
 					description: 'How often you want the reminder to repeat',
+					name: 'job-repeat',
+					description: 'How often you want the reminder to repeat',
 					choices: [
+						{ name: 'Daily', value: 'daily' },
+						{ name: 'Weekly', value: 'weekly' }
 						{ name: 'Daily', value: 'daily' },
 						{ name: 'Weekly', value: 'weekly' }
 					],
 					type: ApplicationCommandOptionType.String,
+					required: true
+				}
+			]
+		}
 					required: true
 				}
 			]
@@ -71,6 +95,7 @@ export default class extends Command {
 			.toArray();
 
 		return reminders.some(
+			(reminder: Reminder) => reminder.content === 'Job Reminder'
 			(reminder: Reminder) => reminder.content === 'Job Reminder'
 		);
 	}
@@ -98,6 +123,8 @@ export default class extends Command {
 					content:
 						'You currently already have a job reminder set. To clear your existing job reminder, run `/cancelreminder` and provide the reminder number.',
 					ephemeral: true
+						'You currently already have a job reminder set. To clear your existing job reminder, run `/cancelreminder` and provide the reminder number.',
+					ephemeral: true
 				});
 			} else {
 				interaction.client.mongo
@@ -108,9 +135,12 @@ export default class extends Command {
 						jobReminder
 					)}.`,
 					ephemeral: true
+					ephemeral: true
 				});
 			}
 		} else {
+			const content = interaction.options.getString('content');
+			const rawDuration = interaction.options.getString('duration');
 			const content = interaction.options.getString('content');
 			const rawDuration = interaction.options.getString('duration');
 			const duration = parse(rawDuration);
@@ -122,13 +152,16 @@ export default class extends Command {
 				return interaction.reply({
 					content: `**${rawDuration}** is not a valid duration. You can use words like hours, minutes, seconds, days, weeks, months, or years.`,
 					ephemeral: true
+					ephemeral: true
 				});
 			}
 			const reminder: Reminder = {
 				owner: interaction.user.id,
 				content,
 				mode: 'public', // temporary
+				mode: 'public', // temporary
 				expires: new Date(duration + Date.now()),
+				repeat
 				repeat
 			};
 			interaction.client.mongo
@@ -139,8 +172,10 @@ export default class extends Command {
 					reminder
 				)}.`,
 				ephemeral: true
+				ephemeral: true
 			});
 		}
 	}
+
 
 }
