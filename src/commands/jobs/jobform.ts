@@ -14,10 +14,10 @@ import {
 // prettier-ignore
 const questions = [
 	[
-		'What city do you want the city to be located in or around?',
-		'Are you looking for remote, hybrid, and/or in person?',
-		'Employement type: Full-time, Part-time, Internship, Temporary, and/or contract?',
-		'How far are you willing to travel (in miles)?'
+		'What city do you want to be located?',
+		'Remote, hybrid, and/or in-person?',
+		'Full-time, Part-time, and/or Internship?',
+		'How far are you willing to travel?'
 	],
 	['Interest 1', 'Interest 2', 'Interest 3', 'Interest 4', 'Interest 5']
 ];
