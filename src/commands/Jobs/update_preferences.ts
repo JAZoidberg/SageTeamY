@@ -6,7 +6,10 @@ import { ActionRowBuilder, ApplicationCommandOptionData, ApplicationCommandOptio
 
 
 const questions = [
-	['What city are you located in?', 'Are you looking for remote or in person?', 'Job, internship or both?', 'How far are you willing to travel?'],
+	['What city do you want the city to be located in or around?',
+		'Are you looking for remote, hybrid, and/or in person?',
+		'Employement type: Full-time, Part-time, Internship, Temporary, and/or contract?',
+		'How far are you willing to travel (in miles)?'],
 	['Interest 1', 'Interest 2', 'Interest 3', 'Interest 4', 'Interest 5']
 ];
 
