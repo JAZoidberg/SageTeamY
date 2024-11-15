@@ -9,6 +9,7 @@ import { Reminder } from '@lib/types/Reminder';
 import parse from 'parse-duration';
 import { reminderTime } from '@root/src/lib/utils/generalUtils';
 import { Command } from '@lib/types/Command';
+
 export default class extends Command {
 
 	description = `Have ${BOT.NAME} give you a reminder.`;
