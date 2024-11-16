@@ -82,9 +82,9 @@ export default class extends Command {
 		const subcommand: string = interaction.options.getSubcommand();
 
 		if (subcommand === 'jobs') {
-			const jobReminderRepeat = (interaction.options.getString('job-repeat') as
+			const jobReminderRepeat = interaction.options.getString('job-repeat') as
 					| 'daily'
-					| 'weekly') || null;
+					| 'weekly' || null;
 
 			const jobReminder: Reminder = {
 				owner: interaction.user.id,
@@ -115,9 +115,9 @@ export default class extends Command {
 			const content = interaction.options.getString('content');
 			const rawDuration = interaction.options.getString('duration');
 			const duration = parse(rawDuration);
-			const repeat = (interaction.options.getString('repeat') as
+			const repeat = interaction.options.getString('repeat') as
 					| 'daily'
-					| 'weekly') || null;
+					| 'weekly' || null;
 
 			if (!duration) {
 				return interaction.reply({

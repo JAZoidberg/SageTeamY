@@ -1,5 +1,5 @@
 import { DB } from '@root/config';
-import { ChatInputCommandInteraction, Embed, EmbedBuilder, InteractionResponse } from 'discord.js';
+import { ChatInputCommandInteraction, EmbedBuilder, InteractionResponse } from 'discord.js';
 import { Command } from '@lib/types/Command';
 
 export default class extends Command {
