@@ -32,5 +32,6 @@ export const validatePreferences = (answers: string[], qset: number, isJobForm: 
 				errors.push(`Invalid work type: ${invalidTypes.join(', ')}. Must be full time, part time, and/or internship`);
 			}
 		}
+		if (!travelDistance?.trim()) errors.push('Enter valid travel distance');
 	}
 };
