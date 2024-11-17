@@ -36,4 +36,10 @@ export const validatePreferences = (answers: string[], qset: number, isJobForm: 
 			errors.push('Travel distance must be a number');
 		}
 	}
+	else if (qset === 1 && isJobForm) {
+		const intersts = answers.filter(interest => interest?.trim()).length;
+		if (intersts < 5) {
+			errors.push('Select at least 5 interests');
+		}
+	}
 };
