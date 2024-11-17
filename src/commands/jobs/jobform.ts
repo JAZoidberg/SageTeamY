@@ -10,6 +10,7 @@ import {
 	TextInputBuilder,
 	TextInputStyle
 } from 'discord.js';
+import { validatePreferences } from './validatePreferences';
 
 // prettier-ignore
 const questions = [
@@ -88,6 +89,15 @@ export default class extends Command {
 					.setPlaceholder('Input Answer Here')
 			]
 		});
+	}
+	async handleSubmit(interaction: ChatInputCommandInteraction, answers: string[], qSet: number): Promise<boolean> {
+		const validation = validatePreferences(answers, qSet, true);
+		if (!validation.isValid) {
+			await interaction.reply({ content: `Form validation failed:\n${validation.errors.join('\n')}`,
+				ephemeral: true });
+			return false;
+		}
+		return true;
 	}
 
 }

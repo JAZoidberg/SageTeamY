@@ -1,6 +1,6 @@
 interface ValidateResult {
 	isValid: boolean;
-	error: string[];
+	errors: string[];
 }
 
 export const validatePreferences = (answers: string[], qset: number, isJobForm: boolean): ValidateResult => {
@@ -35,11 +35,14 @@ export const validatePreferences = (answers: string[], qset: number, isJobForm: 
 		if (travelDistance && isNaN(Number(travelDistance.replace(/[^0-9]/g, '')))) {
 			errors.push('Travel distance must be a number');
 		}
-	}
-	else if (qset === 1 && isJobForm) {
+	} else if (qset === 1 && isJobForm) {
 		const intersts = answers.filter(interest => interest?.trim()).length;
 		if (intersts < 5) {
 			errors.push('Select at least 5 interests');
 		}
 	}
+	return {
+		isValid: errors.length === 0,
+		errors
+	};
 };
