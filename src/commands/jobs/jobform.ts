@@ -10,7 +10,7 @@ import {
 	TextInputBuilder,
 	TextInputStyle
 } from 'discord.js';
-import { validatePreferences } from './validatePreferences';
+import { validatePreferences } from '../../lib/utils/jobUtils/validatePreferences';
 
 // prettier-ignore
 const questions = [
