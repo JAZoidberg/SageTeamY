@@ -1,9 +1,6 @@
 import { DB } from '@root/config';
-import { ChatInputCommandInteraction, Embed, EmbedBuilder, InteractionResponse } from 'discord.js';
-import { reminderTime } from '@root/src/lib/utils/generalUtils';
+import { ChatInputCommandInteraction, EmbedBuilder, InteractionResponse } from 'discord.js';
 import { Command } from '@lib/types/Command';
-import jobform from './jobform';
-import { JobPreferenceAPI } from './jobDatabase';
 
 export default class extends Command {
 
