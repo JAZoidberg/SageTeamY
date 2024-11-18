@@ -1,8 +1,8 @@
 name: Main Pipeline
 
 on:
-  push:
-    branches: [ "main"]
+  push #:
+#    branches: [ "main", "Ava-branch-config" ]
   pull_request:
     branches: [ "main", "Ava-branch-config" ]
 
