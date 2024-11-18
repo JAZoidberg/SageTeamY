@@ -43,6 +43,7 @@ interface Config {
 	MAINTAINERS: string;
 	SEMESTER_ID: string;
 	BLACKLIST: string;
+	JOB_FORMS: string;
 }
 
 function getEnvVar(name: keyof Config): string {
@@ -97,7 +98,8 @@ export const config: Config = {
 	PREFIX: getEnvVar('PREFIX'),
 	MAINTAINERS: getEnvVar('MAINTAINERS'),
 	SEMESTER_ID: getEnvVar('SEMESTER_ID'),
-	BLACKLIST: getEnvVar('BLACKLIST')
+	BLACKLIST: getEnvVar('BLACKLIST'),
+	JOB_FORMS: getEnvVar('JOB_FORMS')
 };
 /*
 export const { DB_CONNECTION } = process.env.DB_CONNECTION;
@@ -152,7 +154,8 @@ export const DB = {
 	COURSES: config.DB_COURSES,
 	REMINDERS: config.DB_REMINDERS,
 	CLIENT_DATA: config.DB_CLIENT_DATA,
-	POLLS: config.DB_POLLS
+	POLLS: config.DB_POLLS,
+	JOB_FORMS: config.JOB_FORMS
 };
 
 export const GUILDS = {
