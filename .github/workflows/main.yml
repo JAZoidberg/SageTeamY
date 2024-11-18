@@ -2,8 +2,6 @@ name: Main Pipeline
 
 # REMOVE THIS ON PRODUCTION CODE
 on: push
-  pull_request:
-    branches: [ "main", "Ava-branch-config" ]
 
 # RESTORE THIS ON PRODUCTION CODE
 # on:
