@@ -7,20 +7,20 @@ import {
 	TextChannel,
 	ActionRowBuilder,
 	ApplicationCommandPermissions,
-	StringSelectMenuBuilder,
-} from "discord.js";
-import { Command, CompCommand } from "@lib/types/Command";
-import * as fs from "fs";
-import { DB, CHANNELS, ROLE_DROPDOWNS, BOT } from "@root/config";
-import moment from "moment";
-import { Reminder } from "@lib/types/Reminder";
-import { Course } from "@lib/types/Course";
+	StringSelectMenuBuilder
+} from 'discord.js';
+import { Command, CompCommand } from '@lib/types/Command';
+import * as fs from 'fs';
+import { DB, CHANNELS, ROLE_DROPDOWNS, BOT } from '@root/config';
+import moment from 'moment';
+import { Reminder } from '@lib/types/Reminder';
+import { Course } from '@lib/types/Course';
 
 export function getCommand(bot: Client, cmd: string): Command {
 	cmd = cmd.toLowerCase();
 	return (
-		bot.commands.get(cmd) ||
-		bot.commands.find(
+		bot.commands.get(cmd)
+		|| bot.commands.find(
 			(command) => command.aliases && command.aliases.includes(cmd)
 		)
 	);
@@ -28,9 +28,9 @@ export function getCommand(bot: Client, cmd: string): Command {
 
 export function isCmdEqual(cmd1: CompCommand, cmd2: CompCommand): boolean {
 	return (
-		cmd1.name === cmd2.name &&
-		cmd1.description === cmd2.description &&
-		isOptionsListEqual(cmd1.options, cmd2.options)
+		cmd1.name === cmd2.name
+		&& cmd1.description === cmd2.description
+		&& isOptionsListEqual(cmd1.options, cmd2.options)
 	);
 }
 
@@ -42,10 +42,10 @@ export function isOptionsListEqual(
 	const valid = list1.every((list1Option) =>
 		list2.find(
 			(list2Option) =>
-				list2Option.name === list1Option.name &&
-				list2Option.description === list1Option.description &&
-				checkOptions(list1Option, list2Option) &&
-				list2Option.type === list1Option.type
+				list2Option.name === list1Option.name
+				&& list2Option.description === list1Option.description
+				&& checkOptions(list1Option, list2Option)
+				&& list2Option.type === list1Option.type
 		)
 	);
 	return valid;
@@ -55,7 +55,7 @@ function checkOptions(
 	list1Option: ApplicationCommandOptionData,
 	list2Option: ApplicationCommandOptionData
 ): boolean {
-	if ("required" in list1Option && "required" in list2Option) {
+	if ('required' in list1Option && 'required' in list2Option) {
 		// see note 1 comment block in help.ts
 		return list2Option.required === list1Option.required;
 	}
@@ -67,24 +67,23 @@ export function isPermissionEqual(
 	perm2: ApplicationCommandPermissions
 ): boolean {
 	return (
-		perm1.id === perm2.id &&
-		perm1.permission === perm2.permission &&
-		perm1.type === perm2.type
+		perm1.id === perm2.id
+		&& perm1.permission === perm2.permission
+		&& perm1.type === perm2.type
 	);
 }
 
 export function generateErrorEmbed(msg: string): EmbedBuilder {
 	const responseEmbed = new EmbedBuilder()
-		.setColor("#ff0000")
-		.setTitle("Error")
+		.setColor('#ff0000')
+		.setTitle('Error')
 		.setDescription(msg);
 	return responseEmbed;
 }
 
 export function getMsgIdFromLink(link: string): string {
 	let msgId: string;
-	if ((msgId = link.split("/").pop()) === undefined)
-		throw "You must call this function with a message link!";
+	if ((msgId = link.split('/').pop()) === undefined) { throw 'You must call this function with a message link!'; }
 	return msgId;
 }
 
@@ -109,20 +108,20 @@ export async function updateDropdowns(
 		);
 	} catch (error) {
 		const responseEmbed = new EmbedBuilder()
-			.setColor("#ff0000")
-			.setTitle("Argument error")
+			.setColor('#ff0000')
+			.setTitle('Argument error')
 			.setDescription(
 				`Unknown message(s), make sure your channel and message ID are correct.`
 			);
 		interaction.channel.send({ embeds: [responseEmbed] });
 	}
 	if (
-		coursesMsg.author.id !== BOT.CLIENT_ID ||
-		assignablesMsg.author.id !== BOT.CLIENT_ID
+		coursesMsg.author.id !== BOT.CLIENT_ID
+		|| assignablesMsg.author.id !== BOT.CLIENT_ID
 	) {
 		const responseEmbed = new EmbedBuilder()
-			.setColor("#ff0000")
-			.setTitle("Argument error")
+			.setColor('#ff0000')
+			.setTitle('Argument error')
 			.setDescription(
 				`You must tag a message that was sent by ${BOT.NAME} (me!).`
 			);
@@ -145,16 +144,16 @@ export async function updateDropdowns(
 	}
 
 	// sort alphabetically
-	courses = courses.sort((a, b) => (a.name > b.name ? 1 : -1));
-	assignables = assignables.sort((a, b) => (a.name > b.name ? 1 : -1));
+	courses = courses.sort((a, b) => a.name > b.name ? 1 : -1);
+	assignables = assignables.sort((a, b) => a.name > b.name ? 1 : -1);
 
 	// initialize dropdowns
 	const coursesDropdown = new StringSelectMenuBuilder()
-		.setCustomId("roleselect")
+		.setCustomId('roleselect')
 		.setMaxValues(courses.length)
 		.setMinValues(0);
 	const assignablesDropdown = new StringSelectMenuBuilder()
-		.setCustomId("roleselect")
+		.setCustomId('roleselect')
 		.setMaxValues(assignables.length)
 		.setMinValues(0);
 	// these have to be here otherwise it won't add the dropdown components
@@ -166,7 +165,7 @@ export async function updateDropdowns(
 	coursesDropdown.addOptions(
 		courses.map((c) => ({
 			label: `CISC ${c.name}`,
-			value: c.roles.student,
+			value: c.roles.student
 		}))
 	);
 	assignablesDropdown.addOptions(
@@ -174,12 +173,12 @@ export async function updateDropdowns(
 	);
 
 	// create component rows, add to messages
-	const coursesRow =
-		new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+	const coursesRow
+		= new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
 			coursesDropdown
 		);
-	const assignablesRow =
-		new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+	const assignablesRow
+		= new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
 			assignablesDropdown
 		);
 	coursesMsg.edit({ components: [coursesRow] });
@@ -188,21 +187,21 @@ export async function updateDropdowns(
 	return;
 }
 
-export type TimestampType = "t" | "T" | "d" | "D" | "f" | "F" | "R";
-export function dateToTimestamp(date: Date, type: TimestampType = "t"): string {
+export type TimestampType = 't' | 'T' | 'd' | 'D' | 'f' | 'F' | 'R';
+export function dateToTimestamp(date: Date, type: TimestampType = 't'): string {
 	return `<t:${Math.round(date.valueOf() / 1e3)}:${type}>`;
 }
 
 export async function sendToFile(
 	input: string,
-	filetype = "txt",
+	filetype = 'txt',
 	filename: string = null,
 	timestamp = false
 ): Promise<AttachmentBuilder> {
-	const time = moment().format("M-D-YY_HH-mm");
-	filename = `${filename}${timestamp ? `_${time}` : ""}` || time;
+	const time = moment().format('M-D-YY_HH-mm');
+	filename = `${filename}${timestamp ? `_${time}` : ''}` || time;
 	return new AttachmentBuilder(Buffer.from(input.trim()), {
-		name: `${filename}.${filetype}`,
+		name: `${filename}.${filetype}`
 	});
 }
 
@@ -215,9 +214,9 @@ export async function generateQuestionId(
 	)}${interaction.id.slice(interaction.id.length - depth)}`;
 
 	if (
-		(await interaction.client.mongo
+		await interaction.client.mongo
 			.collection(DB.PVQ)
-			.countDocuments({ questionId: potentialId })) > 0
+			.countDocuments({ questionId: potentialId }) > 0
 	) {
 		return generateQuestionId(interaction, depth + 1);
 	}
@@ -244,34 +243,34 @@ export function readdirRecursive(dir: string): string[] {
 
 export function reminderTime({ expires: date, repeat }: Reminder): string {
 	const now = new Date();
-	let prettyDateTime = "";
+	let prettyDateTime = '';
 
 	const hour = date.getHours() % 12 === 0 ? 12 : date.getHours() % 12;
 	const mins = date.getMinutes();
-	const amPm = date.getHours() < 12 ? "AM" : "PM";
-	prettyDateTime += `${hour}:${mins.toString().padStart(2, "0")} ${amPm} `;
+	const amPm = date.getHours() < 12 ? 'AM' : 'PM';
+	prettyDateTime += `${hour}:${mins.toString().padStart(2, '0')} ${amPm} `;
 
-	if (repeat === "daily") {
-		prettyDateTime += "every day";
+	if (repeat === 'daily') {
+		prettyDateTime += 'every day';
 		return prettyDateTime;
 	}
 
 	if (
 		!(
-			now.getDate() === date.getDate() &&
-			now.getMonth() === date.getMonth() &&
-			now.getFullYear() === date.getFullYear()
+			now.getDate() === date.getDate()
+			&& now.getMonth() === date.getMonth()
+			&& now.getFullYear() === date.getFullYear()
 		)
 	) {
 		prettyDateTime += `on ${
 			date.getMonth() + 1
 		}/${date.getDate()}/${date.getFullYear()}`;
 	} else {
-		prettyDateTime += "Today";
+		prettyDateTime += 'Today';
 	}
 
-	if (repeat === "weekly") {
-		prettyDateTime += " and every week";
+	if (repeat === 'weekly') {
+		prettyDateTime += ' and every week';
 	}
 
 	return prettyDateTime;
@@ -279,7 +278,7 @@ export function reminderTime({ expires: date, repeat }: Reminder): string {
 
 export function calcNeededExp(levelExp: number, direction: string): number {
 	const xpRatio = 1.31; // Ren and I had an argument over whether it should be 1.3 or 1.33, we agreed on 1.31 because haha :)
-	if (direction === "+") {
+	if (direction === '+') {
 		// calculate exp for next level
 		return Math.floor(levelExp * xpRatio);
 	}
