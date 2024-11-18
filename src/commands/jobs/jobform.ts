@@ -69,7 +69,7 @@ export default class extends Command {
 
 		await interaction.showModal(modal);
 
-		// Answers are handled in src/pieces/commandManager.ts on line 149
+		// Answers are handled in src/pieces/commandManager.ts on line 151
 
 		return;
 	}
