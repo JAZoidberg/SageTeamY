@@ -13,8 +13,8 @@ import { Course } from '../lib/types/Course';
 import { SageUser } from '../lib/types/SageUser';
 import { CommandError } from '../lib/types/errors';
 import { verify } from '../pieces/verification';
-import { JobPreferenceAPI } from '../commands/jobs/jobDatabase';
-import { JobForm } from '../lib/types/JobForm';
+import { JobPreferenceAPI } from '../lib/utils/jobUtils/jobDatabase';
+import { Job } from '../lib/types/Job';
 
 const DELETE_DELAY = 10000;
 
