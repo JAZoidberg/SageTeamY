@@ -1,14 +1,10 @@
 name: Main Pipeline
 
-# REMOVE THIS ON PRODUCTION CODE
-on: push
-
-# RESTORE THIS ON PRODUCTION CODE
-# on:
-#   push:
-#     branches: [ "main", "Ava-branch-config" ]
-#   pull_request:
-#     branches: [ "main", "Ava-branch-config" ]
+on:
+  push:
+    branches: [ "main", "Ava-branch-config" ]
+  pull_request:
+    branches: [ "main", "Ava-branch-config" ]
 
 env:
   DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
