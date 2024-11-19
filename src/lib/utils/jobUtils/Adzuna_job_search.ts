@@ -19,11 +19,10 @@ fetch(URL)
 		if (!response.ok) {
 			throw new Error(`HTTP error ${response.status}`);
 		}
-		return response.json();
+		// return response.json();
 	})
 	.then((responseData) => {
-		console.log('got data');
-		// console.log(responseData);
+		// console.log('-------------------------------------------------------------------', responseData);
 	})
 	.catch((error) => {
 		console.error('Fetch error:', error);
