@@ -66,6 +66,3 @@ getJobs('software engineer', 'US')
 	.then((data) => console.log('Job Listings:', data))
 	.catch((err) => console.error(err));
 
-getJobs('software engineer', 'US')
-	.then((data) => console.log('Job Listings:', data))
-	.catch((err) => console.error(err));
