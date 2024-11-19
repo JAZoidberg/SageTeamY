@@ -22,7 +22,8 @@ fetch(URL)
 		return response.json();
 	})
 	.then((responseData) => {
-		console.log(responseData);
+		console.log('got data');
+		// console.log(responseData);
 	})
 	.catch((error) => {
 		console.error('Fetch error:', error);
