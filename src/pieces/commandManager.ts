@@ -163,23 +163,23 @@ async function handleModalBuilder(interaction: ModalSubmitInteraction, bot: Clie
 					});
 					return;
 				}
-				const answerResponse: Job = {
-					owner: interaction.user.id,
-					content: '',
-					location: '',
-					questionSet: formNumber,
-					answers: answers,
-					mode: 'private' // temporary - switch to private before final submission
-				};
+				// const answerResponse: Job = {
+				// 	owner: interaction.user.id,
+				// 	content: '',
+				// 	location: '',
+				// 	questionSet: formNumber,
+				// 	answers: answers,
+				// 	mode: 'private' // temporary - switch to private before final submission
+				// };
 
-				// interaction.client.mongo.collection(DB.JOB_FORMS).insertOne(answerResponse);
-				if (answerResponse.questionSet === 0) {
-					interaction.client.mongo.collection(DB.JOB_FORMS).findOneAndReplace(
-						{ questionSet: 0 }, answerResponse, { upsert: true });
-				} else if (answerResponse.questionSet === 1) {
-					interaction.client.mongo.collection(DB.JOB_FORMS).findOneAndReplace(
-						{ questionSet: 1 }, answerResponse, { upsert: true });
-				}
+				// // interaction.client.mongo.collection(DB.JOB_FORMS).insertOne(answerResponse);
+				// if (answerResponse.questionSet === 0) {
+				// 	interaction.client.mongo.collection(DB.JOB_FORMS).findOneAndReplace(
+				// 		{ questionSet: 0 }, answerResponse, { upsert: true });
+				// } else if (answerResponse.questionSet === 1) {
+				// 	interaction.client.mongo.collection(DB.JOB_FORMS).findOneAndReplace(
+				// 		{ questionSet: 1 }, answerResponse, { upsert: true });
+				// }
 
 				// Create API instance with the database instance directly
 				const jobPreferenceAPI = new JobPreferenceAPI(interaction.client.mongo);

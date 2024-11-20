@@ -87,6 +87,7 @@ export default class extends Command {
 					.setLabel(`${question}`)
 					.setStyle(TextInputStyle.Short)
 					.setPlaceholder('Input Answer Here')
+					.setRequired(true)
 			]
 		});
 	}

@@ -2,6 +2,7 @@ import { Collection, Db, MongoClient } from 'mongodb';
 import { DB } from '@root/config';
 import { Command } from '@root/src/lib/types/Command';
 import { Emoji } from 'discord.js';
+import { validatePreferences } from './validatePreferences';
 
 interface JobPreferences {
 	userID: string;
@@ -34,7 +35,11 @@ export class JobPreferenceAPI {
 	async storeFormResponses(userID: string, answers: string[], questionSet: number): Promise<boolean> {
 		try {
 			const updateObject = {};
-
+			const { isValid, errors } = validatePreferences(answers, questionSet, true);
+			if (!isValid) {
+				console.error('Validation failed', errors);
+				return false;
+			}
 			// Adds answers to questions.
 			if (questionSet === 0) {
 				const [city, workType, employmentType, travelDistance] = answers;
