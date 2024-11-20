@@ -126,7 +126,7 @@ function listJobs(jobData: JobResult[]): string {
 	for (let i = 0; i < jobData.length; i++) {
 		jobList += `${i + 1}. **${jobData[i].company} (${jobData[i].title})**  
         * **Salary Average:** ${(Number(jobData[i].salaryMax) + Number(jobData[i].salaryMin)) / 2}  
-        *(Min: ${jobData[i].salaryMin}, Max: ${jobData[i].salaryMax})*  
+        *(Min: ${jobData[i].salaryMin}, Max: ${jobData[i].salaryMax})
         * **Location:** ${jobData[i].location}  
         * **Apply here:** [read more about the job and apply here](${jobData[i].link})  
 	    \n`;
@@ -152,6 +152,12 @@ ${listJobs(jobFormData[2])}
 	return message;
 }
 
+function modifyMessage(message:string, owner:string): string {
+	return message.replace(`## Hey <@${owner}>!  
+## Here's your list of job/internship recommendations:`, '').replace(/\[read more about the job and apply here\]/g, '').replace(/\((https?:\/\/[^\s)]+)\)/g, '$1')
+		.replace(/\*\*([^*]*(?:\*[^*]+)*)\*\*/g, '$1');
+}
+
 async function checkReminders(bot: Client): Promise<void> {
 	const reminders: Reminder[] = await bot.mongo.collection(DB.REMINDERS).find({ expires: { $lte: new Date() } }).toArray();
 	const pubChan = (await bot.channels.fetch(CHANNELS.SAGE)) as TextChannel;
@@ -172,10 +178,7 @@ async function checkReminders(bot: Client): Promise<void> {
 					});
 				} else {
 					const attachments: AttachmentBuilder[] = [];
-					// eslint-disable-next-line max-len
-					attachments.push(await sendToFile(message.replace(`## Hey <@${reminder.owner}>!  
-## Here's your list of job/internship recommendations:`, '').replace(/\[read more about the job and apply here\]/g, '')
-.replace(/\((https?:\/\/[^\s)]+)\)/g, '$1'), 'md', 'Personalized Job/Internships', false));
+					attachments.push(await sendToFile(modifyMessage(message, reminder.owner), 'txt', 'list-of-jobs-internships', false));
 					user.send({ content: `## Hey <@${reminder.owner}>!  
 ## Here's your list of job/internship recommendations:`, files: attachments as AttachmentBuilder[] });
 				}
