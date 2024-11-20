@@ -131,7 +131,7 @@ function formatCurrency(currency:number): string {
 function listJobs(jobData: JobResult[]): string {
 	let jobList = '';
 	for (let i = 0; i < jobData.length; i++) {
-		jobList += `${i + 1}. **${jobData[i].title})**  
+		jobList += `${i + 1}. **${jobData[i].title}**  
         * **Salary Average:** ${formatCurrency((Number(jobData[i].salaryMax) + Number(jobData[i].salaryMin)) / 2)}
  (Min: ${formatCurrency(Number(jobData[i].salaryMin))}, Max: ${formatCurrency(Number(jobData[i].salaryMax))})
         * **Location:** ${jobData[i].location}  
