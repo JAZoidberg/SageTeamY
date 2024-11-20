@@ -120,15 +120,23 @@ async function getJobFormData(userID:string):Promise<[JobData, Interest, JobResu
 	return [jobData, interests, APIResponse];
 }
 
+function formatCurrency(currency:number): string {
+	return `${new Intl.NumberFormat('en-US', {
+		style: 'currency',
+		currency: 'USD'
+	}).format(Number(currency))}`;
+}
+
 // TODO - need to figure out if the salary is in USD or not
 function listJobs(jobData: JobResult[]): string {
 	let jobList = '';
 	for (let i = 0; i < jobData.length; i++) {
-		jobList += `${i + 1}. **${jobData[i].company} (${jobData[i].title})**  
-        * **Salary Average:** ${(Number(jobData[i].salaryMax) + Number(jobData[i].salaryMin)) / 2} (Min: ${jobData[i].salaryMin}, Max: ${jobData[i].salaryMax})
+		jobList += `${i + 1}. **${jobData[i].title})**  
+        * **Salary Average:** ${formatCurrency((Number(jobData[i].salaryMax) + Number(jobData[i].salaryMin)) / 2)}
+ (Min: ${formatCurrency(Number(jobData[i].salaryMin))}, Max: ${formatCurrency(Number(jobData[i].salaryMax))})
         * **Location:** ${jobData[i].location}  
         * **Apply here:** [read more about the job and apply here](${jobData[i].link})  
-	    \n`;
+	    ${i !== jobData.length - 1 ? '\n' : ''}`;
 	}
 	return jobList || 'No jobs found based on your interests.';
 }
@@ -140,7 +148,7 @@ async function jobMessage(reminder: Reminder, userID: string): Promise<string> {
 Based on your interests in **${jobFormData[1].interest1}**, **${jobFormData[1].interest2}**,  
 **${jobFormData[1].interest3}**, **${jobFormData[1].interest4}**, and **${jobFormData[1].interest5}**, I've found these jobs you may find interesting. Please note that while you may get 
 job/internship recommendations from the same company, 
-their positions/details/applications/salary WILL be different and this is not a glitch/bug! \n Here they are \n:
+their positions/details/applications/salary WILL be different and this is not a glitch/bug! \n Here's your personalized list: \n
 ${listJobs(jobFormData[2])}
 ---  
 ### **Disclaimer:**  
@@ -167,7 +175,7 @@ async function checkReminders(bot: Client): Promise<void> {
 		} else {
 			bot.users.fetch(reminder.owner).then(async (user) => {
 				const message = await jobMessage(reminder, user.id);
-				if (message.length <= 2000) {
+				if (message.length < 2000) {
 					user.send(message).catch((err) => {
 						console.log('ERROR:', err);
 						pubChan.send(
