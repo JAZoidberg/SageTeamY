@@ -4,6 +4,7 @@ import { Command } from '@root/src/lib/types/Command';
 import { Emoji } from 'discord.js';
 import { validatePreferences } from './validatePreferences';
 
+// class to store the info of the preferences the user previously put in to match to jobs in the database
 interface JobPreferences {
 	userID: string;
 	answers: {

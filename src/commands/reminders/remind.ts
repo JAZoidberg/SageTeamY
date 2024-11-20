@@ -44,6 +44,7 @@ export default class extends Command {
 				}
 			]
 		},
+		// added by Fried Sage Leaves - handles what happens when /remind jobs is run
 		{
 			name: 'jobs',
 			description: 'Create a job reminder',
@@ -93,7 +94,7 @@ export default class extends Command {
 				expires: new Date(),
 				repeat: jobReminderRepeat
 			};
-
+			// handling duplicate job reminders
 			if (await this.checkJobReminder(interaction)) {
 				return interaction.reply({
 					content:
