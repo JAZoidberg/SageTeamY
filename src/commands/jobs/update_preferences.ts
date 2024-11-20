@@ -4,7 +4,7 @@ import { ActionRowBuilder, ApplicationCommandOptionData, ApplicationCommandOptio
 	ChatInputCommandInteraction, InteractionResponse, ModalBuilder, ModalSubmitFields,
 	TextInputBuilder, TextInputStyle } from 'discord.js';
 
-
+// should be same questions as jobform.ts line 16
 const questions = [
 	['What city are you located in?', 'Are you looking for remote or in person?', 'Job, internship or both?', 'How far are you willing to travel?'],
 	['Interest 1', 'Interest 2', 'Interest 3', 'Interest 4', 'Interest 5']
@@ -31,16 +31,18 @@ export default class extends Command {
 	async run(interaction: ChatInputCommandInteraction): Promise<InteractionResponse<boolean> | void> {
 		const questionSet = interaction.options.getNumber('qset') - 1;
 
+		// bad input handling
 		if (questionSet !== 0 && questionSet !== 1) {
 			interaction.reply({ content: 'Please enter either 1 or 2' });
 			return;
 		}
-		// Checks if ansers already exists.
+		// Checks if user has done the job form at least once
 		const existingAnswers = await interaction.client.mongo.collection(DB.USERS).findOne({
 			discordId: interaction.user.id,
 			jobPreferences: { $exists: true }
 		});
 
+		// directs user to do /jobform first since they have no preferences to update
 		if (!existingAnswers) {
 			interaction.reply({
 				content: 'No preferences found, enter preferences by using the command /jobform',
@@ -50,6 +52,7 @@ export default class extends Command {
 		}
 		const currentAns = existingAnswers.jobPreferences?.answers;
 		const askedQuestions = questions[questionSet];
+		// if questions changed, making sure to update these titles to correctly describe question
 		const quesChoices = questionSet === 0
 			? ['city', 'workType', 'employmentType', 'travelDistance']
 			: ['interest1', 'interest2', 'interest3', 'interest4', 'interest5'];
@@ -62,6 +65,7 @@ export default class extends Command {
 			return this.getAnswerField(question, askedQuestions.indexOf(question), value);
 		});
 
+		// creates the modal that pops up when command is used, with title matching which questions set user is answering
 		const modal = new ModalBuilder()
 			.setCustomId(`updateModal${questionSet}`)
 			.setTitle(`Update Job Preferences (${questionSet + 1} of 2)`);
