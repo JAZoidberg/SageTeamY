@@ -90,14 +90,17 @@ export default class extends Command {
 			]
 		});
 	}
-	async handleSubmit(interaction: ChatInputCommandInteraction, answers: string[], qSet: number): Promise<boolean> {
+	async handleModalSubmit(interaction: ChatInputCommandInteraction, answers: string[], qSet: number): Promise<boolean> {
 		const validation = validatePreferences(answers, qSet, true);
 		if (!validation.isValid) {
 			await interaction.reply({ content: `Form validation failed:\n${validation.errors.join('\n')}`,
 				ephemeral: true });
-			return false;
+			return;
 		}
-		return true;
+		await interaction.reply({
+			content: 'Form submitted successfully!',
+			ephemeral: true
+		});
 	}
 
 }
