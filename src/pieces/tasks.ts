@@ -5,6 +5,7 @@ import { Reminder } from '@lib/types/Reminder';
 import { Poll, PollResult } from '@lib/types/Poll';
 import { MongoClient } from 'mongodb';
 import { Job } from '../lib/types/Job';
+import getJobAPIResponse from '../lib/utils/jobUtils/Adzuna_job_search';
 
 async function register(bot: Client): Promise<void> {
 	schedule('0/30 * * * * *', () => {
@@ -79,14 +80,14 @@ async function checkPolls(bot: Client): Promise<void> {
 	});
 }
 
-interface JobData {
+export interface JobData {
 	city: string,
 	preference: string,
 	jobType: string,
 	distance: string
 }
 
-interface Interest {
+export interface Interest {
 	interest1: string,
 	interest2: string,
 	interest3: string,
@@ -99,7 +100,6 @@ async function getJobFormData(userID:string):Promise<[JobData, Interest]> {
 	const client = await MongoClient.connect(DB.CONNECTION, { useUnifiedTopology: true });
 	const db = client.db(BOT.NAME).collection(DB.JOB_FORMS);
 	const jobformAnswers:Job[] = await db.find({ owner: userID }).toArray();
-
 	const jobData:JobData = {
 		city: jobformAnswers[0].answers[0],
 		preference: jobformAnswers[0].answers[1],
@@ -114,6 +114,8 @@ async function getJobFormData(userID:string):Promise<[JobData, Interest]> {
 		interest4: jobformAnswers[1].answers[3],
 		interest5: jobformAnswers[1].answers[4]
 	};
+
+	getJobAPIResponse(jobData, interests);
 
 	return [jobData, interests];
 }
@@ -146,8 +148,8 @@ ${jobFormData[1].interest3}, ${jobFormData[1].interest4}, and ${jobFormData[1].i
    - **Apply here**: [application](https://www.cybersecureintern.com/apply)
 	\n
 -# **Disclaimer:**
--# Please note that the job listings provided are sourced from a third-party API  and we cannot guarantee the legitimacy or security of all postings.  Exercise caution when submitting personal 
--# information, resumes, or signing up  on external sites. Always verify the authenticity of a job application 
+-# Please note that the job listings provided are sourced from a third-party API and we cannot guarantee the legitimacy or security of all postings. Exercise caution when submitting personal 
+-# information, resumes, or signing up on external sites. Always verify the authenticity of a job application 
 -# before proceeding. Stay safe and mindful while applying!
 `;
 }
