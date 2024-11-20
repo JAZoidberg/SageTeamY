@@ -138,8 +138,9 @@ async function jobMessage(reminder: Reminder, userID: string): Promise<string> {
 	const message = `## Hey <@${reminder.owner}>!  
 ## Here's your list of job/internship recommendations:  
 Based on your interests in **${jobFormData[1].interest1}**, **${jobFormData[1].interest2}**,  
-**${jobFormData[1].interest3}**, **${jobFormData[1].interest4}**, and **${jobFormData[1].interest5}**--Please note that while you may get job/internship recommendations from the same company, 
-their positions/details/applications/salary WILL be different and this is not a glitch/bug!--I've found these jobs you may find interesting-- :
+**${jobFormData[1].interest3}**, **${jobFormData[1].interest4}**, and **${jobFormData[1].interest5}**, I've found these jobs you may find interesting. Please note that while you may get 
+job/internship recommendations from the same company, 
+their positions/details/applications/salary WILL be different and this is not a glitch/bug! \n Here they are:
 ${listJobs(jobFormData[2])}
 
 ---  
@@ -153,7 +154,8 @@ ${listJobs(jobFormData[2])}
 function stripMarkdown(message:string, owner:string): string {
 	return message.replace(`## Hey <@${owner}>!  
 ## Here's your list of job/internship recommendations:`, '').replace(/\[read more about the job and apply here\]/g, '').replace(/\((https?:\/\/[^\s)]+)\)/g, '$1')
-		.replace(/\*\*([^*]*(?:\*[^*]+)*)\*\*/g, '$1').replace(/#\S+/g, '').replace(/##\S+/g, '');
+		// eslint-disable-next-line no-useless-escape
+		.replace(/\*\*([^*]*(?:\*[^*]+)*)\*\*/g, '$1').replace(/(###|-\#)\s*/g, '');
 }
 
 async function checkReminders(bot: Client): Promise<void> {
