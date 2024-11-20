@@ -140,9 +140,8 @@ async function jobMessage(reminder: Reminder, userID: string): Promise<string> {
 Based on your interests in **${jobFormData[1].interest1}**, **${jobFormData[1].interest2}**,  
 **${jobFormData[1].interest3}**, **${jobFormData[1].interest4}**, and **${jobFormData[1].interest5}**, I've found these jobs you may find interesting. Please note that while you may get 
 job/internship recommendations from the same company, 
-their positions/details/applications/salary WILL be different and this is not a glitch/bug! \n Here they are:
+their positions/details/applications/salary WILL be different and this is not a glitch/bug! \n Here they are \n:
 ${listJobs(jobFormData[2])}
-
 ---  
 ### **Disclaimer:**  
 -# Please note that the job listings provided are sourced from a third-party API, and we cannot guarantee the legitimacy or security of all postings. Exercise caution when submitting personal 
