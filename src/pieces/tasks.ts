@@ -125,8 +125,7 @@ function listJobs(jobData: JobResult[]): string {
 	let jobList = '';
 	for (let i = 0; i < jobData.length; i++) {
 		jobList += `${i + 1}. **${jobData[i].company} (${jobData[i].title})**  
-        * **Salary Average:** ${(Number(jobData[i].salaryMax) + Number(jobData[i].salaryMin)) / 2}  
-        *(Min: ${jobData[i].salaryMin}, Max: ${jobData[i].salaryMax})
+        * **Salary Average:** ${(Number(jobData[i].salaryMax) + Number(jobData[i].salaryMin)) / 2} (Min: ${jobData[i].salaryMin}, Max: ${jobData[i].salaryMax})
         * **Location:** ${jobData[i].location}  
         * **Apply here:** [read more about the job and apply here](${jobData[i].link})  
 	    \n`;
@@ -139,9 +138,8 @@ async function jobMessage(reminder: Reminder, userID: string): Promise<string> {
 	const message = `## Hey <@${reminder.owner}>!  
 ## Here's your list of job/internship recommendations:  
 Based on your interests in **${jobFormData[1].interest1}**, **${jobFormData[1].interest2}**,  
-**${jobFormData[1].interest3}**, **${jobFormData[1].interest4}**, and **${jobFormData[1].interest5}**,  
-I've found these jobs you may find interesting:  
-
+**${jobFormData[1].interest3}**, **${jobFormData[1].interest4}**, and **${jobFormData[1].interest5}**--Please note that while you may get job/internship recommendations from the same company, 
+their positions/details/applications/salary WILL be different and this is not a glitch/bug!--I've found these jobs you may find interesting-- :
 ${listJobs(jobFormData[2])}
 
 ---  
