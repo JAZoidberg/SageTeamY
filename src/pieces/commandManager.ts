@@ -15,6 +15,7 @@ import { CommandError } from '../lib/types/errors';
 import { verify } from '../pieces/verification';
 import { JobPreferenceAPI } from '../lib/utils/jobUtils/jobDatabase';
 import { Job } from '../lib/types/Job';
+import { validatePreferences } from '../lib/utils/jobUtils/validatePreferences';
 
 const DELETE_DELAY = 10000;
 
@@ -154,7 +155,14 @@ async function handleModalBuilder(interaction: ModalSubmitInteraction, bot: Clie
 				// extracting the input from the modal
 				const formNumber = parseInt(customId.slice(-1));
 				const answers = [1, 2, 3, 4, 5].slice(0, formNumber === 0 ? 4 : 5).map(num => fields.getTextInputValue(`question${num}`));
-
+				const { isValid, errors } = validatePreferences(answers, formNumber, true);
+				if (!isValid) {
+					await interaction.reply({
+						content: `Form validation failed:\n${errors.join('\n')}`,
+						ephemeral: true
+					});
+					return;
+				}
 				const answerResponse: Job = {
 					owner: interaction.user.id,
 					content: '',
