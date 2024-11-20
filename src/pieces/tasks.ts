@@ -5,7 +5,7 @@ import { Reminder } from '@lib/types/Reminder';
 import { Poll, PollResult } from '@lib/types/Poll';
 import { MongoClient } from 'mongodb';
 import { Job } from '../lib/types/Job';
-import getJobAPIResponse from '../lib/utils/jobUtils/Adzuna_job_search';
+import getJobAPIResponse, { JobResult } from '../lib/utils/jobUtils/Adzuna_job_search';
 
 async function register(bot: Client): Promise<void> {
 	schedule('0/30 * * * * *', () => {
@@ -96,7 +96,7 @@ export interface Interest {
 }
 
 // eslint-disable-next-line no-warning-comments
-async function getJobFormData(userID:string):Promise<[JobData, Interest]> {
+async function getJobFormData(userID:string):Promise<[JobData, Interest, JobResult[]]> {
 	const client = await MongoClient.connect(DB.CONNECTION, { useUnifiedTopology: true });
 	const db = client.db(BOT.NAME).collection(DB.JOB_FORMS);
 	const jobformAnswers:Job[] = await db.find({ owner: userID }).toArray();
@@ -115,42 +115,40 @@ async function getJobFormData(userID:string):Promise<[JobData, Interest]> {
 		interest5: jobformAnswers[1].answers[4]
 	};
 
-	getJobAPIResponse(jobData, interests);
-
-	return [jobData, interests];
+	const APIResponse:JobResult[] = await getJobAPIResponse(jobData, interests);
+	return [jobData, interests, APIResponse];
 }
 
-async function jobMessage(reminder:Reminder, userID:string):Promise<string> {
-	const jobFormData:[JobData, Interest] = await getJobFormData(userID);
+// TODO - need to figure out if the salary is in USD or not
+function listJobs(jobData: JobResult[]): string {
+	let jobList = '';
+	for (let i = 0; i < jobData.length; i++) {
+		jobList += `${i + 1}. **${jobData[i].company} (${jobData[i].title})**  
+        * **Salary Average:** ${(Number(jobData[i].salaryMax) + Number(jobData[i].salaryMin)) / 2}  
+        *(Min: ${jobData[i].salaryMin}, Max: ${jobData[i].salaryMax})*  
+        * **Job Description:** ${jobData[i].description.slice(0, 50).trim()}...  
+        * **Location:** ${jobData[i].location}  
+        * **Apply here:** [read more about the job and apply here](${jobData[i].link})  
+	    \n`;
+	}
+	return jobList || 'No jobs found based on your interests.';
+}
+
+async function jobMessage(reminder: Reminder, userID: string): Promise<string> {
+	const jobFormData: [JobData, Interest, JobResult[]] = await getJobFormData(userID);
+
 	return `## Hey <@${reminder.owner}>!  
 ## Here's your list of job/internship recommendations:  
-Based on your interests in ${jobFormData[1].interest1}, ${jobFormData[1].interest2}, 
-${jobFormData[1].interest3}, ${jobFormData[1].interest4}, and ${jobFormData[1].interest5}, I've found these jobs you may find of interest:
+Based on your interests in **${jobFormData[1].interest1}**, **${jobFormData[1].interest2}**,  
+**${jobFormData[1].interest3}**, **${jobFormData[1].interest4}**, and **${jobFormData[1].interest5}**,  
+I've found these jobs you may find interesting:  
 
-1. **Junior Data Visualization Engineer**  
-   * **Salary**: $60,000 - $75,000 annually  
-   * **Location**: San Francisco, CA  
-   * **Job Type**: Full-time  
-   * **Work Mode**: Hybrid  
-   * **Job Description**:  
-     As a Junior Data Visualization Engineer, you will work closely with the data science team to design and implement visually compelling dashboards and data presentations. The role involves 
-	 using tools like Tableau and D3.js to communicate data insights in ways that are accessible and engaging for various stakeholders.  
-   * **Apply here**: [application](https://www.techjobportal.com/apply-junior-dve)
+${listJobs(jobFormData[2])}
 
-2. **Cybersecurity Intern**  
-   * **Salary**: $20 - $30 per hour  
-   * **Location**: Arlington, VA  
-   * **Job Type**: Internship  
-   * **Work Mode**: In-person  
-   * **Job Description**:  
-     This internship offers hands-on experience in network security, ethical hacking, and threat assessment. The intern will support the security team in identifying and mitigating vulnerabilities, 
-	 responding to incidents, and learning security protocols.  
-   - **Apply here**: [application](https://www.cybersecureintern.com/apply)
-	\n
--# **Disclaimer:**
--# Please note that the job listings provided are sourced from a third-party API and we cannot guarantee the legitimacy or security of all postings. Exercise caution when submitting personal 
--# information, resumes, or signing up on external sites. Always verify the authenticity of a job application 
--# before proceeding. Stay safe and mindful while applying!
+---  
+### **Disclaimer:**  
+-# Please note that the job listings provided are sourced from a third-party API, and we cannot guarantee the legitimacy or security of all postings. Exercise caution when submitting personal 
+-# information, resumes, or signing up on external sites. Always verify the authenticity of a job application before proceeding. Stay safe and mindful while applying!  
 `;
 }
 
