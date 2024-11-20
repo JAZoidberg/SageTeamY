@@ -172,7 +172,9 @@ async function checkReminders(bot: Client): Promise<void> {
 					});
 				} else {
 					const attachments: AttachmentBuilder[] = [];
-					attachments.push(await sendToFile(message, 'md', 'Personalized Job/Internships', false));
+					// eslint-disable-next-line max-len
+					attachments.push(await sendToFile(message.replace(`## Hey <@${reminder.owner}>!  
+## Here's your list of job/internship recommendations:`, ''), 'md', 'Personalized Job/Internships', false));
 					user.send({ files: attachments as AttachmentBuilder[] });
 				}
 			}).catch((error) => {
