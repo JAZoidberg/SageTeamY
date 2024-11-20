@@ -1,11 +1,12 @@
 import { BOT, CHANNELS, DB } from '@root/config';
-import { ChannelType, Client, EmbedBuilder, TextChannel } from 'discord.js';
+import { AttachmentBuilder, ChannelType, Client, EmbedBuilder, TextChannel } from 'discord.js';
 import { schedule } from 'node-cron';
 import { Reminder } from '@lib/types/Reminder';
 import { Poll, PollResult } from '@lib/types/Poll';
 import { MongoClient } from 'mongodb';
 import { Job } from '../lib/types/Job';
 import getJobAPIResponse, { JobResult } from '../lib/utils/jobUtils/Adzuna_job_search';
+import { sendToFile } from '../lib/utils/generalUtils';
 
 async function register(bot: Client): Promise<void> {
 	schedule('0/30 * * * * *', () => {
@@ -126,7 +127,6 @@ function listJobs(jobData: JobResult[]): string {
 		jobList += `${i + 1}. **${jobData[i].company} (${jobData[i].title})**  
         * **Salary Average:** ${(Number(jobData[i].salaryMax) + Number(jobData[i].salaryMin)) / 2}  
         *(Min: ${jobData[i].salaryMin}, Max: ${jobData[i].salaryMax})*  
-        * **Job Description:** ${jobData[i].description.slice(0, 50).trim()}...  
         * **Location:** ${jobData[i].location}  
         * **Apply here:** [read more about the job and apply here](${jobData[i].link})  
 	    \n`;
@@ -136,8 +136,7 @@ function listJobs(jobData: JobResult[]): string {
 
 async function jobMessage(reminder: Reminder, userID: string): Promise<string> {
 	const jobFormData: [JobData, Interest, JobResult[]] = await getJobFormData(userID);
-
-	return `## Hey <@${reminder.owner}>!  
+	const message = `## Hey <@${reminder.owner}>!  
 ## Here's your list of job/internship recommendations:  
 Based on your interests in **${jobFormData[1].interest1}**, **${jobFormData[1].interest2}**,  
 **${jobFormData[1].interest3}**, **${jobFormData[1].interest4}**, and **${jobFormData[1].interest5}**,  
@@ -150,6 +149,7 @@ ${listJobs(jobFormData[2])}
 -# Please note that the job listings provided are sourced from a third-party API, and we cannot guarantee the legitimacy or security of all postings. Exercise caution when submitting personal 
 -# information, resumes, or signing up on external sites. Always verify the authenticity of a job application before proceeding. Stay safe and mindful while applying!  
 `;
+	return message;
 }
 
 async function checkReminders(bot: Client): Promise<void> {
@@ -162,12 +162,19 @@ async function checkReminders(bot: Client): Promise<void> {
 		} else {
 			bot.users.fetch(reminder.owner).then(async (user) => {
 				const message = await jobMessage(reminder, user.id);
-				user.send(message).catch((err) => {
-					console.log('ERROR:', err);
-					pubChan.send(
-						`<@${reminder.owner}>, I tried to send you a DM about your private reminder but it looks like you have DMs closed. Please enable DMs in the future if you'd like to get private reminders.`
-					);
-				});
+				if (message.length <= 2000) {
+					user.send(message).catch((err) => {
+						console.log('ERROR:', err);
+						pubChan.send(
+							`<@${reminder.owner}>, I tried to send you a DM about your private reminder but it looks like you have DMs closed. Please enable DMs in the future if 
+							you'd like to get private reminders.`
+						);
+					});
+				} else {
+					const attachments: AttachmentBuilder[] = [];
+					attachments.push(await sendToFile(message, 'md', 'Personalized Job/Internships', false));
+					user.send({ files: attachments as AttachmentBuilder[] });
+				}
 			}).catch((error) => {
 				console.error(`Failed to fetch user with ID: ${reminder.owner}`, error);
 			});
