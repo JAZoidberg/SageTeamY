@@ -175,7 +175,8 @@ async function checkReminders(bot: Client): Promise<void> {
 					// eslint-disable-next-line max-len
 					attachments.push(await sendToFile(message.replace(`## Hey <@${reminder.owner}>!  
 ## Here's your list of job/internship recommendations:`, ''), 'md', 'Personalized Job/Internships', false));
-					user.send({ files: attachments as AttachmentBuilder[] });
+					user.send({ content: `## Hey <@${reminder.owner}>!  
+## Here's your list of job/internship recommendations:`, files: attachments as AttachmentBuilder[] });
 				}
 			}).catch((error) => {
 				console.error(`Failed to fetch user with ID: ${reminder.owner}`, error);
