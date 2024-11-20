@@ -1,30 +1,70 @@
 import { APP_ID, APP_KEY } from '@root/config';
-// import axios from 'axios';
+import { Interest, JobData } from '@root/src/pieces/tasks';
 
+export interface JobResult {
+	company: string,
+	title: string,
+	description: string,
+	location,
+	created: string,
+	salaryMax: string,
+	salaryMin: string,
+	link: string,
+}
 
-// Questions: how to pull it? Do I need to pull it?
-// how to work on the next part of the project?
-// Task 3.5: Store fetched job listings temporarily for job matching
-// Create a local cache or temporary storage to hold job listings for processing.
+export default function getJobAPIResponse(jobData:JobData, interests:Interest):JobResult[] {
+	const LOCATION = encodeURIComponent(jobData.city);
+	const JOB_TYPE = encodeURIComponent(jobData.jobType);
+	const DISTANCE_KM = Number(jobData.distance) * 1.609; // miles in km
+	let whatInterests = '';
 
-const JOB_TITLE = 'software engineer';
-const LOCATION = 'us';
-// const SALARY_MIN = 50000;
+	const keys = Object.keys(interests);
+	const lastKey = keys[keys.length - 1];
+	const lastValue = interests[lastKey];
 
-const URL = `https://api.adzuna.com/v1/api/jobs/${LOCATION}/search/1?app_id=${APP_ID}&app_key=${APP_KEY}
-&results_per_page=10&what=${encodeURIComponent(JOB_TITLE)}&where=${encodeURIComponent(LOCATION)}`;
-
-fetch(URL)
-	.then((response) => {
-		if (!response.ok) {
-			throw new Error(`HTTP error ${response.status}`);
+	for (const interest in interests) {
+		whatInterests += interests[interest].replace(/\s+/g, '-'); // replaces each space in a word with a dash
+		if (interests[interest] !== lastValue) {
+			whatInterests += ' ';
 		}
-		return response.json();
-	})
-	.then((responseData) => {
-		console.log('got data');
-		// console.log(responseData);
-	})
-	.catch((error) => {
-		console.error('Fetch error:', error);
-	});
+	}
+
+	whatInterests = encodeURIComponent(whatInterests);
+	// const SALARY_MIN = 50000;
+	const URL = `https://api.adzuna.com/v1/api/jobs/us/search/1?app_id=${APP_ID}&app_key=${APP_KEY}&results_per_page=7&what=${JOB_TYPE}&what_or=${whatInterests}&where=
+	${LOCATION}&distance=${DISTANCE_KM}`;
+
+	const jobResults = [];
+
+	fetch(URL)
+		.then((response) => {
+			if (!response.ok) {
+				throw new Error(`HTTP error ${response.status}`);
+			}
+			return response.json();
+		})
+		.then((responseData) => {
+			console.log('-------------------------------------------------------------------');
+			for (let i = 0; i < responseData.results.length; i++) {
+				const jobResultData = {
+					company: responseData.results[i].company.display_name,
+					title: responseData.results[i].title,
+					description: responseData.results[i].description,
+					location: `${responseData.results[i].location.display_name} (${responseData.results[i].location.area.toString().replace(/,/g, ', ')})`,
+					created: responseData.results[i].created,
+					salaryMax: responseData.results[i].salary_max,
+					salaryMin: responseData.results[i].salary_min,
+					link: responseData.results[i].redirect_url
+				};
+
+				if (!jobResults.find((job:JobResult) => job.company === jobResultData.company)) {
+					jobResults.push(jobResultData);
+				}
+			}
+		})
+		.catch((error) => {
+			console.error('Fetch error:', error);
+		});
+
+	return jobResults;
+}
