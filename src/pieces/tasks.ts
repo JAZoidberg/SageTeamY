@@ -174,7 +174,8 @@ async function checkReminders(bot: Client): Promise<void> {
 					const attachments: AttachmentBuilder[] = [];
 					// eslint-disable-next-line max-len
 					attachments.push(await sendToFile(message.replace(`## Hey <@${reminder.owner}>!  
-## Here's your list of job/internship recommendations:`, ''), 'md', 'Personalized Job/Internships', false));
+## Here's your list of job/internship recommendations:`, '').replace(/\[read more about the job and apply here\]/g, '')
+.replace(/\((https?:\/\/[^\s)]+)\)/g, '$1'), 'md', 'Personalized Job/Internships', false));
 					user.send({ content: `## Hey <@${reminder.owner}>!  
 ## Here's your list of job/internship recommendations:`, files: attachments as AttachmentBuilder[] });
 				}
