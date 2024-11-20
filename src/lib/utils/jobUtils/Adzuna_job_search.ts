@@ -31,7 +31,7 @@ export default async function getJobAPIResponse(jobData: JobData, interests: Int
 
 	whatInterests = encodeURIComponent(whatInterests);
 
-	const URL = `https://api.adzuna.com/v1/api/jobs/us/search/1?app_id=${APP_ID}&app_key=${APP_KEY}&results_per_page=7&what=${JOB_TYPE}&what_or=${whatInterests}&where=
+	const URL = `https://api.adzuna.com/v1/api/jobs/us/search/1?app_id=${APP_ID}&app_key=${APP_KEY}&results_per_page=15&what=${JOB_TYPE}&what_or=${whatInterests}&where=
     ${LOCATION}&distance=${DISTANCE_KM}`;
 
 	const jobResults: JobResult[] = [];
@@ -55,9 +55,9 @@ export default async function getJobAPIResponse(jobData: JobData, interests: Int
 				link: responseData.results[i].redirect_url
 			};
 
-			if (!jobResults.find((job: JobResult) => job.company === jobResultData.company)) {
-				jobResults.push(jobResultData);
-			}
+			// if (!jobResults.find((job: JobResult) => job.company === jobResultData.company)) {
+			jobResults.push(jobResultData);
+			// }
 		}
 	} catch (error) {
 		console.error('Fetch error:', error);
