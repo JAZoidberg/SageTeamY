@@ -150,10 +150,10 @@ ${listJobs(jobFormData[2])}
 	return message;
 }
 
-function modifyMessage(message:string, owner:string): string {
+function stripMarkdown(message:string, owner:string): string {
 	return message.replace(`## Hey <@${owner}>!  
 ## Here's your list of job/internship recommendations:`, '').replace(/\[read more about the job and apply here\]/g, '').replace(/\((https?:\/\/[^\s)]+)\)/g, '$1')
-		.replace(/\*\*([^*]*(?:\*[^*]+)*)\*\*/g, '$1');
+		.replace(/\*\*([^*]*(?:\*[^*]+)*)\*\*/g, '$1').replace(/#\S+/g, '').replace(/##\S+/g, '');
 }
 
 async function checkReminders(bot: Client): Promise<void> {
@@ -176,7 +176,7 @@ async function checkReminders(bot: Client): Promise<void> {
 					});
 				} else {
 					const attachments: AttachmentBuilder[] = [];
-					attachments.push(await sendToFile(modifyMessage(message, reminder.owner), 'txt', 'list-of-jobs-internships', false));
+					attachments.push(await sendToFile(stripMarkdown(message, reminder.owner), 'txt', 'list-of-jobs-internships', false));
 					user.send({ content: `## Hey <@${reminder.owner}>!  
 ## Here's your list of job/internship recommendations:`, files: attachments as AttachmentBuilder[] });
 				}
