@@ -180,11 +180,11 @@ function stripMarkdown(message:string, owner:string): string {
 
 function headerMessage(owner:string):string {
 	return `## Hey <@${owner}>!  
-	### **__please read this disclaimer before reading your list of jobs/internships__:**  
+	### **__Please read this disclaimer before reading your list of jobs/internships__:**  
 -# Please be aware that the job listings displayed are retrieved from a third-party API. \
 While we strive to provide accurate information, we cannot guarantee the legitimacy or security \
-of all postings. Exercise caution when sharing personal information, submitting resumes, or registering\
-	on external sites. Always verify the authenticity of job applications before proceeding. Additionally, \
+of all postings. Exercise caution when sharing personal information, submitting resumes, or registering \
+on external sites. Always verify the authenticity of job applications before proceeding. Additionally, \
 some job postings may contain inaccuracies due to API limitations, which are beyond our control. We apologize for any inconvenience this may cause and appreciate your understanding.
 ## Here's your list of job/internship recommendations:
 	`;
