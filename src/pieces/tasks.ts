@@ -136,10 +136,10 @@ function listJobs(jobData: JobResult[]): string {
 		const formattedSalaryMin = formatCurrency(Number(jobData[i].salaryMin));
 
 		jobList += `${i + 1}. **${jobData[i].title}**  
-		* **Salary Average:** ${formattedAvgSalary}\
+		\t \t * **Salary Average:** ${formattedAvgSalary}\
 		${formattedAvgSalary !== formattedSalaryMax ? `, Min: ${formattedSalaryMin}, Max: ${formattedSalaryMax}` : ''}
-		* **Location:** ${jobData[i].location}  
-		* **Apply here:** [read more about the job and apply here](${jobData[i].link})  
+		\t \t * **Location:** ${jobData[i].location}  
+		\t \t * **Apply here:** [read more about the job and apply here](${jobData[i].link})  
 		${i !== jobData.length - 1 ? '\n' : ''}`;
 	}
 	return jobList || '### Unfortunately, there were no jobs found based on your interests :(. Consider updating your interests or waiting until something is found.';
