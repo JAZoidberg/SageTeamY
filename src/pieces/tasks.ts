@@ -153,7 +153,7 @@ async function jobMessage(reminder: Reminder, userID: string): Promise<string> {
 	const jobFormData: [JobData, Interest, JobResult[]] = await getJobFormData(userID);
 	const message = `## Hey <@${reminder.owner}>!  
 	## Here's your list of job/internship recommendations:  
-	Based on your interests in **${jobFormData[1].interest1}**, **${jobFormData[1].interest2}**, \
+	Based on your interests in **${jobFormData[1].interest1}**, **${jobFormData[1].interest2}**,\
 	**${jobFormData[1].interest3}**, **${jobFormData[1].interest4}**, and **${jobFormData[1].interest5}**, I've found these jobs you may find interesting. Please note that while you may get\
 	job/internship recommendations from the same company,\
 	their positions/details/applications/salary WILL be different and this is not a glitch/bug!
@@ -162,10 +162,10 @@ async function jobMessage(reminder: Reminder, userID: string): Promise<string> {
 	${listJobs(jobFormData[2])}
 	---  
 	### **Disclaimer:**  
-	-# Please be aware that the job listings displayed are retrieved from a third-party API.\
+	-# Please be aware that the job listings displayed are retrieved from a third-party API. \
 	While we strive to provide accurate information, we cannot guarantee the legitimacy or security\
 	of all postings. Exercise caution when sharing personal information, submitting resumes, or registering\
-	on external sites. Always verify the authenticity of job applications before proceeding. Additionally,\
+	on external sites. Always verify the authenticity of job applications before proceeding. Additionally, \
 	some job postings may contain inaccuracies due to API limitations, which are beyond our control. We apologize for any inconvenience this may cause and appreciate your understanding.
 	`;
 	return message;
@@ -176,6 +176,18 @@ function stripMarkdown(message:string, owner:string): string {
 	## Here's your list of job/internship recommendations:`, '').replace(/\[read more about the job and apply here\]/g, '').replace(/\((https?:\/\/[^\s)]+)\)/g, '$1')
 		// eslint-disable-next-line no-useless-escape
 		.replace(/\*\*([^*]*(?:\*[^*]+)*)\*\*/g, '$1').replace(/(###|-\#)\s*/g, '');
+}
+
+function headerMessage(owner:string):string {
+	return `## Hey <@${owner}>!  
+	### **__please read this disclaimer before reading your list of jobs/internships__:**  
+-# Please be aware that the job listings displayed are retrieved from a third-party API. \
+While we strive to provide accurate information, we cannot guarantee the legitimacy or security \
+of all postings. Exercise caution when sharing personal information, submitting resumes, or registering\
+	on external sites. Always verify the authenticity of job applications before proceeding. Additionally, \
+some job postings may contain inaccuracies due to API limitations, which are beyond our control. We apologize for any inconvenience this may cause and appreciate your understanding.
+## Here's your list of job/internship recommendations:
+	`;
 }
 
 async function checkReminders(bot: Client): Promise<void> {
@@ -199,8 +211,7 @@ async function checkReminders(bot: Client): Promise<void> {
 				} else {
 					const attachments: AttachmentBuilder[] = [];
 					attachments.push(await sendToFile(stripMarkdown(message, reminder.owner), 'txt', 'list-of-jobs-internships', false));
-					user.send({ content: `## Hey <@${reminder.owner}>!  
-## Here's your list of job/internship recommendations:`, files: attachments as AttachmentBuilder[] });
+					user.send({ content: headerMessage(reminder.owner), files: attachments as AttachmentBuilder[] });
 				}
 			}).catch((error) => {
 				console.error(`Failed to fetch user with ID: ${reminder.owner}`, error);
