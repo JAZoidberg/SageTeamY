@@ -127,6 +127,10 @@ function formatCurrency(currency:number): string {
 	}).format(Number(currency))}`;
 }
 
+function titleCase(jobTitle:string): string {
+	return jobTitle.toLowerCase().replace(/[()]/g, '').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+}
+
 function listJobs(jobData: JobResult[]): string {
 	let jobList = '';
 	for (let i = 0; i < jobData.length; i++) {
@@ -135,7 +139,7 @@ function listJobs(jobData: JobResult[]): string {
 		const formattedSalaryMax = formatCurrency(Number(jobData[i].salaryMax));
 		const formattedSalaryMin = formatCurrency(Number(jobData[i].salaryMin));
 
-		jobList += `${i + 1}. **${jobData[i].title}**  
+		jobList += `${i + 1}. **${titleCase(jobData[i].title)}**  
 		\t \t * **Salary Average:** ${formattedAvgSalary}\
 		${formattedAvgSalary !== formattedSalaryMax ? `, Min: ${formattedSalaryMin}, Max: ${formattedSalaryMax}` : ''}
 		\t \t * **Location:** ${jobData[i].location}  
