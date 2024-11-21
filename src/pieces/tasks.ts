@@ -210,7 +210,7 @@ async function checkReminders(bot: Client): Promise<void> {
 					});
 				} else {
 					const attachments: AttachmentBuilder[] = [];
-					attachments.push(await sendToFile(stripMarkdown(message, reminder.owner), 'txt', 'list-of-jobs-internships', false));
+					attachments.push(await sendToFile(stripMarkdown(message.split('---')[0], reminder.owner), 'txt', 'list-of-jobs-internships', false));
 					user.send({ content: headerMessage(reminder.owner), files: attachments as AttachmentBuilder[] });
 				}
 			}).catch((error) => {
