@@ -127,33 +127,39 @@ function formatCurrency(currency:number): string {
 	}).format(Number(currency))}`;
 }
 
-// TODO - need to figure out if the salary is in USD or not
 function listJobs(jobData: JobResult[]): string {
 	let jobList = '';
 	for (let i = 0; i < jobData.length; i++) {
+		const avgSalary = (Number(jobData[i].salaryMax) + Number(jobData[i].salaryMin)) / 2;
+		const formattedAvgSalary = formatCurrency(avgSalary);
+		const formattedSalaryMax = formatCurrency(Number(jobData[i].salaryMax));
+		const formattedSalaryMin = formatCurrency(Number(jobData[i].salaryMin));
+
 		jobList += `${i + 1}. **${jobData[i].title}**  
-        * **Salary Average:** ${formatCurrency((Number(jobData[i].salaryMax) + Number(jobData[i].salaryMin)) / 2)}
- (Min: ${formatCurrency(Number(jobData[i].salaryMin))}, Max: ${formatCurrency(Number(jobData[i].salaryMax))})
-        * **Location:** ${jobData[i].location}  
-        * **Apply here:** [read more about the job and apply here](${jobData[i].link})  
-	    ${i !== jobData.length - 1 ? '\n' : ''}`;
+		* **Salary Average:** ${formattedAvgSalary}\
+		${formattedAvgSalary !== formattedSalaryMax ? `, Min: ${formattedSalaryMin}, Max: ${formattedSalaryMax}` : ''}
+		* **Location:** ${jobData[i].location}  
+		* **Apply here:** [read more about the job and apply here](${jobData[i].link})  
+		${i !== jobData.length - 1 ? '\n' : ''}`;
 	}
-	return jobList || 'No jobs found based on your interests.';
+	return jobList || '### Unfortunately, there were no jobs found based on your interests :(. Consider updating your interests or waiting until something is found.';
 }
 
 async function jobMessage(reminder: Reminder, userID: string): Promise<string> {
 	const jobFormData: [JobData, Interest, JobResult[]] = await getJobFormData(userID);
 	const message = `## Hey <@${reminder.owner}>!  
 ## Here's your list of job/internship recommendations:  
-Based on your interests in **${jobFormData[1].interest1}**, **${jobFormData[1].interest2}**,  
-**${jobFormData[1].interest3}**, **${jobFormData[1].interest4}**, and **${jobFormData[1].interest5}**, I've found these jobs you may find interesting. Please note that while you may get 
-job/internship recommendations from the same company, 
-their positions/details/applications/salary WILL be different and this is not a glitch/bug! \n Here's your personalized list: \n
+Based on your interests in **${jobFormData[1].interest1}**, **${jobFormData[1].interest2}**, \
+**${jobFormData[1].interest3}**, **${jobFormData[1].interest4}**, and **${jobFormData[1].interest5}**, I've found these jobs you may find interesting. Please note that while you may get\
+job/internship recommendations from the same company,\
+their positions/details/applications/salary WILL be different and this is not a glitch/bug!
+Here's your personalized list:
+
 ${listJobs(jobFormData[2])}
 ---  
 ### **Disclaimer:**  
--# Please note that the job listings provided are sourced from a third-party API, and we cannot guarantee the legitimacy or security of all postings. Exercise caution when submitting personal 
--# information, resumes, or signing up on external sites. Always verify the authenticity of a job application before proceeding. Stay safe and mindful while applying!  
+-# Please note that the job listings provided are sourced from a third-party API, and we cannot guarantee the legitimacy or security of all postings. Exercise caution when submitting personal\
+information, resumes, or signing up on external sites. Always verify the authenticity of a job application before proceeding. Stay safe and mindful while applying!  
 `;
 	return message;
 }
