@@ -1,3 +1,5 @@
+import jobform from '@root/src/commands/jobs/jobform';
+
 interface ValidateResult {
 	isValid: boolean;
 	errors: string[];
@@ -7,8 +9,8 @@ export const validatePreferences = (answers: string[], qset: number, isJobForm: 
 	const errors: string[] = [];
 	if (qset === 0) {
 		const [city, workType, employmentType, travelDistance] = answers;
-		if (!city?.trim()) errors.push('Enter valid city');
-		if (!workType?.trim()) {
+		if (!isJobForm || !city?.trim()) errors.push('Enter valid city');
+		if (!isJobForm || !workType?.trim()) {
 			errors.push('Enter valid work type');
 		} else {
 			const validWorkTypes = ['remote', 'hybrid', 'in person',
@@ -23,7 +25,7 @@ export const validatePreferences = (answers: string[], qset: number, isJobForm: 
 				errors.push(`Invalid work type: ${invalidTypes.join(', ')}. Must be remote, hybrid, and/or in person seperated only by comams. Must be all if it is all three`);
 			}
 		}
-		if (!employmentType?.trim()) {
+		if (!isJobForm || !employmentType?.trim()) {
 			errors.push('Enter valid employment type');
 		} else {
 			const validEmploymentTypes = ['full time', 'part time', 'internship',
@@ -38,13 +40,15 @@ export const validatePreferences = (answers: string[], qset: number, isJobForm: 
 				errors.push(`Invalid employment type: ${invalidTypes.join(', ')}. Must be full time, part time, and/or internship seperated only by comams. Must be all if it is all three`);
 			}
 		}
-		if (travelDistance && isNaN(Number(travelDistance.replace(/[^0-9]/g, '')))) {
+		if (!isJobForm || (travelDistance && isNaN(Number(travelDistance.replace(/[^0-9]/g, ''))))) {
 			errors.push('Travel distance must be a number');
 		}
-	} else if (qset === 1 && isJobForm) {
-		const intersts = answers.filter(interest => interest?.trim()).length;
-		if (intersts < 5) {
-			errors.push('Select at least 5 interests');
+	} else if (qset === 1) {
+		if (isJobForm) {
+			const intersts = answers.filter(interest => interest?.trim()).length;
+			if (intersts < 5) {
+				errors.push('Select at least 5 interests');
+			}
 		}
 	}
 	return {
