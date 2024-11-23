@@ -5,6 +5,7 @@ interface ValidateResult {
 	errors: string[];
 }
 
+// eslint-disable-next-line complexity
 export const validatePreferences = (answers: string[], qset: number, isJobForm: boolean): ValidateResult => {
 	const errors: string[] = [];
 	if (qset === 0) {
@@ -32,18 +33,20 @@ export const validatePreferences = (answers: string[], qset: number, isJobForm: 
 			}
 		}
 		if (!isJobForm || !employmentType?.trim()) {
-			errors.push('Enter valid employment type');
-		} else {
 			const validEmploymentTypes = ['full time', 'part time', 'internship',
 				'full time, part time', 'full time, internship', 'part time, internship', 'part time, full time', 'internship, full time', 'internship, part time',
 				'all'
 			];
-			// eslint-disable-next-line id-length
-			const employmentTypes = employmentType.toLowerCase().split(',').map(t => t.trim());
-			// eslint-disable-next-line id-length
-			const invalidTypes = employmentTypes.filter(t => !validEmploymentTypes.includes(t));
-			if (invalidTypes.length > 0) {
-				errors.push(`Invalid employment type: ${invalidTypes.join(', ')}. Must be full time, part time, and/or internship seperated only by comams. Must be all if it is all three`);
+			if (employmentType?.trim()) {
+				// eslint-disable-next-line id-length
+				const employmentTypes = employmentType.toLowerCase().split(',').map(t => t.trim());
+				// eslint-disable-next-line id-length
+				const invalidTypes = employmentTypes.filter(t => !validEmploymentTypes.includes(t));
+				if (invalidTypes.length > 0) {
+					errors.push(`Invalid employment type: ${invalidTypes.join(', ')}. Must be full time, part time, and/or internship seperated only by comams. Must be all if it is all three`);
+				}
+			} else if (isJobForm) {
+				errors.push('Enter valid employment type');
 			}
 		}
 		if (!isJobForm || (travelDistance && isNaN(Number(travelDistance.replace(/[^0-9]/g, ''))))) {
