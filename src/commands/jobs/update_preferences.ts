@@ -102,6 +102,7 @@ export default class extends Command {
 			.setPlaceholder(`Current value: ${value || 'Not Set'}`)
 			.setRequired(false)] });
 	}
+	// Handles validation for qset1
 	async handleModalSubmit(interaction: ChatInputCommandInteraction, answers: string[], qSet: number): Promise<boolean> {
 		const validation = validatePreferences(answers, qSet, false);
 		if (!validation.isValid) {

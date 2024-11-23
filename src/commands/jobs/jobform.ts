@@ -95,6 +95,7 @@ export default class extends Command {
 			]
 		});
 	}
+	// Handles validation for qset1
 	async handleModalSubmit(interaction: ChatInputCommandInteraction, answers: string[], qSet: number): Promise<boolean> {
 		const validation = validatePreferences(answers, qSet, true);
 		if (!validation.isValid) {

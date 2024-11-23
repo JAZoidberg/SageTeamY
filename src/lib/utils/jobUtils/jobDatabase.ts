@@ -77,7 +77,7 @@ export class JobPreferenceAPI {
 			return false;
 		}
 	}
-
+	// Gets the preferences anwers from the database.
 	async getPreference(userID: string): Promise<boolean> {
 		try {
 			const user = await this.collection.findOne({ discordId: userID });
