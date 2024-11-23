@@ -9,7 +9,11 @@ export const validatePreferences = (answers: string[], qset: number, isJobForm: 
 	const errors: string[] = [];
 	if (qset === 0) {
 		const [city, workType, employmentType, travelDistance] = answers;
-		if (!isJobForm || !city?.trim()) errors.push('Enter valid city');
+		if (!isJobForm || !city?.trim()) {
+			if (city?.trim() === '') {
+				errors.push('Enter valid city');
+			}
+		}
 		if (!isJobForm || !workType?.trim()) {
 			errors.push('Enter valid work type');
 		} else {

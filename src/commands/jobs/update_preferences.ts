@@ -1,5 +1,6 @@
 import { DB } from '@root/config';
 import { Command } from '@root/src/lib/types/Command';
+import { validatePreferences } from '@root/src/lib/utils/jobUtils/validatePreferences';
 import { ActionRowBuilder, ApplicationCommandOptionData, ApplicationCommandOptionType,
 	ChatInputCommandInteraction, InteractionResponse, ModalBuilder, ModalSubmitFields,
 	TextInputBuilder, TextInputStyle } from 'discord.js';
@@ -100,6 +101,18 @@ export default class extends Command {
 			.setStyle(TextInputStyle.Short)
 			.setPlaceholder(`Current value: ${value || 'Not Set'}`)
 			.setRequired(false)] });
+	}
+	async handleModalSubmit(interaction: ChatInputCommandInteraction, answers: string[], qSet: number): Promise<boolean> {
+		const validation = validatePreferences(answers, qSet, false);
+		if (!validation.isValid) {
+			await interaction.reply({ content: `Form validation failed:\n${validation.errors.join('\n')}`,
+				ephemeral: true });
+			return;
+		}
+		await interaction.reply({
+			content: 'Form submitted successfully!',
+			ephemeral: true
+		});
 	}
 
 }
