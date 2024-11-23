@@ -15,18 +15,20 @@ export const validatePreferences = (answers: string[], qset: number, isJobForm: 
 			}
 		}
 		if (!isJobForm || !workType?.trim()) {
-			errors.push('Enter valid work type');
-		} else {
 			const validWorkTypes = ['remote', 'hybrid', 'in person',
 				'remote, hybrid', 'remote, in person', 'hybrid, in person', 'hybrid. remote', 'in person, remote', 'in person, hybrid',
 				'all'
 			];
+			if (workType?.trim()) {
 			// eslint-disable-next-line id-length
-			const workTypes = workType.toLowerCase().split(',').map(t => t.trim());
-			// eslint-disable-next-line id-length
-			const invalidTypes = workTypes.filter(t => !validWorkTypes.includes(t));
-			if (invalidTypes.length > 0) {
-				errors.push(`Invalid work type: ${invalidTypes.join(', ')}. Must be remote, hybrid, and/or in person seperated only by comams. Must be all if it is all three`);
+				const workTypes = workType.toLowerCase().split(',').map(t => t.trim());
+				// eslint-disable-next-line id-length
+				const invalidTypes = workTypes.filter(t => !validWorkTypes.includes(t));
+				if (invalidTypes.length > 0) {
+					errors.push(`Invalid work type: ${invalidTypes.join(', ')}. Must be remote, hybrid, and/or in person seperated only by comams. Must be all if it is all three`);
+				}
+			} else if (isJobForm) {
+				errors.push('Enter valid work type');
 			}
 		}
 		if (!isJobForm || !employmentType?.trim()) {
