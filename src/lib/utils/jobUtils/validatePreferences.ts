@@ -65,8 +65,6 @@ export const validatePreferences = (answers: string[], qset: number, isJobForm: 
 			errors.push('Travel distance must be a number');
 		}
 	}
-
-
 	return {
 		isValid: errors.length === 0,
 		errors
