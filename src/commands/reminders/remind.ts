@@ -46,6 +46,7 @@ export default class extends Command {
 				}
 			]
 		},
+		// added by Fried Sage Leaves - handles what happens when /remind jobs is run
 		{
 			name: 'jobs',
 			description: 'Create a job reminder',
@@ -139,6 +140,13 @@ export default class extends Command {
 						ephemeral: true
 					});
 				}
+			// handling duplicate job reminders
+			if (await this.checkJobReminder(interaction)) {
+				return interaction.reply({
+					content:
+						'You currently already have a job reminder set. To clear your existing job reminder, run `/cancelreminder` and provide the reminder number.',
+					ephemeral: true
+				});
 			} else {
 				const remainingQuestionSets = await this.checkRemainingQuestionSets(interaction);
 				return interaction.reply({
