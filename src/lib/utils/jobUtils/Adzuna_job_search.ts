@@ -60,4 +60,3 @@ export async function adzunaAPI(JOB_TITLE: string, LOCATION: string): Promise<Jo
 		throw error;
 	}
 }
-

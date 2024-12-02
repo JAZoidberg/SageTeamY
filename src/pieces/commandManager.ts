@@ -106,6 +106,7 @@ async function handleDropdown(interaction: SelectMenuInteraction) {
 	}
 }
 
+// used by jobform and update_preferences
 async function handleModalBuilder(interaction: ModalSubmitInteraction, bot: Client) {
 	const { customId, fields } = interaction;
 	const guild = await bot.guilds.fetch(GUILDS.MAIN);
@@ -132,6 +133,7 @@ async function handleModalBuilder(interaction: ModalSubmitInteraction, bot: Clie
 			interaction.reply({ content: `Your message was edited.` });
 			break;
 		}
+		// makes sure the user is verified in the mongo db user collections
 		case 'verify': {
 			const givenHash = fields.getTextInputValue('verifyPrompt');
 			const entry: SageUser = await interaction.client.mongo.collection(DB.USERS).findOne({ hash: givenHash });
@@ -148,6 +150,7 @@ async function handleModalBuilder(interaction: ModalSubmitInteraction, bot: Clie
 			interaction.reply({ content: `Thank you for verifying! You can now access the rest of the server. ${enrollStr}`, ephemeral: true });
 			break;
 		}
+		// jobform and update_preferences use the same logic to store responses
 		case 'jobModal':
 		case 'updateModal': {
 			try {
@@ -155,16 +158,17 @@ async function handleModalBuilder(interaction: ModalSubmitInteraction, bot: Clie
 				const formNumber = parseInt(customId.slice(-1));
 				const answers = [1, 2, 3, 4, 5].slice(0, formNumber === 0 ? 4 : 5).map(num => fields.getTextInputValue(`question${num}`));
 
+				// schema used to store the responses by the user
 				const answerResponse: Job = {
 					owner: interaction.user.id,
 					content: '',
 					location: '',
 					questionSet: formNumber,
 					answers: answers,
-					mode: 'private' // temporary - switch to private before final submission
+					mode: 'private'
 				};
 
-				// interaction.client.mongo.collection(DB.JOB_FORMS).insertOne(answerResponse);
+				// handling which document to replace, upsert: true makes it so it makes the document if no matching one is found
 				if (answerResponse.questionSet === 0) {
 					interaction.client.mongo.collection(DB.JOB_FORMS).findOneAndReplace(
 						{ questionSet: 0 }, answerResponse, { upsert: true });
@@ -185,6 +189,7 @@ async function handleModalBuilder(interaction: ModalSubmitInteraction, bot: Clie
 					content: success ? mess : 'Error saving preferences. Please try again',
 					ephemeral: true
 				});
+			// couldnt update form for some reason
 			} catch (error) {
 				console.error('update form error:', error);
 				await interaction.reply({ content: 'An error occurred. Please try again.', ephemeral: true });
