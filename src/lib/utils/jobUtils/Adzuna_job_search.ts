@@ -1,67 +1,62 @@
+import axios from 'axios';
 import { APP_ID, APP_KEY } from '@root/config';
-import { Interest, JobData } from '@root/src/pieces/tasks';
 
-export interface JobResult {
-	company: string,
-	title: string,
-	description: string,
-	location,
-	created: string,
-	salaryMax: string,
-	salaryMin: string,
-	link: string,
+// Define the structure of a job listing
+interface JobListing {
+	title: string;
+	company: string;
+	location: string;
+	salary: string;
+	link: string;
+	description: string;
 }
 
-export default async function getJobAPIResponse(jobData: JobData, interests: Interest): Promise<JobResult[]> {
-	const LOCATION = encodeURIComponent(jobData.city);
-	const JOB_TYPE = encodeURIComponent(jobData.jobType);
-	const DISTANCE_KM = Number(jobData.distance) * 1.609; // miles in km
-	let whatInterests = '';
+// Define the cache type
+type JobCache = {
+	[key: string]: JobListing[];
+};
 
-	const keys = Object.keys(interests);
-	const lastKey = keys[keys.length - 1];
-	const lastValue = interests[lastKey];
+// a cache object to store results
+const jobCache: JobCache = {};
 
-	for (const interest in interests) {
-		whatInterests += interests[interest].replace(/\s+/g, '-'); // replaces each space in a word with a dash
-		if (interests[interest] !== lastValue) {
-			whatInterests += ' ';
-		}
+// the adzunaAPI function
+export async function adzunaAPI(JOB_TITLE: string, LOCATION: string): Promise<JobListing[]> {
+	const cacheKey = `${JOB_TITLE.toLowerCase()}-${LOCATION.toLowerCase()}`;
+
+	// Check if the data is already in the cache
+	if (jobCache[cacheKey]) {
+		console.log('Fetching data from cache...');
+		return jobCache[cacheKey];
 	}
 
-	whatInterests = encodeURIComponent(whatInterests);
-
-	const URL = `https://api.adzuna.com/v1/api/jobs/us/search/1?app_id=${APP_ID}&app_key=${APP_KEY}&results_per_page=15&what=${JOB_TYPE}&what_or=${whatInterests}&where=
-    ${LOCATION}&distance=${DISTANCE_KM}`;
-
-	const jobResults: JobResult[] = [];
+	// URL for the API
+	const URL = `https://api.adzuna.com/v1/api/jobs/${LOCATION}/search/1?app_id=${APP_ID}&app_key=${APP_KEY}
+        &results_per_page=10&what=${encodeURIComponent(JOB_TITLE)}&where=${encodeURIComponent(LOCATION)}`;
 
 	try {
-		const response = await fetch(URL);
-		if (!response.ok) {
-			throw new Error(`HTTP error ${response.status}`);
-		}
+		// Make the API request
+		console.log('Fetching data from API...');
+		const response = await axios.get(URL);
 
-		const responseData = await response.json();
-		for (let i = 0; i < responseData.results.length; i++) {
-			const jobResultData: JobResult = {
-				company: responseData.results[i].company.display_name,
-				title: responseData.results[i].title,
-				description: responseData.results[i].description,
-				location: `${responseData.results[i].location.display_name} (${responseData.results[i].location.area.toString().replace(/,/g, ', ')})`,
-				created: responseData.results[i].created,
-				salaryMax: responseData.results[i].salary_max,
-				salaryMin: responseData.results[i].salary_min,
-				link: responseData.results[i].redirect_url
-			};
+		// Format the job listings
+		const jobListings: JobListing[] = response.data.results.map((job: any) => ({
+			title: job.title,
+			company: job.company?.name || 'Not Provided',
+			location: job.location?.display_name || 'Not Provided',
+			salary: job.salary_min
+				? `$${job.salary_min.toLocaleString()} - $${job.salary_max.toLocaleString()}`
+				: 'Salary not listed',
+			link: job.redirect_url || 'No link available',
+			description: job.description || 'No description available'
+		}));
 
-			// if (!jobResults.find((job: JobResult) => job.company === jobResultData.company)) {
-			jobResults.push(jobResultData);
-			// }
-		}
+		// Store the formatted data in the cache
+		jobCache[cacheKey] = jobListings;
+
+		// Return the data
+		return jobListings;
 	} catch (error) {
-		console.error('Fetch error:', error);
+		console.error('Axios error:', error);
+		throw error;
 	}
-
-	return jobResults;
 }
