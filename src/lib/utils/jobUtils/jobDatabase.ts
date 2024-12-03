@@ -80,6 +80,8 @@ export class JobPreferenceAPI {
 	}
 	// Gets the preferences anwers from the database.
 	async getPreference(userID: string): Promise<boolean> {
+		// If user id does not exist, then nothing will be stored
+		if (!userID?.trim()) return false;
 		try {
 			const user = await this.collection.findOne({ discordId: userID });
 			return user?.jobPreferences || null;
@@ -90,6 +92,8 @@ export class JobPreferenceAPI {
 	}
 	// Deletes the preferences answers to an empty string.
 	async deletePreference(userID: string): Promise<boolean> {
+		// If user id does not exist, then nothing will be stored
+		if (!userID?.trim()) return false;
 		try {
 			const result = await this.collection.updateOne(
 				{ discordId: userID },
