@@ -32,6 +32,8 @@ export class JobPreferenceAPI {
 	}
 
 	async storeFormResponses(userID: string, answers: string[], questionSet: number): Promise<boolean> {
+		// If user id does not exist, then nothing will be stored
+		if (!userID?.trim()) return false;
 		try {
 			const updateObject = {};
 			const { isValid, errors } = validatePreferences(answers, questionSet, true);
@@ -55,7 +57,8 @@ export class JobPreferenceAPI {
 				if (interest4?.trim()) updateObject['jobPreferences.answers.interest4'] = interest4;
 				if (interest5?.trim()) updateObject['jobPreferences.answers.interest5'] = interest5;
 			}
-			// Updates preferences with new answers and the new date inputted.
+			// Updates preferences with new answers and the new date inputted if the answers length is greater than 0.
+			if (Object.keys(updateObject).length === 0) return false;
 			if (Object.keys(updateObject).length > 0) {
 				await this.collection.updateOne(
 					{ discordId: userID },
