@@ -3,6 +3,7 @@ import { DB } from '@root/config';
 import { Command } from '@root/src/lib/types/Command';
 import { Emoji } from 'discord.js';
 
+// class to store the info of the preferences the user previously put in to match to jobs in the database
 interface JobPreferences {
 	userID: string;
 	answers: {
