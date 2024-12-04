@@ -35,7 +35,7 @@ export class JobPreferenceAPI {
 	async storeFormResponses(userID: string, answers: string[], questionSet: number): Promise<{ success: boolean; message: string }> {
 		// If user id does not exist, then nothing will be stored
 		if (!userID?.trim()) {
-			return { success: false, message: 'User ID is required' };
+			return { success: false, message: 'Invalid User ID' };
 		}
 		try {
 			const updateObject = {};
@@ -85,7 +85,7 @@ export class JobPreferenceAPI {
 	async getPreference(userID: string): Promise<{ success: boolean; data?; message: string }> {
 		// If user id does not exist, then nothing will be stored
 		if (!userID?.trim()) {
-			return { success: false, message: 'User ID is required' };
+			return { success: false, message: 'Invalid User ID' };
 		}
 		try {
 			const user = await this.collection.findOne({ discordId: userID });
@@ -103,7 +103,7 @@ export class JobPreferenceAPI {
 	async deletePreference(userID: string): Promise<{ success: boolean; message: string }> {
 		// If user id does not exist, then nothing will be stored
 		if (!userID?.trim()) {
-			return { success: false, message: 'User ID is required' };
+			return { success: false, message: 'Invalid User ID' };
 		}
 		try {
 			const result = await this.collection.updateOne(
