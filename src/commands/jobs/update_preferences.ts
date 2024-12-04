@@ -1,12 +1,16 @@
 import { DB } from '@root/config';
 import { Command } from '@root/src/lib/types/Command';
+import { validatePreferences } from '@root/src/lib/utils/jobUtils/validatePreferences';
 import { ActionRowBuilder, ApplicationCommandOptionData, ApplicationCommandOptionType,
 	ChatInputCommandInteraction, InteractionResponse, ModalBuilder, ModalSubmitFields,
 	TextInputBuilder, TextInputStyle } from 'discord.js';
 
 // should be same questions as jobform.ts line 16
 const questions = [
-	['What city are you located in?', 'Are you looking for remote or in person?', 'Job, internship or both?', 'How far are you willing to travel?'],
+	['What city do you want to be located?',
+		'Remote, hybrid, and/or in-person?',
+		'Full time, Part time, and/or Internship?',
+		'How far are you willing to travel?'],
 	['Interest 1', 'Interest 2', 'Interest 3', 'Interest 4', 'Interest 5']
 ];
 
@@ -97,6 +101,19 @@ export default class extends Command {
 			.setStyle(TextInputStyle.Short)
 			.setPlaceholder(`Current value: ${value || 'Not Set'}`)
 			.setRequired(false)] });
+	}
+	// Handles validation for qset1
+	async handleModalSubmit(interaction: ChatInputCommandInteraction, answers: string[], qSet: number): Promise<boolean> {
+		const validation = validatePreferences(answers, qSet, false);
+		if (!validation.isValid) {
+			await interaction.reply({ content: `Form validation failed:\n${validation.errors.join('\n')}`,
+				ephemeral: true });
+			return;
+		}
+		await interaction.reply({
+			content: 'Form submitted successfully!',
+			ephemeral: true
+		});
 	}
 
 }
