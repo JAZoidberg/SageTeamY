@@ -28,7 +28,7 @@ type JobCache = {
 
 const jobCache: JobCache = {};
 
-export async function fetchJobListings(jobData: JobData, interests?: Interest): Promise<JobResult[]> {
+export default async function fetchJobListings(jobData: JobData, interests?: Interest): Promise<JobResult[]> {
 	const LOCATION = encodeURIComponent(jobData.city);
 	const JOB_TYPE = encodeURIComponent(jobData.jobType);
 	const DISTANCE_KM = Number(jobData.distance) * 1.609; // Convert miles to kilometers
@@ -78,12 +78,4 @@ export async function fetchJobListings(jobData: JobData, interests?: Interest): 
 		console.error('API error:', error);
 		throw error;
 	}
-			return response.json();
-		})
-		.then((responseData) => {
-			console.log(responseData);
-		})
-		.catch((error) => {
-			console.error('Fetch error:', error);
-		});
 }
