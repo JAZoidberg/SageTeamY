@@ -15,6 +15,7 @@ import { CommandError } from '../lib/types/errors';
 import { verify } from '../pieces/verification';
 import { JobPreferenceAPI } from '../lib/utils/jobUtils/jobDatabase';
 import { Job } from '../lib/types/Job';
+import { validatePreferences } from '../lib/utils/jobUtils/validatePreferences';
 
 const DELETE_DELAY = 10000;
 
@@ -157,24 +158,13 @@ async function handleModalBuilder(interaction: ModalSubmitInteraction, bot: Clie
 				// extracting the input from the modal
 				const formNumber = parseInt(customId.slice(-1));
 				const answers = [1, 2, 3, 4, 5].slice(0, formNumber === 0 ? 4 : 5).map(num => fields.getTextInputValue(`question${num}`));
-
-				// schema used to store the responses by the user
-				const answerResponse: Job = {
-					owner: interaction.user.id,
-					content: '',
-					location: '',
-					questionSet: formNumber,
-					answers: answers,
-					mode: 'private'
-				};
-
-				// handling which document to replace, upsert: true makes it so it makes the document if no matching one is found
-				if (answerResponse.questionSet === 0) {
-					interaction.client.mongo.collection(DB.JOB_FORMS).findOneAndReplace(
-						{ questionSet: 0 }, answerResponse, { upsert: true });
-				} else if (answerResponse.questionSet === 1) {
-					interaction.client.mongo.collection(DB.JOB_FORMS).findOneAndReplace(
-						{ questionSet: 1 }, answerResponse, { upsert: true });
+				const { isValid, errors } = validatePreferences(answers, formNumber, true);
+				if (!isValid) {
+					await interaction.reply({
+						content: `Form validation failed:\n${errors.join('\n')}`,
+						ephemeral: true
+					});
+					return;
 				}
 
 				// Create API instance with the database instance directly
@@ -189,7 +179,7 @@ async function handleModalBuilder(interaction: ModalSubmitInteraction, bot: Clie
 					content: success ? mess : 'Error saving preferences. Please try again',
 					ephemeral: true
 				});
-			// couldnt update form for some reason
+			// Error for failed update
 			} catch (error) {
 				console.error('update form error:', error);
 				await interaction.reply({ content: 'An error occurred. Please try again.', ephemeral: true });

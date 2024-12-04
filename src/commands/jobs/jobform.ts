@@ -10,14 +10,15 @@ import {
 	TextInputBuilder,
 	TextInputStyle
 } from 'discord.js';
+import { validatePreferences } from '../../lib/utils/jobUtils/validatePreferences';
 
 // prettier-ignore
 // can be updated based on job algorithm API information - if changed make sure to update in update_preferences.ts on line 8 and question titles on line 55
 const questions = [
 	[
-		'What city are you located in?',
-		'Are you looking for remote or in person?',
-		'Job, internship or both?',
+		'What city do you want to be located?',
+		'Remote, hybrid, and/or in-person?',
+		'Full time, Part time, and/or Internship?',
 		'How far are you willing to travel?'
 	],
 	['Interest 1', 'Interest 2', 'Interest 3', 'Interest 4', 'Interest 5']
@@ -90,7 +91,21 @@ export default class extends Command {
 					.setLabel(`${question}`)
 					.setStyle(TextInputStyle.Short)
 					.setPlaceholder('Input Answer Here')
+					.setRequired(true)
 			]
+		});
+	}
+	// Handles validation for qset1
+	async handleModalSubmit(interaction: ChatInputCommandInteraction, answers: string[], qSet: number): Promise<boolean> {
+		const validation = validatePreferences(answers, qSet, true);
+		if (!validation.isValid) {
+			await interaction.reply({ content: `Form validation failed:\n${validation.errors.join('\n')}`,
+				ephemeral: true });
+			return;
+		}
+		await interaction.reply({
+			content: 'Form submitted successfully!',
+			ephemeral: true
 		});
 	}
 
