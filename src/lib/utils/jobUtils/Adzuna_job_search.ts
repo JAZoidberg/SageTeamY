@@ -22,8 +22,7 @@ export function adzunaAPI(): void {
 			return response.json();
 		})
 		.then((responseData) => {
-			console.log('got data');
-		// console.log(responseData);
+			console.log(responseData);
 		})
 		.catch((error) => {
 			console.error('Fetch error:', error);
