@@ -78,4 +78,12 @@ export async function fetchJobListings(jobData: JobData, interests?: Interest): 
 		console.error('API error:', error);
 		throw error;
 	}
+			return response.json();
+		})
+		.then((responseData) => {
+			console.log(responseData);
+		})
+		.catch((error) => {
+			console.error('Fetch error:', error);
+		});
 }
