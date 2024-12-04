@@ -82,15 +82,21 @@ export class JobPreferenceAPI {
 		}
 	}
 	// Gets the preferences anwers from the database.
-	async getPreference(userID: string): Promise<boolean> {
+	async getPreference(userID: string): Promise<{ success: boolean; data?; message: string }> {
 		// If user id does not exist, then nothing will be stored
-		if (!userID?.trim()) return false;
+		if (!userID?.trim()) {
+			return { success: false, message: 'User ID is required' };
+		}
 		try {
 			const user = await this.collection.findOne({ discordId: userID });
-			return user?.jobPreferences || null;
+			return {
+				success: true,
+				data: user?.jobPreferences || null,
+				message: user?.jobPreferences ? 'Preferences found' : 'No preferences found'
+			};
 		} catch (error) {
 			console.error('Error getting job form responses', error);
-			return false;
+			return { success: false, message: 'Failed to retrieve preferences' };
 		}
 	}
 	// Deletes the preferences answers to an empty string.
