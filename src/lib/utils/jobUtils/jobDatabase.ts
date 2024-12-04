@@ -1,6 +1,7 @@
 import { Collection, Db, MongoClient } from 'mongodb';
 import { DB } from '@root/config';
 import { validatePreferences } from './validatePreferences';
+import { EmbedBuilder } from 'discord.js';
 
 // class to store the info of the preferences the user previously put in to match to jobs in the database
 interface JobPreferences {
@@ -31,15 +32,17 @@ export class JobPreferenceAPI {
 		this.collection = db.collection(DB.USERS);
 	}
 
-	async storeFormResponses(userID: string, answers: string[], questionSet: number): Promise<boolean> {
+	async storeFormResponses(userID: string, answers: string[], questionSet: number): Promise<{ success: boolean; message: string }> {
 		// If user id does not exist, then nothing will be stored
-		if (!userID?.trim()) return false;
+		if (!userID?.trim()) {
+			return { success: false, message: 'User ID is required' };
+		}
 		try {
 			const updateObject = {};
 			const { isValid, errors } = validatePreferences(answers, questionSet, true);
 			if (!isValid) {
 				console.error('Validation failed', errors);
-				return false;
+				return { success: false, message: 'Invalid preferences provided' };
 			}
 			// Adds answers to questions.
 			if (questionSet === 0) {
@@ -58,7 +61,7 @@ export class JobPreferenceAPI {
 				if (interest5?.trim()) updateObject['jobPreferences.answers.interest5'] = interest5;
 			}
 			// Updates preferences with new answers and the new date inputted if the answers length is greater than 0.
-			if (Object.keys(updateObject).length === 0) return false;
+			if (Object.keys(updateObject).length === 0) return { success: false, message: 'No valid answers provided' };
 			if (Object.keys(updateObject).length > 0) {
 				await this.collection.updateOne(
 					{ discordId: userID },
@@ -72,10 +75,10 @@ export class JobPreferenceAPI {
 					{ upsert: true }
 				);
 			}
-			return true;
+			return { success: true, message: 'Preferences stored successfully' };
 		} catch (error) {
 			console.error('Error storing job form responses', error);
-			return false;
+			return { success: false, message: 'Failed to store preferences' };
 		}
 	}
 	// Gets the preferences anwers from the database.
