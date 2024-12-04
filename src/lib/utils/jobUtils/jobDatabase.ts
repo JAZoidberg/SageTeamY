@@ -100,18 +100,23 @@ export class JobPreferenceAPI {
 		}
 	}
 	// Deletes the preferences answers to an empty string.
-	async deletePreference(userID: string): Promise<boolean> {
+	async deletePreference(userID: string): Promise<{ success: boolean; message: string }> {
 		// If user id does not exist, then nothing will be stored
-		if (!userID?.trim()) return false;
+		if (!userID?.trim()) {
+			return { success: false, message: 'User ID is required' };
+		}
 		try {
 			const result = await this.collection.updateOne(
 				{ discordId: userID },
 				{ $unset: { jobPreferences: '' } }
 			);
-			return result.modifiedCount > 0;
+			return {
+				success: result.modifiedCount > 0,
+				message: result.modifiedCount > 0 ? 'Preferences deleted' : 'No preferences found'
+			};
 		} catch (error) {
 			console.error('Error deleting job preference', error);
-			return false;
+			return { success: false, message: 'Failed to delete preferences' };
 		}
 	}
 
