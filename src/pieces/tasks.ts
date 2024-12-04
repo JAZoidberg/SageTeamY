@@ -5,7 +5,7 @@ import { Reminder } from '@lib/types/Reminder';
 import { Poll, PollResult } from '@lib/types/Poll';
 import { MongoClient } from 'mongodb';
 import { Job } from '../lib/types/Job';
-import getJobAPIResponse, { JobResult } from '../lib/utils/jobUtils/Adzuna_job_search';
+import fetchJobListings, { JobResult } from '../lib/utils/jobUtils/Adzuna_job_search';
 import { sendToFile } from '../lib/utils/generalUtils';
 
 async function register(bot: Client): Promise<void> {
@@ -116,7 +116,7 @@ async function getJobFormData(userID:string):Promise<[JobData, Interest, JobResu
 		interest5: jobformAnswers[1].answers[4]
 	};
 
-	const APIResponse:JobResult[] = await getJobAPIResponse(jobData, interests);
+	const APIResponse:JobResult[] = await fetchJobListings(jobData, interests);
 	return [jobData, interests, APIResponse];
 }
 

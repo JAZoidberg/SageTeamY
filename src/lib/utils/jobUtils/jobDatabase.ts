@@ -1,4 +1,4 @@
-import { Collection, Db, MongoClient } from 'mongodb';
+import { Collection, Db } from 'mongodb';
 import { DB } from '@root/config';
 import { validatePreferences } from './validatePreferences';
 
