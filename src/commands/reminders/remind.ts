@@ -59,6 +59,17 @@ export default class extends Command {
 					],
 					type: ApplicationCommandOptionType.String,
 					required: true
+				},
+				{
+					name: 'filter-type',
+					description: 'Select what you would like your job/internships filtered by',
+					choices: [
+						{ name: 'Relevance', value: 'relevance' },
+						{ name: 'Salary', value: 'salary' },
+						{ name: 'Date Posted', value: 'date posted' },
+						{ name: 'Default', value: 'default' }
+					],
+					type: ApplicationCommandOptionType.String
 				}
 			]
 		}
