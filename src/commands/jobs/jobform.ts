@@ -17,7 +17,7 @@ import { validatePreferences } from '../../lib/utils/jobUtils/validatePreference
 const questions = [
 	[
 		'What city do you want to be located?',
-		'Remote, hybrid, and/or in-person?',
+		'Remote, hybrid, and/or in person?',
 		'Full time, Part time, and/or Internship?',
 		'How far are you willing to travel?'
 	],
@@ -63,7 +63,7 @@ export default class extends Command {
 
 		const askedQuestions = questions[questionSet];
 		const rows = askedQuestions.map((question) =>
-			this.getAnswerField(question, askedQuestions.indexOf(question))
+			this.getAnswerField(question.toLowerCase(), askedQuestions.indexOf(question))
 		);
 
 		for (const row of rows) {

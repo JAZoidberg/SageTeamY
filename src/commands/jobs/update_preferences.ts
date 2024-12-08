@@ -64,9 +64,9 @@ export default class extends Command {
 		const rows = askedQuestions.map((question) => {
 			let value = '';
 			if (currentAns) {
-				value = currentAns[quesChoices[askedQuestions.indexOf(question)]] || '';
+				value = currentAns[quesChoices[askedQuestions.indexOf(question.toLowerCase())]] || '';
 			}
-			return this.getAnswerField(question, askedQuestions.indexOf(question), value);
+			return this.getAnswerField(question.toLowerCase(), askedQuestions.indexOf(question), value);
 		});
 
 		// creates the modal that pops up when command is used, with title matching which questions set user is answering
