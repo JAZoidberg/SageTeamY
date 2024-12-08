@@ -1,7 +1,6 @@
-import { Collection, Db, MongoClient } from 'mongodb';
+import { Collection, Db } from 'mongodb';
 import { DB } from '@root/config';
-import { Command } from '@root/src/lib/types/Command';
-import { Emoji } from 'discord.js';
+import { validatePreferences } from './validatePreferences';
 
 // class to store the info of the preferences the user previously put in to match to jobs in the database
 interface JobPreferences {
@@ -35,7 +34,11 @@ export class JobPreferenceAPI {
 	async storeFormResponses(userID: string, answers: string[], questionSet: number): Promise<boolean> {
 		try {
 			const updateObject = {};
-
+			const { isValid, errors } = validatePreferences(answers, questionSet, true);
+			if (!isValid) {
+				console.error('Validation failed', errors);
+				return false;
+			}
 			// Adds answers to questions.
 			if (questionSet === 0) {
 				const [city, workType, employmentType, travelDistance] = answers;
@@ -48,7 +51,7 @@ export class JobPreferenceAPI {
 				const [interest1, interest2, interest3, interest4, interest5] = answers;
 				if (interest1?.trim()) updateObject['jobPreferences.answers.interest1'] = interest1;
 				if (interest2?.trim()) updateObject['jobPreferences.answers.interest2'] = interest2;
-				if (interest3?.trim()) updateObject['jobPreferences.asnwers.interest3'] = interest3;
+				if (interest3?.trim()) updateObject['jobPreferences.answers.interest3'] = interest3;
 				if (interest4?.trim()) updateObject['jobPreferences.answers.interest4'] = interest4;
 				if (interest5?.trim()) updateObject['jobPreferences.answers.interest5'] = interest5;
 			}
@@ -72,7 +75,7 @@ export class JobPreferenceAPI {
 			return false;
 		}
 	}
-
+	// Gets the preferences anwers from the database.
 	async getPreference(userID: string): Promise<boolean> {
 		try {
 			const user = await this.collection.findOne({ discordId: userID });

@@ -1,8 +1,12 @@
-import { CHANNELS, DB } from '@root/config';
-import { ChannelType, Client, EmbedBuilder, TextChannel } from 'discord.js';
+import { BOT, CHANNELS, DB } from '@root/config';
+import { AttachmentBuilder, ChannelType, Client, EmbedBuilder, TextChannel } from 'discord.js';
 import { schedule } from 'node-cron';
 import { Reminder } from '@lib/types/Reminder';
 import { Poll, PollResult } from '@lib/types/Poll';
+import { MongoClient } from 'mongodb';
+import { Job } from '../lib/types/Job';
+import fetchJobListings, { JobResult } from '../lib/utils/jobUtils/Adzuna_job_search';
+import { sendToFile } from '../lib/utils/generalUtils';
 
 async function register(bot: Client): Promise<void> {
 	schedule('0/30 * * * * *', () => {
@@ -77,42 +81,113 @@ async function checkPolls(bot: Client): Promise<void> {
 	});
 }
 
-// NOTE: MAKE SURE YOU TAKE INTO CONSIDERATION THAT DISCORD HAS A CHARACTER LIMIT!
-function jobMessage(reminder:Reminder):string {
-	return `## Hey <@${reminder.owner}>!  
-## Here's your list of job/internship recommendations:  
-Based on your interests in data visualization, cybersecurity, web development, AI ethics, and automation, I've found these jobs you may find of interest:
+export interface JobData {
+	city: string,
+	preference: string,
+	jobType: string,
+	distance: string
+}
 
-1. **Junior Data Visualization Engineer**  
-   * **Salary**: $60,000 - $75,000 annually  
-   * **Location**: San Francisco, CA  
-   * **Job Type**: Full-time  
-   * **Work Mode**: Hybrid  
-   * **Job Description**:  
-     As a Junior Data Visualization Engineer, you will work closely with the data science team to design and implement visually compelling dashboards and data presentations. The role involves 
-	 using tools like Tableau and D3.js to communicate data insights in ways that are accessible and engaging for various stakeholders.  
-   * **Apply here**: [application](https://www.techjobportal.com/apply-junior-dve)
+export interface Interest {
+	interest1: string,
+	interest2: string,
+	interest3: string,
+	interest4: string,
+	interest5: string
+}
 
-2. **Cybersecurity Intern**  
-   * **Salary**: $20 - $30 per hour  
-   * **Location**: Arlington, VA  
-   * **Job Type**: Internship  
-   * **Work Mode**: In-person  
-   * **Job Description**:  
-     This internship offers hands-on experience in network security, ethical hacking, and threat assessment. The intern will support the security team in identifying and mitigating vulnerabilities, 
-	 responding to incidents, and learning security protocols.  
-   - **Apply here**: [application](https://www.cybersecureintern.com/apply)
+// eslint-disable-next-line no-warning-comments
+async function getJobFormData(userID:string):Promise<[JobData, Interest, JobResult[]]> {
+	const client = await MongoClient.connect(DB.CONNECTION, { useUnifiedTopology: true });
+	const db = client.db(BOT.NAME).collection(DB.JOB_FORMS);
+	const jobformAnswers:Job[] = await db.find({ owner: userID }).toArray();
+	const jobData:JobData = {
+		city: jobformAnswers[0].answers[0],
+		preference: jobformAnswers[0].answers[1],
+		jobType: jobformAnswers[0].answers[2],
+		distance: jobformAnswers[0].answers[3]
+	};
 
-3. **Front-End Web Developer (Contract)**  
-   * **Salary**: $45 - $55 per hour  
-   * **Location**: Remote  
-   * **Job Type**: Contract (3 months)  
-   * **Work Mode**: Online  
-   * **Job Description**:  
-     We are looking for a talented Front-End Developer to help enhance our company's website and improve user experience. You'll work on creating responsive, interactive, and dynamic 
-	 interfaces using React and CSS frameworks.  
-   * **Apply here**: [application](https://www.devhubjobs.com/frontend-developer)
-`;
+	const interests:Interest = {
+		interest1: jobformAnswers[1].answers[0],
+		interest2: jobformAnswers[1].answers[1],
+		interest3: jobformAnswers[1].answers[2],
+		interest4: jobformAnswers[1].answers[3],
+		interest5: jobformAnswers[1].answers[4]
+	};
+
+	const APIResponse:JobResult[] = await fetchJobListings(jobData, interests);
+	return [jobData, interests, APIResponse];
+}
+
+function formatCurrency(currency:number): string {
+	return `${new Intl.NumberFormat('en-US', {
+		style: 'currency',
+		currency: 'USD'
+	}).format(Number(currency))}`;
+}
+
+function titleCase(jobTitle:string): string {
+	return jobTitle.toLowerCase().replace(/[()]/g, '').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+}
+
+function listJobs(jobData: JobResult[]): string {
+	let jobList = '';
+	for (let i = 0; i < jobData.length; i++) {
+		const avgSalary = (Number(jobData[i].salaryMax) + Number(jobData[i].salaryMin)) / 2;
+		const formattedAvgSalary = formatCurrency(avgSalary);
+		const formattedSalaryMax = formatCurrency(Number(jobData[i].salaryMax));
+		const formattedSalaryMin = formatCurrency(Number(jobData[i].salaryMin));
+
+		jobList += `${i + 1}. **${titleCase(jobData[i].title)}**  
+		\t \t * **Salary Average:** ${formattedAvgSalary}\
+		${formattedAvgSalary !== formattedSalaryMax ? `, Min: ${formattedSalaryMin}, Max: ${formattedSalaryMax}` : ''}
+		\t \t * **Location:** ${jobData[i].location}  
+		\t \t * **Apply here:** [read more about the job and apply here](${jobData[i].link})  
+		${i !== jobData.length - 1 ? '\n' : ''}`;
+	}
+	return jobList || '### Unfortunately, there were no jobs found based on your interests :(. Consider updating your interests or waiting until something is found.';
+}
+
+async function jobMessage(reminder: Reminder, userID: string): Promise<string> {
+	const jobFormData: [JobData, Interest, JobResult[]] = await getJobFormData(userID);
+	const message = `## Hey <@${reminder.owner}>!  
+	## Here's your list of job/internship recommendations:  
+	Based on your interests in **${jobFormData[1].interest1}**, **${jobFormData[1].interest2}**, \
+	**${jobFormData[1].interest3}**, **${jobFormData[1].interest4}**, and **${jobFormData[1].interest5}**, I've found these jobs you may find interesting. Please note that while you may get\
+	job/internship recommendations from the same company,\
+	their positions/details/applications/salary WILL be different and this is not a glitch/bug!
+	Here's your personalized list:
+
+	${listJobs(jobFormData[2])}
+	---  
+	### **Disclaimer:**  
+	-# Please be aware that the job listings displayed are retrieved from a third-party API. \
+	While we strive to provide accurate information, we cannot guarantee the legitimacy or security\
+	of all postings. Exercise caution when sharing personal information, submitting resumes, or registering\
+	on external sites. Always verify the authenticity of job applications before proceeding. Additionally, \
+	some job postings may contain inaccuracies due to API limitations, which are beyond our control. We apologize for any inconvenience this may cause and appreciate your understanding.
+	`;
+	return message;
+}
+
+function stripMarkdown(message:string, owner:string): string {
+	return message.replace(`## Hey <@${owner}>!  
+	## Here's your list of job/internship recommendations:`, '').replace(/\[read more about the job and apply here\]/g, '').replace(/\((https?:\/\/[^\s)]+)\)/g, '$1')
+		// eslint-disable-next-line no-useless-escape
+		.replace(/\*\*([^*]*(?:\*[^*]+)*)\*\*/g, '$1').replace(/(###|-\#)\s*/g, '');
+}
+
+function headerMessage(owner:string):string {
+	return `## Hey <@${owner}>!  
+	### **__Please read this disclaimer before reading your list of jobs/internships__:**  
+-# Please be aware that the job listings displayed are retrieved from a third-party API. \
+While we strive to provide accurate information, we cannot guarantee the legitimacy or security \
+of all postings. Exercise caution when sharing personal information, submitting resumes, or registering \
+on external sites. Always verify the authenticity of job applications before proceeding. Additionally, \
+some job postings may contain inaccuracies due to API limitations, which are beyond our control. We apologize for any inconvenience this may cause and appreciate your understanding.
+## Here's your list of job/internship recommendations:
+	`;
 }
 
 async function checkReminders(bot: Client): Promise<void> {
@@ -120,25 +195,27 @@ async function checkReminders(bot: Client): Promise<void> {
 	const pubChan = (await bot.channels.fetch(CHANNELS.SAGE)) as TextChannel;
 
 	reminders.forEach((reminder) => {
-		// eslint-disable-next-line no-warning-comments
-		// TODO - need to find a way to check if the user has set their job preferences. If they haven't, find a way to check it and display the message advising them where in order to get
-		// personalized job recommendations, they'll need to fill out the job form (by default they're getting a list of jobs from anywhere)
-
-		const message = reminder.mode === 'private'
-			? jobMessage(reminder)
-			: `<@${reminder.owner}>, here's the reminder you asked for: **${reminder.content}**`;
-
 		if (reminder.mode === 'public') {
-			pubChan.send(message);
+			pubChan.send(`<@${reminder.owner}>, here's the reminder you asked for: **${reminder.content}**`);
 		} else {
-			bot.users.fetch(reminder.owner).then((user) =>
-				user.send(message).catch((err) => {
-					console.log('ERROR', err);
-					pubChan.send(
-						`<@${reminder.owner}>, I tried to send you a DM about your private reminder but it looks like you have DMs closed. Please enable DMs in the future if you'd like to get private reminders.`
-					);
-				})
-			);
+			bot.users.fetch(reminder.owner).then(async (user) => {
+				const message = await jobMessage(reminder, user.id);
+				if (message.length < 2000) {
+					user.send(message).catch((err) => {
+						console.log('ERROR:', err);
+						pubChan.send(
+							`<@${reminder.owner}>, I tried to send you a DM about your private reminder but it looks like you have DMs closed. Please enable DMs in the future if 
+							you'd like to get private reminders.`
+						);
+					});
+				} else {
+					const attachments: AttachmentBuilder[] = [];
+					attachments.push(await sendToFile(stripMarkdown(message.split('---')[0], reminder.owner), 'txt', 'list-of-jobs-internships', false));
+					user.send({ content: headerMessage(reminder.owner), files: attachments as AttachmentBuilder[] });
+				}
+			}).catch((error) => {
+				console.error(`Failed to fetch user with ID: ${reminder.owner}`, error);
+			});
 		}
 
 		const newReminder: Reminder = {
