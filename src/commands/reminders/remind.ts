@@ -98,7 +98,7 @@ export default class extends Command {
 					| 'daily'
 					| 'weekly' || null;
 
-			const filterBy = interaction.options.getString('filter-type') as 'relevance' | 'salary' | 'date-posted' | 'default' | null;
+			const filterBy = interaction.options.getString('filter-type') as 'relevance' | 'salary' | 'date' | 'default' | null;
 
 			const jobReminder: Reminder = {
 				owner: interaction.user.id,
