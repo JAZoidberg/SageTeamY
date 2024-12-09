@@ -5,10 +5,11 @@ import { Reminder } from '@lib/types/Reminder';
 import { Poll, PollResult } from '@lib/types/Poll';
 import { MongoClient } from 'mongodb';
 import { Job } from '../lib/types/Job';
-import fetchJobListings, { JobResult } from '../lib/utils/jobUtils/Adzuna_job_search';
+import fetchJobListings from '../lib/utils/jobUtils/Adzuna_job_search';
 import { sendToFile } from '../lib/utils/generalUtils';
 import { JobData } from '../lib/types/JobData';
 import { Interest } from '../lib/types/Interest';
+import { JobResult } from '../lib/types/JobResult';
 
 async function register(bot: Client): Promise<void> {
 	schedule('0/30 * * * * *', () => {
