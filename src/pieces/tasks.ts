@@ -141,18 +141,23 @@ function listJobs(jobData: JobResult[]): string {
 		const formattedSalaryMax = formatCurrency(Number(jobData[i].salaryMax));
 		const formattedSalaryMin = formatCurrency(Number(jobData[i].salaryMin));
 
+		const salaryDetails = formattedAvgSalary !== formattedSalaryMax
+			? `, Min: ${formattedSalaryMin}, Max: ${formattedSalaryMax}`
+			: '';
+
 		jobList += `${i + 1}. **${titleCase(jobData[i].title)}**  
-		\t \t * **Salary Average:** ${formattedAvgSalary}\
-		${formattedAvgSalary !== formattedSalaryMax ? `, Min: ${formattedSalaryMin}, Max: ${formattedSalaryMax}` : ''}
-		\t \t * **Location:** ${jobData[i].location}  
-		\t \t * **Apply here:** [read more about the job and apply here](${jobData[i].link})  
-		${i !== jobData.length - 1 ? '\n' : ''}`;
+        \t\t* **Salary Average:** ${formattedAvgSalary}${salaryDetails}  
+        \t\t* **Location:** ${jobData[i].location}  
+        \t\t* **Apply here:** [read more about the job and apply here](${jobData[i].link})  
+        ${i !== jobData.length - 1 ? '\n' : ''}`;
 	}
+
 	return jobList || '### Unfortunately, there were no jobs found based on your interests :(. Consider updating your interests or waiting until something is found.';
 }
 
+
 async function jobMessage(reminder: Reminder, userID: string): Promise<string> {
-	const jobFormData: [JobData, Interest, JobResult[]] = await getJobFormData(userID, reminder.filterBy || "default");
+	const jobFormData: [JobData, Interest, JobResult[]] = await getJobFormData(userID, reminder.filterBy || 'default');
 	const message = `## Hey <@${reminder.owner}>!  
 	## Here's your list of job/internship recommendations:  
 	Based on your interests in **${jobFormData[1].interest1}**, **${jobFormData[1].interest2}**, \
@@ -168,7 +173,8 @@ async function jobMessage(reminder: Reminder, userID: string): Promise<string> {
 	While we strive to provide accurate information, we cannot guarantee the legitimacy or security\
 	of all postings. Exercise caution when sharing personal information, submitting resumes, or registering\
 	on external sites. Always verify the authenticity of job applications before proceeding. Additionally, \
-	some job postings may contain inaccuracies due to API limitations, which are beyond our control. We apologize for any inconvenience this may cause and appreciate your understanding.
+	some job postings may contain inaccuracies due to API limitations, which are beyond our control. We apologize for any inconvenience this may cause and appreciate your understanding.\
+	 ${reminder.filterBy !== 'default' ? `Your job results were filtered by: ${reminder.filterBy}` : ''}
 	`;
 	return message;
 }
