@@ -2,26 +2,9 @@ import axios from 'axios';
 import { APP_ID, APP_KEY } from '@root/config';
 import { JobData } from '../../types/JobData';
 import { Interest } from '../../types/Interest';
+import { JobListing } from '../../types/JobListing';
+import { JobResult } from '../../types/JobResult';
 
-interface JobListing {
-	title: string;
-	company: string;
-	location: string;
-	salary: string;
-	link: string;
-	description: string;
-}
-
-export interface JobResult {
-	company: string;
-	title: string;
-	description: string;
-	location: string;
-	created: string;
-	salaryMax: string;
-	salaryMin: string;
-	link: string;
-}
 
 type JobCache = {
 	[key: string]: JobListing[] | JobResult[];
