@@ -95,7 +95,7 @@ async function getJobFormData(userID:string, filterBy: string):Promise<[JobData,
 		preference: jobformAnswers[0].answers[1],
 		jobType: jobformAnswers[0].answers[2],
 		distance: jobformAnswers[0].answers[3],
-		filterBy
+		filterBy: filterBy ?? 'default'
 	};
 
 	const interests:Interest = {
@@ -121,48 +121,60 @@ function titleCase(jobTitle:string): string {
 	return jobTitle.toLowerCase().replace(/[()]/g, '').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 }
 
-function listJobs(jobData: JobResult[]): string {
+function listJobs(jobData: JobResult[], filterBy: string): string {
+	// Conditionally sort jobs by salary if sortBy is 'salary'
+	if (filterBy === 'salary') {
+		jobData.sort((a, b) => {
+			const avgA = (Number(a.salaryMax) + Number(a.salaryMin)) / 2;
+			const avgB = (Number(b.salaryMax) + Number(b.salaryMin)) / 2;
+
+			// Handle cases where salaryMax or salaryMin is "Not listed"
+			if (isNaN(avgA)) return 1; // Treat jobs with no salary info as lowest
+			if (isNaN(avgB)) return -1;
+
+			return avgB - avgA; // Descending order
+		});
+	}
+
 	let jobList = '';
 	for (let i = 0; i < jobData.length; i++) {
 		const avgSalary = (Number(jobData[i].salaryMax) + Number(jobData[i].salaryMin)) / 2;
 		const formattedAvgSalary = formatCurrency(avgSalary);
-		const formattedSalaryMax = formatCurrency(Number(jobData[i].salaryMax));
-		const formattedSalaryMin = formatCurrency(Number(jobData[i].salaryMin));
+		const formattedSalaryMax = formatCurrency(Number(jobData[i].salaryMax)) !== 'N/A' ? formatCurrency(Number(jobData[i].salaryMax)) : '';
+		const formattedSalaryMin = formatCurrency(Number(jobData[i].salaryMin)) !== 'N/A' ? formatCurrency(Number(jobData[i].salaryMin)) : '';
 
-		const salaryDetails = formattedAvgSalary !== formattedSalaryMax
+		const salaryDetails = (formattedSalaryMin && formattedSalaryMax)
 			? `, Min: ${formattedSalaryMin}, Max: ${formattedSalaryMax}`
-			: '';
+			: formattedAvgSalary;
 
 		jobList += `${i + 1}. **${titleCase(jobData[i].title)}**  
-        \t\t* **Salary Average:** ${formattedAvgSalary}${salaryDetails}  
-        \t\t* **Location:** ${jobData[i].location}  
-        \t\t* **Apply here:** [read more about the job and apply here](${jobData[i].link})  
-        ${i !== jobData.length - 1 ? '\n' : ''}`;
+		  \t\t* **Salary Average:** ${formattedAvgSalary}${salaryDetails}  
+		  \t\t* **Location:** ${jobData[i].location}  
+		  \t\t* **Apply here:** [read more about the job and apply here](${jobData[i].link})  
+		  ${i !== jobData.length - 1 ? '\n' : ''}`;
 	}
 
 	return jobList || '### Unfortunately, there were no jobs found based on your interests :(. Consider updating your interests or waiting until something is found.';
 }
 
-
 async function jobMessage(reminder: Reminder, userID: string): Promise<string> {
-	const jobFormData: [JobData, Interest, JobResult[]] = await getJobFormData(userID, reminder.filterBy || 'default');
+	const jobFormData: [JobData, Interest, JobResult[]] = await getJobFormData(userID, reminder.filterBy);
 	const message = `## Hey <@${reminder.owner}>!  
-	## Here's your list of job/internship recommendations:  
+	## Here's your list of job/internship recommendations${reminder.filterBy ? ` (filtered based on ${reminder.filterBy}):` : ':'}  
 	Based on your interests in **${jobFormData[1].interest1}**, **${jobFormData[1].interest2}**, \
 	**${jobFormData[1].interest3}**, **${jobFormData[1].interest4}**, and **${jobFormData[1].interest5}**, I've found these jobs you may find interesting. Please note that while you may get\
 	job/internship recommendations from the same company,\
 	their positions/details/applications/salary WILL be different and this is not a glitch/bug!
 	Here's your personalized list:
 
-	${listJobs(jobFormData[2])}
+	${listJobs(jobFormData[2], reminder.filterBy)}
 	---  
 	### **Disclaimer:**  
 	-# Please be aware that the job listings displayed are retrieved from a third-party API. \
 	While we strive to provide accurate information, we cannot guarantee the legitimacy or security\
 	of all postings. Exercise caution when sharing personal information, submitting resumes, or registering\
 	on external sites. Always verify the authenticity of job applications before proceeding. Additionally, \
-	some job postings may contain inaccuracies due to API limitations, which are beyond our control. We apologize for any inconvenience this may cause and appreciate your understanding.\
-	 ${reminder.filterBy !== 'default' ? `Your job results were filtered by: ${reminder.filterBy}` : ''}
+	some job postings may contain inaccuracies due to API limitations, which are beyond our control. We apologize for any inconvenience this may cause and appreciate your understanding.
 	`;
 	return message;
 }
