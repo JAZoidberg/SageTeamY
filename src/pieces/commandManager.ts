@@ -13,7 +13,6 @@ import { SageUser } from '../lib/types/SageUser';
 import { CommandError } from '../lib/types/errors';
 import { verify } from '../pieces/verification';
 import { JobPreferenceAPI } from '../lib/utils/jobUtils/jobDatabase';
-import { Job } from '../lib/types/Job';
 import { validatePreferences } from '../lib/utils/jobUtils/validatePreferences';
 
 const DELETE_DELAY = 10000;
