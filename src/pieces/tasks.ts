@@ -84,7 +84,6 @@ async function checkPolls(bot: Client): Promise<void> {
 	});
 }
 
-
 // eslint-disable-next-line no-warning-comments
 async function getJobFormData(userID:string, filterBy: string):Promise<[JobData, Interest, JobResult[]]> {
 	const client = await MongoClient.connect(DB.CONNECTION, { useUnifiedTopology: true });
@@ -191,7 +190,6 @@ function stripMarkdown(message: string, owner: string): string {
 		.trim();
 }
 
-
 function headerMessage(owner:string, filterBy:string):string {
 	return `## Hey <@${owner}>!  
 	### **__Please read this disclaimer before reading your list of jobs/internships__:**  
@@ -200,7 +198,7 @@ While we strive to provide accurate information, we cannot guarantee the legitim
 of all postings. Exercise caution when sharing personal information, submitting resumes, or registering \
 on external sites. Always verify the authenticity of job applications before proceeding. Additionally, \
 some job postings may contain inaccuracies due to API limitations, which are beyond our control. We apologize for any inconvenience this may cause and appreciate your understanding.
-## Here's your list of job/internship recommendations${filterBy ? ` (filtered based on ${filterBy}):` : ':'}
+## Here's your list of job/internship recommendations${filterBy && filterBy !== 'default' ? ` (filtered based on ${filterBy}):` : ':'}
 	`;
 }
 
@@ -228,6 +226,7 @@ async function checkReminders(bot: Client): Promise<void> {
 					user.send({ content: headerMessage(reminder.owner, reminder.filterBy), files: attachments as AttachmentBuilder[] });
 				}
 			}).catch((error) => {
+				console.log('ERROR CALLED ----------------------------------------------------');
 				console.error(`Failed to fetch user with ID: ${reminder.owner}`, error);
 			});
 		}
