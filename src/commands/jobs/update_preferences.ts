@@ -5,7 +5,7 @@ import { ActionRowBuilder, ApplicationCommandOptionData, ApplicationCommandOptio
 	ChatInputCommandInteraction, InteractionResponse, ModalBuilder, ModalSubmitFields,
 	TextInputBuilder, TextInputStyle } from 'discord.js';
 
-// should be same questions as jobform.ts line 16
+// Questions users will be asked to input into the API
 const questions = [
 	['What city do you want to be located?',
 		'Remote, hybrid, and/or in-person?',
@@ -35,11 +35,6 @@ export default class extends Command {
 	async run(interaction: ChatInputCommandInteraction): Promise<InteractionResponse<boolean> | void> {
 		const questionSet = interaction.options.getNumber('qset') - 1;
 
-		// bad input handling
-		if (questionSet !== 0 && questionSet !== 1) {
-			interaction.reply({ content: 'Please enter either 1 or 2' });
-			return;
-		}
 		// Checks if user has done the job form at least once
 		const existingAnswers = await interaction.client.mongo.collection(DB.USERS).findOne({
 			discordId: interaction.user.id,
@@ -93,7 +88,7 @@ export default class extends Command {
 		return fields.getField(`question${questionNum + 1}`).value;
 	}
 
-
+	// Creates the interface where the user can view and answer the questions.
 	getAnswerField(question: string, questionNum: number, value: string): ActionRowBuilder {
 		return new ActionRowBuilder({ components: [new TextInputBuilder()
 			.setCustomId(`question${questionNum + 1}`)

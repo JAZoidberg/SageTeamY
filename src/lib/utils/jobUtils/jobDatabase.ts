@@ -1,28 +1,8 @@
 import { Collection, Db } from 'mongodb';
 import { DB } from '@root/config';
 import { validatePreferences } from './validatePreferences';
-import { EmbedBuilder } from 'discord.js';
 
-// class to store the info of the preferences the user previously put in to match to jobs in the database
-interface JobPreferences {
-	userID: string;
-	answers: {
-		// Questions
-		city: string;
-		workType: string;
-		employmentType: string;
-		travelDistance: string;
-		// Interests
-		interest1: string;
-		interest2: string;
-		interest3: string;
-		interest4: string;
-		interest5: string;
-	};
-	lastUpdated: Date;
-}
-
-
+// Class to store the info of the preferences the user previously put in to match to jobs in the database.
 export class JobPreferenceAPI {
 
 	private collection: Collection;
@@ -31,14 +11,15 @@ export class JobPreferenceAPI {
 	constructor(db: Db) {
 		this.collection = db.collection(DB.USERS);
 	}
-
+	// Stores preferences into the database. Returns an error message if success is false.
 	async storeFormResponses(userID: string, answers: string[], questionSet: number): Promise<{ success: boolean; message: string }> {
-		// If user id does not exist, then nothing will be stored
+		// If user id does not exist, then nothing will be stored.
 		if (!userID?.trim()) {
 			return { success: false, message: 'Invalid User ID' };
 		}
 		try {
 			const updateObject = {};
+			// Checks if the answer provided is accuate.
 			const { isValid, errors } = validatePreferences(answers, questionSet, true);
 			if (!isValid) {
 				console.error('Validation failed', errors);
@@ -81,9 +62,9 @@ export class JobPreferenceAPI {
 			return { success: false, message: 'Failed to store preferences' };
 		}
 	}
-	// Gets the preferences anwers from the database.
+	// Gets the preferences anwers from the database. Returns an error message if success is false.
 	async getPreference(userID: string): Promise<{ success: boolean; data?; message: string }> {
-		// If user id does not exist, then nothing will be stored
+		// If user id does not exist, then nothing will be stored.
 		if (!userID?.trim()) {
 			return { success: false, message: 'Invalid User ID' };
 		}
@@ -99,9 +80,9 @@ export class JobPreferenceAPI {
 			return { success: false, message: 'Failed to retrieve preferences' };
 		}
 	}
-	// Deletes the preferences answers to an empty string.
+	// Deletes the preferences answers to an empty string. Returns an error message if success is false.
 	async deletePreference(userID: string): Promise<{ success: boolean; message: string }> {
-		// If user id does not exist, then nothing will be stored
+		// If user id does not exist, then nothing will be stored.
 		if (!userID?.trim()) {
 			return { success: false, message: 'Invalid User ID' };
 		}
