@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { APP_ID, APP_KEY } from '@root/config';
-import { JobData, Interest } from '@root/src/pieces/tasks';
+import { JobData } from '../../types/JobData';
+import { Interest } from '../../types/Interest';
 
 interface JobListing {
 	title: string;
@@ -57,10 +58,9 @@ export default async function fetchJobListings(jobData: JobData, interests?: Int
 	const URL = `https://api.adzuna.com/v1/api/jobs/us/search/1?app_id=${APP_ID}&app_key=${APP_KEY}&results_per_page=15&what=${JOB_TYPE}&what_or=${whatInterests}&where=
         ${LOCATION}&distance=${Math.round(DISTANCE_KM)}&sort_by=${jobData.filterBy}`;
 
-	console.log('URL ---------------------->', URL);
 
+	// TODO - need to change 'any' type here
 	try {
-		console.log('Fetching data from API...');
 		const response = await axios.get(URL);
 		const jobResults: JobResult[] = response.data.results.map((job: any) => ({
 			company: job.company?.display_name || 'Not Provided',
