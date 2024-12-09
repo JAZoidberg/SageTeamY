@@ -98,12 +98,15 @@ export default class extends Command {
 					| 'daily'
 					| 'weekly' || null;
 
+			const filterBy = interaction.options.getString('filter-type') as 'relevance' | 'salary' | 'date-posted' | 'default' | null;
+
 			const jobReminder: Reminder = {
 				owner: interaction.user.id,
 				content: 'Job Reminder',
 				mode: 'private',
 				expires: new Date(),
-				repeat: jobReminderRepeat
+				repeat: jobReminderRepeat,
+				filterBy
 			};
 			// handling duplicate job reminders
 			if (await this.checkJobReminder(interaction)) {
