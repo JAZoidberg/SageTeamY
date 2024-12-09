@@ -38,11 +38,14 @@ export default async function fetchJobListings(jobData: JobData, interests?: Int
 		return jobCache[cacheKey] as JobResult[];
 	}
 
-	const URL = `https://api.adzuna.com/v1/api/jobs/us/search/1?app_id=${APP_ID}&app_key=${APP_KEY}&results_per_page=15&what=${JOB_TYPE}&what_or=${whatInterests}&where=
-        ${LOCATION}&distance=${Math.round(DISTANCE_KM)}&sort_by=${jobData.filterBy}`;
+	// const URL = `https://api.adzuna.com/v1/api/jobs/us/search/1?app_id=${APP_ID}&app_key=${APP_KEY}&results_per_page=15&what=${JOB_TYPE}&what_or=${whatInterests}&where=
+	// ${LOCATION}&distance=${Math.round(DISTANCE_KM)}&sort_by=${jobData.filterBy}`;
+
+	const URL_BASE = `https://api.adzuna.com/v1/api/jobs/us/search/1?app_id=${APP_ID}&app_key=${APP_KEY}&results_per_page=15&what=${JOB_TYPE}&what_or=${whatInterests}&where=\
+	${LOCATION}&distance=${Math.round(DISTANCE_KM)}`;
 
 	try {
-		const response = await axios.get(URL);
+		const response = await axios.get(jobData.filterBy && jobData.filterBy !== 'default' ? `${URL_BASE}&sort_by=${jobData.filterBy}` : URL_BASE);
 		const jobResults: JobResult[] = response.data.results.map((job: AdzunaJobResponse) => ({
 			company: job.company?.display_name || 'Not Provided',
 			title: job.title,
@@ -56,7 +59,7 @@ export default async function fetchJobListings(jobData: JobData, interests?: Int
 
 		jobCache[cacheKey] = jobResults;
 
-		return jobResults;
+		return jobResults.sort();
 	} catch (error) {
 		console.error('API error:', error);
 		throw error;
