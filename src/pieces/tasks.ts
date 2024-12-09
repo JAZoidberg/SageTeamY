@@ -7,6 +7,8 @@ import { MongoClient } from 'mongodb';
 import { Job } from '../lib/types/Job';
 import fetchJobListings, { JobResult } from '../lib/utils/jobUtils/Adzuna_job_search';
 import { sendToFile } from '../lib/utils/generalUtils';
+import { JobData } from '../lib/types/JobData';
+import { Interest } from '../lib/types/Interest';
 
 async function register(bot: Client): Promise<void> {
 	schedule('0/30 * * * * *', () => {
@@ -81,21 +83,6 @@ async function checkPolls(bot: Client): Promise<void> {
 	});
 }
 
-export interface JobData {
-	city: string,
-	preference: string,
-	jobType: string,
-	distance: string,
-	filterBy: string
-}
-
-export interface Interest {
-	interest1: string,
-	interest2: string,
-	interest3: string,
-	interest4: string,
-	interest5: string
-}
 
 // eslint-disable-next-line no-warning-comments
 async function getJobFormData(userID:string, filterBy: string):Promise<[JobData, Interest, JobResult[]]> {
