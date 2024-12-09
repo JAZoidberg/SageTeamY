@@ -30,7 +30,7 @@ export default class extends Command {
 	name = 'jobform';
 	description = 'Form to get your preferences for jobs to be used with the Job Alert System!';
 
-	// gives option to command to choose what question set user is answering
+	// Gives option to command to choose what question set user is answering.
 	options: ApplicationCommandOptionData[] = [
 		{
 			name: 'qset',
@@ -46,12 +46,6 @@ export default class extends Command {
 
 	async run(interaction: ChatInputCommandInteraction): Promise<InteractionResponse<boolean> | void> {
 		const questionSet = interaction.options.getNumber('qset') - 1;
-
-		// bad input handling
-		// if (questionSet !== 0 && questionSet !== 1) {
-		// 	interaction.reply({ content: 'Please enter either 1 or 2' });
-		// 	return;
-		// }
 
 		// Creates the modal that pops up once the command is run, giving it the correct title and set of questions.
 		const modal = new ModalBuilder()

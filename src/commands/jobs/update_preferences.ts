@@ -19,6 +19,7 @@ export default class extends Command {
 	name = 'update_preferences'
 	description = 'View and update your preferences for jobs to be used with the Job Alert System!';
 
+	// Gives option to command to choose what question set user is answering.
 	options: ApplicationCommandOptionData[] = [
 		{
 			name: 'qset',
@@ -51,7 +52,7 @@ export default class extends Command {
 		}
 		const currentAns = existingAnswers.jobPreferences?.answers;
 		const askedQuestions = questions[questionSet];
-		// if questions changed, making sure to update these titles to correctly describe question
+		// If questions changed, making sure to update these titles to correctly describe question.
 		const quesChoices = questionSet === 0
 			? ['city', 'workType', 'employmentType', 'travelDistance']
 			: ['interest1', 'interest2', 'interest3', 'interest4', 'interest5'];
@@ -64,7 +65,7 @@ export default class extends Command {
 			return this.getAnswerField(question, askedQuestions.indexOf(question), value);
 		});
 
-		// creates the modal that pops up when command is used, with title matching which questions set user is answering
+		// Creates the modal that pops up once the command is run, giving it the correct title and set of questions.
 		const modal = new ModalBuilder()
 			.setCustomId(`updateModal${questionSet}`)
 			.setTitle(`Update Job Preferences (${questionSet + 1} of 2)`);
@@ -77,8 +78,6 @@ export default class extends Command {
 		}
 
 		await interaction.showModal(modal);
-
-		// Answers are handled in src/pieces/commandManager.ts on line 149
 
 		return;
 	}
