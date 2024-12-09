@@ -1,26 +1,10 @@
 import axios from 'axios';
 import { APP_ID, APP_KEY } from '@root/config';
-import { JobData, Interest } from '@root/src/pieces/tasks';
-
-interface JobListing {
-	title: string;
-	company: string;
-	location: string;
-	salary: string;
-	link: string;
-	description: string;
-}
-
-export interface JobResult {
-	company: string;
-	title: string;
-	description: string;
-	location: string;
-	created: string;
-	salaryMax: string;
-	salaryMin: string;
-	link: string;
-}
+import { JobData } from '../../types/JobData';
+import { Interest } from '../../types/Interest';
+import { JobListing } from '../../types/JobListing';
+import { JobResult } from '../../types/JobResult';
+import { AdzunaJobResponse } from '../../types/AdzunaJobResponse';
 
 type JobCache = {
 	[key: string]: JobListing[] | JobResult[];
@@ -54,13 +38,15 @@ export default async function fetchJobListings(jobData: JobData, interests?: Int
 		return jobCache[cacheKey] as JobResult[];
 	}
 
-	const URL = `https://api.adzuna.com/v1/api/jobs/us/search/1?app_id=${APP_ID}&app_key=${APP_KEY}&results_per_page=15&what=${JOB_TYPE}&what_or=${whatInterests}&where=
-        ${LOCATION}&distance=${DISTANCE_KM}`;
+	// const URL = `https://api.adzuna.com/v1/api/jobs/us/search/1?app_id=${APP_ID}&app_key=${APP_KEY}&results_per_page=15&what=${JOB_TYPE}&what_or=${whatInterests}&where=
+	// ${LOCATION}&distance=${Math.round(DISTANCE_KM)}&sort_by=${jobData.filterBy}`;
+
+	const URL_BASE = `https://api.adzuna.com/v1/api/jobs/us/search/1?app_id=${APP_ID}&app_key=${APP_KEY}&results_per_page=15&what=${JOB_TYPE}&what_or=${whatInterests}&where=\
+	${LOCATION}&distance=${Math.round(DISTANCE_KM)}`;
 
 	try {
-		console.log('Fetching data from API...');
-		const response = await axios.get(URL);
-		const jobResults: JobResult[] = response.data.results.map((job: any) => ({
+		const response = await axios.get(jobData.filterBy && jobData.filterBy !== 'default' ? `${URL_BASE}&sort_by=${jobData.filterBy}` : URL_BASE);
+		const jobResults: JobResult[] = response.data.results.map((job: AdzunaJobResponse) => ({
 			company: job.company?.display_name || 'Not Provided',
 			title: job.title,
 			description: job.description || 'No description available',
@@ -73,7 +59,7 @@ export default async function fetchJobListings(jobData: JobData, interests?: Int
 
 		jobCache[cacheKey] = jobResults;
 
-		return jobResults;
+		return jobResults.sort();
 	} catch (error) {
 		console.error('API error:', error);
 		throw error;
