@@ -66,7 +66,7 @@ export default class extends Command {
 					choices: [
 						{ name: 'Relevance', value: 'relevance' },
 						{ name: 'Salary', value: 'salary' },
-						{ name: 'Date Posted', value: 'date posted' },
+						{ name: 'Date Posted', value: 'date' },
 						{ name: 'Default', value: 'default' }
 					],
 					type: ApplicationCommandOptionType.String
