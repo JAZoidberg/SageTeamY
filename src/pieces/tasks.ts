@@ -85,7 +85,8 @@ export interface JobData {
 	city: string,
 	preference: string,
 	jobType: string,
-	distance: string
+	distance: string,
+	filterBy: string
 }
 
 export interface Interest {
@@ -97,7 +98,7 @@ export interface Interest {
 }
 
 // eslint-disable-next-line no-warning-comments
-async function getJobFormData(userID:string):Promise<[JobData, Interest, JobResult[]]> {
+async function getJobFormData(userID:string, filterBy: string):Promise<[JobData, Interest, JobResult[]]> {
 	const client = await MongoClient.connect(DB.CONNECTION, { useUnifiedTopology: true });
 	const db = client.db(BOT.NAME).collection(DB.JOB_FORMS);
 	const jobformAnswers:Job[] = await db.find({ owner: userID }).toArray();
@@ -105,7 +106,8 @@ async function getJobFormData(userID:string):Promise<[JobData, Interest, JobResu
 		city: jobformAnswers[0].answers[0],
 		preference: jobformAnswers[0].answers[1],
 		jobType: jobformAnswers[0].answers[2],
-		distance: jobformAnswers[0].answers[3]
+		distance: jobformAnswers[0].answers[3],
+		filterBy
 	};
 
 	const interests:Interest = {
@@ -121,7 +123,7 @@ async function getJobFormData(userID:string):Promise<[JobData, Interest, JobResu
 }
 
 function formatCurrency(currency:number): string {
-	return `${new Intl.NumberFormat('en-US', {
+	return isNaN(currency) ? 'N/A' : `${new Intl.NumberFormat('en-US', {
 		style: 'currency',
 		currency: 'USD'
 	}).format(Number(currency))}`;
@@ -150,7 +152,7 @@ function listJobs(jobData: JobResult[]): string {
 }
 
 async function jobMessage(reminder: Reminder, userID: string): Promise<string> {
-	const jobFormData: [JobData, Interest, JobResult[]] = await getJobFormData(userID);
+	const jobFormData: [JobData, Interest, JobResult[]] = await getJobFormData(userID, reminder.filterBy || "default");
 	const message = `## Hey <@${reminder.owner}>!  
 	## Here's your list of job/internship recommendations:  
 	Based on your interests in **${jobFormData[1].interest1}**, **${jobFormData[1].interest2}**, \
