@@ -198,7 +198,7 @@ While we strive to provide accurate information, we cannot guarantee the legitim
 of all postings. Exercise caution when sharing personal information, submitting resumes, or registering \
 on external sites. Always verify the authenticity of job applications before proceeding. Additionally, \
 some job postings may contain inaccuracies due to API limitations, which are beyond our control. We apologize for any inconvenience this may cause and appreciate your understanding.
-## Here's your list of job/internship recommendations${filterBy && filterBy !== 'default' ? ` (filtered based on ${filterBy}):` : ':'}
+## Here's your list of job/internship recommendations${filterBy && filterBy !== 'default' ? ` (filtered based on ${filterBy === 'date' ? 'date posted' : filterBy}):` : ':'}
 	`;
 }
 
