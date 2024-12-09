@@ -55,7 +55,9 @@ export default async function fetchJobListings(jobData: JobData, interests?: Int
 	}
 
 	const URL = `https://api.adzuna.com/v1/api/jobs/us/search/1?app_id=${APP_ID}&app_key=${APP_KEY}&results_per_page=15&what=${JOB_TYPE}&what_or=${whatInterests}&where=
-        ${LOCATION}&distance=${DISTANCE_KM}`;
+        ${LOCATION}&distance=${Math.round(DISTANCE_KM)}&sort_by=${jobData.filterBy}`;
+
+	console.log('URL ---------------------->', URL);
 
 	try {
 		console.log('Fetching data from API...');
