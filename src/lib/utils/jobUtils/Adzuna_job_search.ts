@@ -4,7 +4,7 @@ import { JobData } from '../../types/JobData';
 import { Interest } from '../../types/Interest';
 import { JobListing } from '../../types/JobListing';
 import { JobResult } from '../../types/JobResult';
-
+import { AdzunaJobResponse } from '../../types/AdzunaJobResponse';
 
 type JobCache = {
 	[key: string]: JobListing[] | JobResult[];
@@ -41,11 +41,9 @@ export default async function fetchJobListings(jobData: JobData, interests?: Int
 	const URL = `https://api.adzuna.com/v1/api/jobs/us/search/1?app_id=${APP_ID}&app_key=${APP_KEY}&results_per_page=15&what=${JOB_TYPE}&what_or=${whatInterests}&where=
         ${LOCATION}&distance=${Math.round(DISTANCE_KM)}&sort_by=${jobData.filterBy}`;
 
-
-	// TODO - need to change 'any' type here
 	try {
 		const response = await axios.get(URL);
-		const jobResults: JobResult[] = response.data.results.map((job: any) => ({
+		const jobResults: JobResult[] = response.data.results.map((job: AdzunaJobResponse) => ({
 			company: job.company?.display_name || 'Not Provided',
 			title: job.title,
 			description: job.description || 'No description available',
