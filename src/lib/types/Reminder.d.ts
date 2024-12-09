@@ -4,5 +4,5 @@ export interface Reminder {
 	content: string;
 	repeat: null | 'daily' | 'weekly';
 	mode: 'public' | 'private';
-	filterBy?: 'relevance' | 'salary' | 'date-posted' | 'default' | null
+	filterBy?: 'relevance' | 'salary' | 'date' | 'default' | null
 }
