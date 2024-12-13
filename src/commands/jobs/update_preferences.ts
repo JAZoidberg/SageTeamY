@@ -10,7 +10,7 @@ const questions = [
 	['What city do you want to be located?',
 		'Remote, hybrid, and/or in-person?',
 		'Full time, Part time, and/or Internship?',
-		'How far are you willing to travel? (in miles)'],
+		'How far are you willing to travel? (in miles)?'],
 	['Interest 1', 'Interest 2', 'Interest 3', 'Interest 4', 'Interest 5']
 ];
 
@@ -35,6 +35,11 @@ export default class extends Command {
 
 	async run(interaction: ChatInputCommandInteraction): Promise<InteractionResponse<boolean> | void> {
 		const questionSet = interaction.options.getNumber('qset') - 1;
+
+		if (questionSet !== 0 && questionSet !== 1) {
+			await interaction.reply({ content: 'Please enter either 1 or 2' });
+			return;
+		}
 
 		// Checks if user has done the job form at least once
 		const existingAnswers = await interaction.client.mongo.collection(DB.USERS).findOne({
