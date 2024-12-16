@@ -7,7 +7,8 @@ import {
 	TextChannel,
 	ActionRowBuilder,
 	ApplicationCommandPermissions,
-	StringSelectMenuBuilder
+	StringSelectMenuBuilder,
+	ChatInputCommandInteraction
 } from 'discord.js';
 import { Command, CompCommand } from '@lib/types/Command';
 import * as fs from 'fs';
@@ -283,4 +284,17 @@ export function calcNeededExp(levelExp: number, direction: string): number {
 		return Math.floor(levelExp * xpRatio);
 	}
 	return Math.ceil(levelExp / xpRatio); // calculate exp for previous level
+}
+
+export async function checkJobReminder(
+	interaction: ChatInputCommandInteraction
+): Promise<boolean> {
+	const reminders: Array<Reminder> = await interaction.client.mongo
+		.collection(DB.REMINDERS)
+		.find({ owner: interaction.user.id })
+		.toArray();
+
+	return reminders.some(
+		(reminder: Reminder) => reminder.content === 'Job Reminder'
+	);
 }
