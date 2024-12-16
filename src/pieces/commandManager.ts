@@ -149,13 +149,14 @@ async function handleModalBuilder(interaction: ModalSubmitInteraction, bot: Clie
 			interaction.reply({ content: `Thank you for verifying! You can now access the rest of the server. ${enrollStr}`, ephemeral: true });
 			break;
 		}
-		// jobform and update_preferences use the same logic to store responses
+		// jobform and update_preferences use the same logic to store responses.
 		case 'jobModal':
 		case 'updateModal': {
 			try {
-				// extracting the input from the modal
+				// extracting the input from the modal.
 				const formNumber = parseInt(customId.slice(-1));
 				const answers = [1, 2, 3, 4, 5].slice(0, formNumber === 0 ? 4 : 5).map(num => fields.getTextInputValue(`question${num}`));
+				// Checks if the answer provided is accuate.
 				const { isValid, errors } = validatePreferences(answers, formNumber, true);
 				if (!isValid) {
 					await interaction.reply({
@@ -165,19 +166,19 @@ async function handleModalBuilder(interaction: ModalSubmitInteraction, bot: Clie
 					return;
 				}
 
-				// Create API instance with the database instance directly
+				// Create API instance with the database instance directly.
 				const jobPreferenceAPI = new JobPreferenceAPI(interaction.client.mongo);
 				const success = await jobPreferenceAPI.storeFormResponses(interaction.user.id, answers, formNumber);
 				const isUpdate = customId.replace(/[0-9]/g, '') === 'updateModal';
 				const mess = isUpdate ? `Success: Your preferences have been updated! ${formNumber === 0
-					? 'Please use /updateform qset:2 to complete your interests.' : ''}`
+					? 'Please use /update_preferences qset:2 to complete your interests.' : ''}`
 					: `Success: Form ${formNumber + 1} submitted! ${formNumber === 0 ? 'Please use /jobform qset:2 to complete your interests.' : ''}`;
 				// Takes user to questions, then interests. If submitted correctly, the answers will be stored.
 				await interaction.reply({
 					content: success ? mess : 'Error saving preferences. Please try again',
 					ephemeral: true
 				});
-			// Error for failed update
+			// Error for failed update.
 			} catch (error) {
 				console.error('update form error:', error);
 				await interaction.reply({ content: 'An error occurred. Please try again.', ephemeral: true });
