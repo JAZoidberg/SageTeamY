@@ -1,9 +1,9 @@
 export interface Job {
 	owner: string;
-	questionSet: int;
+	questionSet: number;
 	content: string;
 	location: string;
-	questionSet: int;
+	questionSet: number;
 	answers: string[];
 	mode: 'public' | 'private';
 }

@@ -59,6 +59,17 @@ export default class extends Command {
 					],
 					type: ApplicationCommandOptionType.String,
 					required: true
+				},
+				{
+					name: 'filter-type',
+					description: 'Select what you would like your job/internships filtered by',
+					choices: [
+						{ name: 'Relevance', value: 'relevance' },
+						{ name: 'Salary', value: 'salary' },
+						{ name: 'Date Posted', value: 'date' },
+						{ name: 'Default', value: 'default' }
+					],
+					type: ApplicationCommandOptionType.String
 				}
 			]
 		}
@@ -87,12 +98,15 @@ export default class extends Command {
 					| 'daily'
 					| 'weekly' || null;
 
+			const filterBy = interaction.options.getString('filter-type') as 'relevance' | 'salary' | 'date' | 'default' | null;
+
 			const jobReminder: Reminder = {
 				owner: interaction.user.id,
 				content: 'Job Reminder',
 				mode: 'private',
 				expires: new Date(),
-				repeat: jobReminderRepeat
+				repeat: jobReminderRepeat,
+				filterBy
 			};
 			// handling duplicate job reminders
 			if (await this.checkJobReminder(interaction)) {

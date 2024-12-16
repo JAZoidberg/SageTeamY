@@ -5,12 +5,12 @@ import { ActionRowBuilder, ApplicationCommandOptionData, ApplicationCommandOptio
 	ChatInputCommandInteraction, InteractionResponse, ModalBuilder, ModalSubmitFields,
 	TextInputBuilder, TextInputStyle } from 'discord.js';
 
-// should be same questions as jobform.ts line 16
+// Questions users will be asked to input into the API
 const questions = [
 	['What city do you want to be located?',
 		'Remote, hybrid, and/or in-person?',
 		'Full time, Part time, and/or Internship?',
-		'How far are you willing to travel?'],
+		'How far are you willing to travel? (in miles)'],
 	['Interest 1', 'Interest 2', 'Interest 3', 'Interest 4', 'Interest 5']
 ];
 
@@ -19,6 +19,7 @@ export default class extends Command {
 	name = 'update_preferences'
 	description = 'View and update your preferences for jobs to be used with the Job Alert System!';
 
+	// Gives option to command to choose what question set user is answering.
 	options: ApplicationCommandOptionData[] = [
 		{
 			name: 'qset',
@@ -35,11 +36,11 @@ export default class extends Command {
 	async run(interaction: ChatInputCommandInteraction): Promise<InteractionResponse<boolean> | void> {
 		const questionSet = interaction.options.getNumber('qset') - 1;
 
-		// bad input handling
 		if (questionSet !== 0 && questionSet !== 1) {
-			interaction.reply({ content: 'Please enter either 1 or 2' });
+			await interaction.reply({ content: 'Please enter either 1 or 2' });
 			return;
 		}
+
 		// Checks if user has done the job form at least once
 		const existingAnswers = await interaction.client.mongo.collection(DB.USERS).findOne({
 			discordId: interaction.user.id,
@@ -56,7 +57,7 @@ export default class extends Command {
 		}
 		const currentAns = existingAnswers.jobPreferences?.answers;
 		const askedQuestions = questions[questionSet];
-		// if questions changed, making sure to update these titles to correctly describe question
+		// If questions changed, making sure to update these titles to correctly describe question.
 		const quesChoices = questionSet === 0
 			? ['city', 'workType', 'employmentType', 'travelDistance']
 			: ['interest1', 'interest2', 'interest3', 'interest4', 'interest5'];
@@ -69,7 +70,7 @@ export default class extends Command {
 			return this.getAnswerField(question, askedQuestions.indexOf(question), value);
 		});
 
-		// creates the modal that pops up when command is used, with title matching which questions set user is answering
+		// Creates the modal that pops up once the command is run, giving it the correct title and set of questions.
 		const modal = new ModalBuilder()
 			.setCustomId(`updateModal${questionSet}`)
 			.setTitle(`Update Job Preferences (${questionSet + 1} of 2)`);
@@ -83,8 +84,6 @@ export default class extends Command {
 
 		await interaction.showModal(modal);
 
-		// Answers are handled in src/pieces/commandManager.ts on line 149
-
 		return;
 	}
 
@@ -93,7 +92,7 @@ export default class extends Command {
 		return fields.getField(`question${questionNum + 1}`).value;
 	}
 
-
+	// Creates the interface where the user can view and answer the questions.
 	getAnswerField(question: string, questionNum: number, value: string): ActionRowBuilder {
 		return new ActionRowBuilder({ components: [new TextInputBuilder()
 			.setCustomId(`question${questionNum + 1}`)
