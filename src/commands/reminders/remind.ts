@@ -7,7 +7,7 @@ import {
 } from 'discord.js';
 import { Reminder } from '@lib/types/Reminder';
 import parse from 'parse-duration';
-import { reminderTime } from '@root/src/lib/utils/generalUtils';
+import { checkJobReminder, reminderTime } from '@root/src/lib/utils/generalUtils';
 import { Command } from '@lib/types/Command';
 
 export default class extends Command {
@@ -75,19 +75,6 @@ export default class extends Command {
 		}
 	];
 
-	async checkJobReminder(
-		interaction: ChatInputCommandInteraction
-	): Promise<boolean> {
-		const reminders: Array<Reminder> = await interaction.client.mongo
-			.collection(DB.REMINDERS)
-			.find({ owner: interaction.user.id })
-			.toArray();
-
-		return reminders.some(
-			(reminder: Reminder) => reminder.content === 'Job Reminder'
-		);
-	}
-
 	async run(
 		interaction: ChatInputCommandInteraction
 	): Promise<InteractionResponse<boolean> | void> {
@@ -109,7 +96,7 @@ export default class extends Command {
 				filterBy
 			};
 			// handling duplicate job reminders
-			if (await this.checkJobReminder(interaction)) {
+			if (await checkJobReminder(interaction)) {
 				return interaction.reply({
 					content:
 						'You currently already have a job reminder set. To clear your existing job reminder, run `/cancelreminder` and provide the reminder number.',
