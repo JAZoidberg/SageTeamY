@@ -33,7 +33,7 @@ export default class extends Command {
 		}
 	];
 
-	async updateFilter(interaction: ChatInputCommandInteraction, filter:string) {
+	async updateFilter(interaction: ChatInputCommandInteraction, filter:string):Promise<void> {
 		try {
 			await interaction.client.mongo.collection(DB.REMINDERS).update(
 				{ owner: interaction.user.id },
@@ -41,20 +41,18 @@ export default class extends Command {
 			);
 		} catch (error) {
 			console.error('Failed to update filter:', error);
-			interaction.reply("There was an error updating your filter preference");
-		}			
+			interaction.reply('There was an error updating your filter preference');
+		}
 	}
 
 	async run(
 		interaction: ChatInputCommandInteraction
 	): Promise<InteractionResponse<boolean> | void> {
-
 		// check if the user has a job reminder
 		if (!(await checkJobReminder(interaction))) {
 			await interaction.reply('Please make sure you have set a job reminder set. To do so, run `/remind jobs`');
-		}
-		else {
-			const filterBy = interaction.options.getString('filter-type') as 'relevance' | 'salary' | 'date' | 'default' | null;		
+		} else {
+			const filterBy = interaction.options.getString('filter-type') as 'relevance' | 'salary' | 'date' | 'default' | null;
 			await this.updateFilter(interaction, filterBy);
 			await interaction.reply(`Your job/internship filter has been updated to "${filterBy}" successfully!`);
 		}
