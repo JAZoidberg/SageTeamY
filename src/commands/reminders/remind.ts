@@ -74,7 +74,7 @@ export default class extends Command {
 			]
 		}
 	];
-	
+
 	async run(
 		interaction: ChatInputCommandInteraction
 	): Promise<InteractionResponse<boolean> | void> {
@@ -144,9 +144,6 @@ export default class extends Command {
 				ephemeral: true
 			});
 		}
-	}
-	checkJobReminder(interaction: ChatInputCommandInteraction<import("discord.js").CacheType>) {
-		throw new Error('Method not implemented.');
 	}
 
 }
