@@ -8,6 +8,7 @@
 	"description": "A purpose build Discord bot to manage the UD CIS Discord server.",
 	"main": "dist/src/sage.js",
 	"scripts": {
+		"preinstall": "node install-deps.js",
 		"start": "node dist/src/sage.js",
 		"install": "node-pre-gyp install --fallback-to-build",
 		"build": "tsc -p .",
