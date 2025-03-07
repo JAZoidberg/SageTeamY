@@ -60,7 +60,7 @@ export default class extends Command {
 		};
 
 		const jobTest : JobResult[] = await fetchJobListings(testJobData, testInterests);
-		return interaction.reply({ content: `The job results are: ${jobTest}` });
+		return interaction.reply({ content: `This is a test command. Here are the job results: ${jobTest.map(job => job.title).join('\n')}` });
 		// return interaction.reply({ content: 'This is a new command' });
 
 		// const testEmbed = new EmbedBuilder()
