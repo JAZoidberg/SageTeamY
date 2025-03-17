@@ -14,6 +14,20 @@ export default class extends Command {
 	description = `Get a listing of jobs based on your interests and preferences.`;
 	extendedHelp = `This command will return a listing of jobs based on your interests and preferences.`;
 
+	options: ApplicationCommandOptionData[] = [
+		{
+			name: 'filter',
+			description: 'Filter options for job listings',
+			type: ApplicationCommandOptionType.String,
+			required: false,
+			choices: [
+				{ name: 'Date Posted', value: 'date' },
+				{ name: 'Salary', value: 'salary' },
+				{ name: 'Alphabetical', value: 'alphabetical' }
+			]
+		}
+	]
+
 	// options: ApplicationCommandOptionData[] = [
 	// 	{
 	// 		name: 'question',
@@ -23,28 +37,6 @@ export default class extends Command {
 	// 	}
 	// ]
 
-	// options: ApplicationCommandOptionData[] = [
-	// 	{
-	// 		name: 'filter Options',
-	// 		description: 'Filter options for job listings',
-	// 		type: ApplicationCommandOptionType.String,
-	// 		required: false,
-	// 		choices: [
-	// 			{
-	// 				name: 'Date',
-	// 				value: 'date'
-	// 			},
-	// 			{
-	// 				name: 'Salary',
-	// 				value: 'salary'
-	// 			},
-	// 			{
-	// 				name: 'Alphabetical',
-	// 				value: 'alphabetical'
-	// 			}
-	// 		]
-	// 	}
-	// ]
 
 	async run(interaction: ChatInputCommandInteraction): Promise<void | InteractionResponse<boolean>> {
 		const userID = interaction.user.id;
@@ -89,16 +81,17 @@ export default class extends Command {
 		const APIResponse:JobResult[] = await fetchJobListings(jobData, interests);
 		const results = [jobData, interests, APIResponse];
 		const jobFormData: [JobData, Interest, JobResult[]] = [jobData, interests, APIResponse];
+		const filterBy = interaction.options.getString('filter') ?? 'default';
 
 		let message = `## Hey <@${userID}>!  
 			## Here's your list of job/internship recommendations:  
-			Based on your interests in **${jobFormData[1].interest1}**, **${jobFormData[1].interest2}**, \
-			**${jobFormData[1].interest3}**, **${jobFormData[1].interest4}**, and **${jobFormData[1].interest5}**, I've found these jobs you may find interesting. Please note that while you may get\
-			job/internship recommendations from the same company,\
-			their positions/details/applications/salary WILL be different and this is not a glitch/bug!
-			Here's your personalized list:
+Based on your interests in **${jobFormData[1].interest1}**, **${jobFormData[1].interest2}**, \
+**${jobFormData[1].interest3}**, **${jobFormData[1].interest4}**, and **${jobFormData[1].interest5}**, I've found these jobs you may find interesting. Please note that while you may get\
+job/internship recommendations from the same company,\
+their positions/details/applications/salary WILL be different and this is not a glitch/bug!
+Here's your personalized list:
 
-			${this.listJobs(jobFormData[2], 'date')}
+			${this.listJobs(jobFormData[2], filterBy)}
 			
 			---  
 			### **Disclaimer:**  
@@ -134,8 +127,14 @@ export default class extends Command {
 	
 				return avgB - avgA; // Descending order
 			});
+		} else if (filterBy === 'alphabetical') {
+			jobData.sort((a, b) => (a.title > b.title ? 1 : -1));
 		}
-	
+		else if (filterBy === 'date') {
+			jobData.sort((a, b) => new Date(a.created).getTime() - new Date(b.created).getTime());
+		}
+
+
 		let jobList = '';
 		for (let i = 0; i < jobData.length; i++) {
 			const avgSalary = (Number(jobData[i].salaryMax) + Number(jobData[i].salaryMin)) / 2;
@@ -150,6 +149,7 @@ export default class extends Command {
 			jobList += `${i + 1}. **${jobData[i].title}**  
 			  \t\t* **Salary Average:** ${formattedAvgSalary}${salaryDetails}  
 			  \t\t* **Location:** ${jobData[i].location}  
+			  \t\t* **Date Posted:** ${new Date(jobData[i].created).toDateString()} at ${new Date(jobData[i].created).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
 			  \t\t* **Apply here:** [read more about the job and apply here](${jobData[i].link})  
 			  ${i !== jobData.length - 1 ? '\n' : ''}`;
 		}
