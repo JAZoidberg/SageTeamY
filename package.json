@@ -11,6 +11,7 @@
 		"preinstall": "node install-deps.js",
 		"start": "node dist/src/sage.js",
 		"install": "node-pre-gyp install --fallback-to-build --build-from-source",
+		"install": "node-pre-gyp install --fallback-to-build",
 		"build": "tsc -p .",
 		"clean": "rm -rf dist",
 		"test": "eslint src --ext .ts",
@@ -21,9 +22,9 @@
 		"autodoc": "node dist/autodoc/writecommands.js && autodoc/movemd.sh"
 	},
 	"binary": {
-  		"module_name": "your_module",
-  		"module_path": "./lib/binding/",
-  		"host": "https://your_module.s3-us-west-1.amazonaws.com"
+		"module_name": "your_module",
+		"module_path": "./lib/binding/",
+		"host": "https://your_module.s3-us-west-1.amazonaws.com"
 	},
 	"repository": {
 		"type": "git",
@@ -36,9 +37,10 @@
 	},
 	"homepage": "https://github.com/ud-cis-discord/SageV2",
 	"dependencies": {
+		"@discordjs/node-pre-gyp": "0.4.5",
 		"@octokit/rest": "^18.3.5",
 		"axios": "^1.4.0",
-		"canvas": "^2.11.2",
+		"canvas": "^3.1.0",
 		"console-stamp": "^3.0.2",
 		"discord.js": "^14.16.3",
 		"@discordjs/node-pre-gyp": "0.4.5",
