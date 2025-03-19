@@ -22,6 +22,25 @@ export default class extends Command {
 	// 		required: true
 	// 	}
 	// ]
+	options: ApplicationCommandOptionData[] = [
+        {
+            name: 'format',
+            description: 'Choose how you want the job information to be displayed',
+            type: ApplicationCommandOptionType.String,
+            required: true,
+            choices: [
+                {
+                    name: 'Slideshow',
+                    value: 'slideshow'
+                },
+                {
+                    name: 'Document',
+                    value: 'document'
+                }
+            ]
+        }
+    ];
+
 
 	// options: ApplicationCommandOptionData[] = [
 	// 	{
@@ -48,6 +67,7 @@ export default class extends Command {
 
 	async run(interaction: ChatInputCommandInteraction): Promise<void | InteractionResponse<boolean>> {
 		const userID = interaction.user.id;
+		const format = interaction.options.getString('format');
 
 		const client = await MongoClient.connect(DB.CONNECTION, { useUnifiedTopology: true });
 		const db = client.db(BOT.NAME).collection(DB.JOB_FORMS);
@@ -163,11 +183,12 @@ export default class extends Command {
 		}).format(Number(currency))}`;
 	}
 		**/
+		if (format === 'slideshow' || format === null) {
 		const slides = APIResponse.map((job, index) => {
             return new EmbedBuilder()
                 .setTitle(`Job ${index + 1}: ${job.title}`)
                 .setDescription(`**Location:** ${job.location}\n**Salary:** ${this.formatCurrency((Number(job.salaryMax) + Number(job.salaryMin)) / 2)}\n**Location: **${job.location}\n **Apply here:** [read more about the job and apply here](${job.link})`)
-                .setThumbnail('https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.bls.gov%2Fcareeroutlook%2F2022%2Farticle%2Foccupations-that-dont-require-a-degree.htm&psig=AOvVaw3Ms_wesjZ5jFHFBXW0GYcm&ust=1742454090155000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCPiNsrrJlYwDFQAAAAAdAAAAABAE') // Update this URL to match your server setup
+                .setThumbnail('https://www.bls.gov/careeroutlook/2022/images/no-college-cover.png') // Update this URL to match your server setup
                 .setColor('#0099ff');
         });
 
@@ -194,13 +215,92 @@ export default class extends Command {
         async function displaySlide(message: Message, slideIndex: number) {
             await message.edit({ embeds: [slides[slideIndex]] });
         }
-    }
+    } else if (format === 'document') {
+		/*let jobList = '';
+		for (let i = 0; i < APIResponse.length; i++) {
+			const avgSalary = (Number(APIResponse[i].salaryMax) + Number(APIResponse[i].salaryMin)) / 2;
+			const formattedAvgSalary = this.formatCurrency(avgSalary);
+			const formattedSalaryMax = this.formatCurrency(Number(APIResponse[i].salaryMax)) !== 'N/A' ? this.formatCurrency(Number(APIResponse[i].salaryMax)) : '';
+			const formattedSalaryMin = this.formatCurrency(Number(APIResponse[i].salaryMin)) !== 'N/A' ? this.formatCurrency(Number(APIResponse[i].salaryMin)) : '';
+
+			const salaryDetails = (formattedSalaryMin && formattedSalaryMax)
+				? `, Min: ${formattedSalaryMin}, Max: ${formattedSalaryMax}`
+				: formattedAvgSalary;
+
+			jobList += `${i + 1}. **${APIResponse[i].title}**  
+			  \t\t* **Salary Average:** ${formattedAvgSalary}${salaryDetails}  
+			  \t\t* **Location:** ${APIResponse[i].location}  
+			  \t\t* **Apply here:** [read more about the job and apply here](${APIResponse[i].link})  
+			  ${i !== APIResponse.length - 1 ? '\n' : ''}`;
+		}
+
+		const messages = this.splitMessage(jobList, 2000);
+		for (const msg of messages) {
+			await interaction.followUp({ content: msg });
+		}
+			*/
+			
+			let jobList = '';
+            for (let i = 0; i < APIResponse.length; i++) {
+                const avgSalary = (Number(APIResponse[i].salaryMax) + Number(APIResponse[i].salaryMin)) / 2;
+                const formattedAvgSalary = this.formatCurrency(avgSalary);
+                const formattedSalaryMax = this.formatCurrency(Number(APIResponse[i].salaryMax)) !== 'N/A' ? this.formatCurrency(Number(APIResponse[i].salaryMax)) : '';
+                const formattedSalaryMin = this.formatCurrency(Number(APIResponse[i].salaryMin)) !== 'N/A' ? this.formatCurrency(Number(APIResponse[i].salaryMin)) : '';
+
+                const salaryDetails = (formattedSalaryMin && formattedSalaryMax)
+                    ? `, Min: ${formattedSalaryMin}, Max: ${formattedSalaryMax}`
+                    : formattedAvgSalary;
+
+                jobList += `${i + 1}. **${APIResponse[i].title}**  
+                  \t\t* **Salary Average:** ${formattedAvgSalary}${salaryDetails}  
+                  \t\t* **Location:** ${APIResponse[i].location}  
+                  \t\t* **Apply here:** [read more about the job and apply here](${APIResponse[i].link})  
+                  ${i !== APIResponse.length - 1 ? '\n' : ''}`;
+            }
+
+            let message = `## Hey <@${userID}>!  
+            ## Here's your list of job/internship recommendations: \n  
+        Based on your interests in...
+            \n\t* working as a: **${interests.interest1}** **${interests.interest2}**, \n\t*  being this job type: **${interests.interest3}**, \n\t*  based in or around: **${interests.interest4}**, \n\t*  and within this distance: **${interests.interest5}**, \n 
+    I've found these jobs you may find interesting. Please note that while you may get job/internship recommendations from the same company, \n their positions/details/applications/salary WILL be different and this is not a glitch/bug!\n
+    Here's your personalized list:
+
+            ${jobList}
+            
+            ---  
+            ### **Disclaimer:**  
+            -# Please be aware that the job listings displayed are retrieved from a third-party API. \
+            While we strive to provide accurate information, we cannot guarantee the legitimacy or security\
+            of all postings. Exercise caution when sharing personal information, submitting resumes, or registering\
+            on external sites. Always verify the authenticity of job applications before proceeding. Additionally, \
+            some job postings may contain inaccuracies due to API limitations, which are beyond our control. We apologize for any inconvenience this may cause and appreciate your understanding.
+            `;
+
+            const messages = this.splitMessage(message, 2000);
+            await interaction.deferReply(); // Defer the reply to allow follow-up messages
+            for (const msg of messages) {
+                await interaction.followUp({ content: msg });
+            }	
+
+	}
+}
 
     formatCurrency(currency: number): string {
         return isNaN(currency) ? 'N/A' : `${new Intl.NumberFormat('en-US', {
             style: 'currency',
             currency: 'USD' 
 		}).format(Number(currency))}`;
+	}
+
+	splitMessage(message: string, maxLength: number): string[] {
+		const messages = [];
+		while (message.length > maxLength) {
+			const splitIndex = message.lastIndexOf('\n', maxLength);
+			messages.push(message.substring(0, splitIndex));
+			message = message.substring(splitIndex + 1);
+		}
+		messages.push(message);
+		return messages;
 	}
 	
 }

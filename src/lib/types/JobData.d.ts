@@ -1,4 +1,5 @@
 export interface JobData {
+	
 	city: string,
 	preference: string,
 	jobType: string,
