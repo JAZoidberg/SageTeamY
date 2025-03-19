@@ -1,4 +1,4 @@
-import { ApplicationCommandOptionData, ApplicationCommandOptionType, ChatInputCommandInteraction, EmbedBuilder, InteractionResponse } from 'discord.js';
+import { ApplicationCommandOptionData, ApplicationCommandOptionType, ChatInputCommandInteraction, EmbedBuilder, InteractionResponse, Message } from 'discord.js';
 import fetchJobListings from '@root/src/lib/utils/jobUtils/Adzuna_job_search';
 import { JobResult } from '@root/src/lib/types/JobResult';
 import { Interest } from '@root/src/lib/types/Interest';
@@ -85,22 +85,17 @@ export default class extends Command {
 			interest5: '10'
 		};
 
-<<<<<<< HEAD
-		const jobTest : JobResult[] = await fetchJobListings(testJobData, testInterests);
-=======
->>>>>>> 7c34f60b4a97428ca6916c976b2041fdc6b4d527
 
 		const APIResponse:JobResult[] = await fetchJobListings(jobData, interests);
-		const results = [jobData, interests, APIResponse];
+		/**const results = [jobData, interests, APIResponse];
 		const jobFormData: [JobData, Interest, JobResult[]] = [jobData, interests, APIResponse];
-
+			// the tabs are being counted for some reason so thats why its formatted so weirdly in code !!
 		let message = `## Hey <@${userID}>!  
-			## Here's your list of job/internship recommendations:  
-			Based on your interests in **${jobFormData[1].interest1}**, **${jobFormData[1].interest2}**, \
-			**${jobFormData[1].interest3}**, **${jobFormData[1].interest4}**, and **${jobFormData[1].interest5}**, I've found these jobs you may find interesting. Please note that while you may get\
-			job/internship recommendations from the same company,\
-			their positions/details/applications/salary WILL be different and this is not a glitch/bug!
-			Here's your personalized list:
+			## Here's your list of job/internship recommendations: \n  
+		Based on your interests in...
+			\n\t* working as a: **${jobFormData[1].interest1}** **${jobFormData[1].interest2}**, \n\t*  being this job type: **${jobFormData[1].interest3}**, \n\t*  based in or around: **${jobFormData[1].interest4}**, \n\t*  and within this distance: **${jobFormData[1].interest5}**, \n 
+	I've found these jobs you may find interesting. Please note that while you may get job/internship recommendations from the same company, \n their positions/details/applications/salary WILL be different and this is not a glitch/bug!\n
+	Here's your personalized list:
 
 			${this.listJobs(jobFormData[2], 'date')}
 			
@@ -167,6 +162,45 @@ export default class extends Command {
 			currency: 'USD'
 		}).format(Number(currency))}`;
 	}
-	
+		**/
+		const slides = APIResponse.map((job, index) => {
+            return new EmbedBuilder()
+                .setTitle(`Job ${index + 1}: ${job.title}`)
+                .setDescription(`**Location:** ${job.location}\n**Salary:** ${this.formatCurrency((Number(job.salaryMax) + Number(job.salaryMin)) / 2)}\n**Location: **${job.location}\n **Apply here:** [read more about the job and apply here](${job.link})`)
+                .setThumbnail('https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.bls.gov%2Fcareeroutlook%2F2022%2Farticle%2Foccupations-that-dont-require-a-degree.htm&psig=AOvVaw3Ms_wesjZ5jFHFBXW0GYcm&ust=1742454090155000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCPiNsrrJlYwDFQAAAAAdAAAAABAE') // Update this URL to match your server setup
+                .setColor('#0099ff');
+        });
 
+        let slideIndex = 0;
+
+        const message = await interaction.reply({ embeds: [slides[slideIndex]], fetchReply: true }) as Message;
+
+        await message.react('◀');
+        await message.react('▶');
+
+        const filter = (reaction: any, user: any) => ['◀', '▶'].includes(reaction.emoji.name) && !user.bot;
+        const collector = message.createReactionCollector({ filter, time: 60000 });
+
+        collector.on('collect', async (reaction, user) => {
+            if (reaction.emoji.name === '◀') {
+                slideIndex = slideIndex > 0 ? slideIndex - 1 : slides.length - 1;
+            } else if (reaction.emoji.name === '▶') {
+                slideIndex = slideIndex < slides.length - 1 ? slideIndex + 1 : 0;
+            }
+            await displaySlide(message, slideIndex);
+            await reaction.users.remove(user.id);
+        });
+
+        async function displaySlide(message: Message, slideIndex: number) {
+            await message.edit({ embeds: [slides[slideIndex]] });
+        }
+    }
+
+    formatCurrency(currency: number): string {
+        return isNaN(currency) ? 'N/A' : `${new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD' 
+		}).format(Number(currency))}`;
+	}
+	
 }
