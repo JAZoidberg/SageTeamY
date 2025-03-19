@@ -54,10 +54,11 @@ export default async function fetchJobListings(jobData: JobData, interests?: Int
 			created: job.created || 'Unknown',
 			salaryMax: job.salary_max || 'Not listed',
 			salaryMin: job.salary_min || 'Not listed',
-			link: job.redirect_url || 'No link available'
+			link: job.redirect_url || 'No link available',
+			// Added latitude and longitude
+			longitude: job.longitude || 0,
+			latitude: job.latitude || 0
 		}));
-
-		jobCache[cacheKey] = jobResults;
 
 		return jobResults.sort();
 	} catch (error) {
