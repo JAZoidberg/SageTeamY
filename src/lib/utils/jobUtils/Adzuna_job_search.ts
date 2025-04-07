@@ -2,6 +2,7 @@ import axios from 'axios';
 import { APP_ID, APP_KEY } from '@root/config';
 import { JobData } from '../../types/JobData';
 import { Interest } from '../../types/Interest';
+import { goalStrength } from '../../types/goalStrength';
 import { JobListing } from '../../types/JobListing';
 import { JobResult } from '../../types/JobResult';
 import { AdzunaJobResponse } from '../../types/AdzunaJobResponse';
@@ -12,7 +13,7 @@ type JobCache = {
 
 const jobCache: JobCache = {};
 
-export default async function fetchJobListings(jobData: JobData, interests?: Interest): Promise<JobResult[]> {
+export default async function fetchJobListings(jobData: JobData, interests?: Interest, goalstrength?: goalStrength): Promise<JobResult[]> {
 	const LOCATION = encodeURIComponent(jobData.city);
 	const JOB_TYPE = encodeURIComponent(jobData.jobType);
 	const DISTANCE_KM = Number(jobData.distance) * 1.609; // Convert miles to kilometers
@@ -32,7 +33,22 @@ export default async function fetchJobListings(jobData: JobData, interests?: Int
 	}
 	whatInterests = encodeURIComponent(whatInterests);
 
-	const cacheKey = `${jobData.jobType.toLowerCase()}-${jobData.city.toLowerCase()}-${whatInterests}`;
+	let whatGoalStrengths = '';
+	if (goalstrength) {
+		const keys2 = Object.keys(goalstrength);
+		const lastKey2 = keys2[keys2.goalstrength - 1];
+		const lastValue2 = goalstrength[lastKey2];
+
+		for (const goalstren in goalstrength) {
+			whatGoalStrengths += goalstrength[goalstren].replace(/\s+/g, '-'); // Replace spaces with dashes
+			if (goalstrength[goalstren] !== lastValue2) {
+				whatGoalStrengths += ' ';
+			}
+		}
+	}
+	whatGoalStrengths = encodeURIComponent(whatGoalStrengths);
+
+	const cacheKey = `${jobData.jobType.toLowerCase()}-${jobData.city.toLowerCase()}-${whatInterests}-${whatGoalStrengths}`;
 	if (jobCache[cacheKey]) {
 		console.log('Fetching data from cache...');
 		return jobCache[cacheKey] as JobResult[];

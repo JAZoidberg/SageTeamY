@@ -9,6 +9,7 @@ import fetchJobListings from '../lib/utils/jobUtils/Adzuna_job_search';
 import { sendToFile } from '../lib/utils/generalUtils';
 import { JobData } from '../lib/types/JobData';
 import { Interest } from '../lib/types/Interest';
+import { goalStrength } from '../lib/types/goalStrength';
 import { JobResult } from '../lib/types/JobResult';
 
 async function register(bot: Client): Promise<void> {
@@ -94,6 +95,7 @@ async function getJobFormData(userID:string, filterBy: string):Promise<[JobData,
 		preference: jobformAnswers[0].answers[1],
 		jobType: jobformAnswers[0].answers[2],
 		distance: jobformAnswers[0].answers[3],
+		salary: jobformAnswers[0].answers[4],
 		filterBy: filterBy ?? 'default'
 	};
 
@@ -105,8 +107,16 @@ async function getJobFormData(userID:string, filterBy: string):Promise<[JobData,
 		interest5: jobformAnswers[1].answers[4]
 	};
 
-	const APIResponse:JobResult[] = await fetchJobListings(jobData, interests);
-	return [jobData, interests, APIResponse];
+	const goalstrength: goalStrength = {
+		strength1: jobformAnswers[2].answers[0],
+		strength2: jobformAnswers[2].answers[1],
+		strength3: jobformAnswers[2].answers[2],
+		goal1: jobformAnswers[2].answers[3],
+		goal2: jobformAnswers[2].answers[4]
+	};
+
+	const APIResponse:JobResult[] = await fetchJobListings(jobData, interests, goalstrength);
+	return [jobData, interests, goalstrength, APIResponse];
 }
 
 function formatCurrency(currency:number): string {
@@ -157,7 +167,7 @@ function listJobs(jobData: JobResult[], filterBy: string): string {
 }
 
 async function jobMessage(reminder: Reminder, userID: string): Promise<string> {
-	const jobFormData: [JobData, Interest, JobResult[]] = await getJobFormData(userID, reminder.filterBy);
+	const jobFormData: [JobData, Interest, goalStrength, JobResult[]] = await getJobFormData(userID, reminder.filterBy);
 	const message = `## Hey <@${reminder.owner}>!  
 	## Here's your list of job/internship recommendations:  
 	Based on your interests in **${jobFormData[1].interest1}**, **${jobFormData[1].interest2}**, \
@@ -166,7 +176,7 @@ async function jobMessage(reminder: Reminder, userID: string): Promise<string> {
 	their positions/details/applications/salary WILL be different and this is not a glitch/bug!
 	Here's your personalized list:
 
-	${listJobs(jobFormData[2], reminder.filterBy)}
+	${listJobs(jobFormData[3], reminder.filterBy)}
 	---  
 	### **Disclaimer:**  
 	-# Please be aware that the job listings displayed are retrieved from a third-party API. \
