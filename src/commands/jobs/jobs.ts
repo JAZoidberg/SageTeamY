@@ -26,7 +26,7 @@ export default class extends Command {
 				{ name: 'Date Posted', value: 'date' },
 				{ name: 'Salary', value: 'salary' },
 				{ name: 'Alphabetical', value: 'alphabetical' },
-				{name: 'Distance', value: 'distance' }
+				{ name: 'Distance', value: 'distance' }
 			]
 		}
 	]
@@ -123,8 +123,6 @@ Here's your personalized list:
 				return distanceA - distanceB; // Might have to account for negative distances
 			});
 		}
-
-
 
 		let jobList = '';
 		for (let i = 0; i < jobForm[2].length; i++) {
