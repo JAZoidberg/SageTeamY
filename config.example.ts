@@ -138,7 +138,7 @@ export const { ROLE_DROPDOWNS_ASSIGN_ROLES } = process.env;
 */
 
 export const BOT = {
-	TOKEN: config.BOT_TOKEN,
+	TOKEN: BOT_TOKEN,
 	CLIENT_ID: config.BOT_CLIENT_ID,
 	NAME: config.BOT_NAME
 };

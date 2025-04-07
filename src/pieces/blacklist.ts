@@ -1,7 +1,7 @@
 import { BLACKLIST } from '@root/config';
 import { Client, Message } from 'discord.js';
 
-// I stole these from https://github.com/powercord-org/powercord-backend/blob/my-awesome-branch/packages/boat/src/modules/mod/automod.ts#L52
+// Character and string normalization and cleaning constants
 const CLEANER = /[\u200B-\u200F\u2060-\u2063\uFEFF\u00AD\u180E]|[\u0300-\u036f]|[\u202A-\u202E]|[/\\]/g;
 const NORMALIZE: [RegExp, string][] = [
 	[/Α|А|₳|Ꭿ|Ꭺ|Λ|@|🅰|🅐|\uD83C\uDDE6/g, 'A'],
@@ -81,20 +81,30 @@ const NORMALIZE: [RegExp, string][] = [
 
 async function register(bot: Client): Promise<void> {
 	bot.on('messageCreate', async (msg) => {
-		filterMessages(msg).catch(async error => bot.emit('error', error));
-	});
-	bot.on('messageUpdate', async (_, msg) => {
-		// Handel partials
-		if (msg.partial) {
-			msg = await msg.fetch();
+		if (msg instanceof Message) {
+			filterMessages(msg).catch(async error => bot.emit('error', error));
 		}
-		msg = msg as Message<true>;
+	});
 
-		filterMessages(msg).catch(async error => bot.emit('error', error));
+	bot.on('messageUpdate', async (_, msg) => {
+		// Handle partials
+		if (msg.partial) {
+			try {
+				msg = await msg.fetch();
+			} catch (error) {
+				console.error('Failed to fetch the message:', error);
+				return;
+			}
+		}
+		msg = msg as Message;
+
+		if (msg instanceof Message) {
+			filterMessages(msg).catch(async error => bot.emit('error', error));
+		}
 	});
 }
 
-async function filterMessages(msg: Message): Promise<Message | void> {
+async function filterMessages(msg: Message): Promise<void> {
 	let normalizedMessage = msg.content.normalize('NFKD');
 	let attemptedBypass = false;
 	for (const [re, rep] of NORMALIZE) {
@@ -113,15 +123,14 @@ async function filterMessages(msg: Message): Promise<Message | void> {
 	for (const word of BLACKLIST) {
 		const simpleContains = lowercaseMessage.includes(word);
 		if (simpleContains || cleanLowercaseMessage.includes(word) || cleanNormalizedLowercaseMessage.includes(word)) {
-			msg.delete();
+			await msg.delete();
 
-			return msg.author.send(`You used a restricted word. Please refrain from doing so again.`)
+			msg.author.send(`You used a restricted word. Please refrain from doing so again.`)
 				.catch(() => {
-					msg.author.send(`${msg.member}, you used a restricted word. Please refrain from doing so again.`);
+					console.error(`Failed to send a warning message to ${msg.author.tag}.`);
 				});
 		}
 	}
 }
-
 
 export default register;

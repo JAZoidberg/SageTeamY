@@ -21,4 +21,3 @@ if [ ! -f "$BINDING_GYP" ]; then
 }
 EOF
     echo "binding.gyp created successfully."
-fi
