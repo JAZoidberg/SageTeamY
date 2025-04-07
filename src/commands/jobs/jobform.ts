@@ -19,9 +19,23 @@ const questions = [
 		'What city do you want to be located?',
 		'Remote, hybrid, and/or in-person?',
 		'Full time, Part time, and/or Internship?',
-		'How far are you willing to travel? (in miles)'
+		'How far are you willing to travel? (in miles)',
+		'What is your minimum yearly salary?'
 	],
-	['Interest 1', 'Interest 2', 'Interest 3', 'Interest 4', 'Interest 5']
+	[
+		'Interest 1',
+		'Interest 2',
+		'Interest 3',
+		'Interest 4',
+		'Interest 5'
+	],
+	[
+		'Strength 1',
+		'Strength 2',
+		'Strength 3',
+		'Goal 1',
+		'Goal 2'
+	]
 ];
 
 // prettier-ignore
@@ -34,12 +48,13 @@ export default class extends Command {
 	options: ApplicationCommandOptionData[] = [
 		{
 			name: 'qset',
-			description: 'Which question set do you want to view (1 or 2).',
+			description: 'Which question set do you want to view (1, 2, or 3).',
 			type: ApplicationCommandOptionType.Number,
 			required: true,
 			choices: [
 				{ name: 'qset 1', value: 1 },
-				{ name: 'qset 2', value: 2 }
+				{ name: 'qset 2', value: 2 },
+				{ name: 'qset 3', value: 3 }
 			]
 		}
 	];
@@ -47,15 +62,15 @@ export default class extends Command {
 	async run(interaction: ChatInputCommandInteraction): Promise<InteractionResponse<boolean> | void> {
 		const questionSet = interaction.options.getNumber('qset') - 1;
 
-		if (questionSet !== 0 && questionSet !== 1) {
-			await interaction.reply({ content: 'Please enter either 1 or 2' });
+		if (questionSet !== 0 && questionSet !== 1 && questionSet !== 2) {
+			await interaction.reply({ content: 'Please enter either 1, 2, or 3' });
 			return;
 		}
 
 		// Creates the modal that pops up once the command is run, giving it the correct title and set of questions.
 		const modal = new ModalBuilder()
 			.setCustomId(`jobModal${questionSet}`)
-			.setTitle(`Job Form (${questionSet + 1} of 2)`);
+			.setTitle(`Job Form (${questionSet + 1} of 3)`);
 
 		const askedQuestions = questions[questionSet];
 		const rows = askedQuestions.map((question) =>

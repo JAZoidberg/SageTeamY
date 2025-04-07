@@ -3,12 +3,14 @@ import fetchJobListings from '@root/src/lib/utils/jobUtils/Adzuna_job_search';
 import { JobResult } from '@root/src/lib/types/JobResult';
 import { Interest } from '@root/src/lib/types/Interest';
 import { JobData } from '@root/src/lib/types/JobData';
+import { goalStrength } from '@root/src/lib/types/goalStrength';
 import { Command } from '@lib/types/Command';
 import { DB, BOT, MAP_KEY } from '@root/config';
 import { MongoClient } from 'mongodb';
 import { sendToFile } from '@root/src/lib/utils/generalUtils';
 import axios from 'axios';
 import { JobPreferences } from '@root/src/lib/types/JobPreferences';
+import jobform from './jobform';
 
 
 export default class extends Command {
@@ -46,6 +48,7 @@ export default class extends Command {
 			preference: jobformAnswers.answers.workType,
 			jobType: jobformAnswers.answers.employmentType,
 			distance: jobformAnswers.answers.travelDistance,
+			salary: jobformAnswers.answers.salary,
 			filterBy: 'default'
 		};
 
@@ -57,8 +60,16 @@ export default class extends Command {
 			interest5: jobformAnswers.answers.interest5
 		};
 
+		const goalstrength: goalStrength = {
+			strength1: jobformAnswers.answers.strength1,
+			strength2: jobformAnswers.answers.strength2,
+			strength3: jobformAnswers.answers.strength3,
+			goal1: jobformAnswers.answers.goal1,
+			goal2: jobformAnswers.answers.goal2
+		};
+
 		const APIResponse:JobResult[] = await fetchJobListings(jobData, interests);
-		const jobFormData: [JobData, Interest, JobResult[]] = [jobData, interests, APIResponse];
+		const jobFormData: [JobData, Interest, goalStrength, JobResult[]] = [jobData, interests, goalstrength, APIResponse];
 
 		const message = `## Hey <@${userID}>!  
 			## Here's your list of job/internship recommendations:  
@@ -90,12 +101,12 @@ Here's your personalized list:
 		}
 	}
 
-	async listJobs(jobForm: [JobData, Interest, JobResult[]], filterBy: string): Promise<string> {
+	async listJobs(jobForm: [JobData, Interest, goalStrength, JobResult[]], filterBy: string): Promise<string> {
 		// Conditionally sort jobs by salary if sortBy is 'salary'
 		const cityCoordinates = await this.queryCoordinates(jobForm[0].city);
 
 		if (filterBy === 'salary') {
-			jobForm[2].sort((a, b) => {
+			jobForm[3].sort((a, b) => {
 				const avgA = (Number(a.salaryMax) + Number(a.salaryMin)) / 2;
 				const avgB = (Number(b.salaryMax) + Number(b.salaryMin)) / 2;
 
@@ -106,13 +117,13 @@ Here's your personalized list:
 				return avgB - avgA; // Descending order
 			});
 		} else if (filterBy === 'alphabetical') {
-			jobForm[2].sort((a, b) => (a.title > b.title ? 1 : -1));
+			jobForm[3].sort((a, b) => (a.title > b.title ? 1 : -1));
 		} else if (filterBy === 'date') {
-			jobForm[2].sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime());
+			jobForm[3].sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime());
 		} else if (filterBy === 'distance') {
 			// cityCoordinates = await this.queryCoordinates(jobForm[0].city);
 
-			jobForm[2].sort((a, b) => {
+			jobForm[3].sort((a, b) => {
 				const distanceA = this.calculateDistance(cityCoordinates.lat, cityCoordinates.lng, Number(a.latitude), Number(a.longitude));
 				const distanceB = this.calculateDistance(cityCoordinates.lat, cityCoordinates.lng, Number(b.latitude), Number(b.longitude));
 
@@ -125,7 +136,7 @@ Here's your personalized list:
 		}
 
 		let jobList = '';
-		for (let i = 0; i < jobForm[2].length; i++) {
+		for (let i = 0; i < jobForm[3].length; i++) {
 			const avgSalary = (Number(jobForm[2][i].salaryMax) + Number(jobForm[2][i].salaryMin)) / 2;
 			const formattedAvgSalary = this.formatCurrency(avgSalary);
 			const formattedSalaryMax = this.formatCurrency(Number(jobForm[2][i].salaryMax)) !== 'N/A' ? this.formatCurrency(Number(jobForm[2][i].salaryMax)) : '';
@@ -137,13 +148,13 @@ Here's your personalized list:
 				? `, Min: ${formattedSalaryMin}, Max: ${formattedSalaryMax}`
 				: formattedAvgSalary;
 
-			jobList += `${i + 1}. **${jobForm[2][i].title}**  
+			jobList += `${i + 1}. **${jobForm[3][i].title}**  
 			  \t\t* **Salary Average:** ${formattedAvgSalary}${salaryDetails}  
-			  \t\t* **Location:** ${jobForm[2][i].location}  
+			  \t\t* **Location:** ${jobForm[3][i].location}  
 			  \t\t* **Date Posted:** ${new Date(jobForm[2][i].created).toDateString()} at ${new Date(jobForm[2][i].created).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-			  \t\t* **Apply here:** [read more about the job and apply here](${jobForm[2][i].link})  
+			  \t\t* **Apply here:** [read more about the job and apply here](${jobForm[3][i].link})  
 			  \t\t* **Distance:** ${formattedDistance}
-			  ${i !== jobForm[2].length - 1 ? '\n' : ''}`;
+			  ${i !== jobForm[3].length - 1 ? '\n' : ''}`;
 		}
 
 		return jobList || '### Unfortunately, there were no jobs found based on your interests :(. Consider updating your interests or waiting until something is found.';

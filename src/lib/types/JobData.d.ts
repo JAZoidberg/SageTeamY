@@ -3,5 +3,6 @@ export interface JobData {
 	preference: string,
 	jobType: string,
 	distance: string,
+	salary: string,
 	filterBy: string
 }
