@@ -20,6 +20,7 @@ import { MongoClient } from "mongodb";
 import { sendToFile } from "@root/src/lib/utils/generalUtils";
 import axios from "axios";
 import { JobPreferences } from "@root/src/lib/types/JobPreferences";
+import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
 // Temporary storage for user job data
 const userJobData = new Map<string, { jobs: JobResult[]; index: number }>();
@@ -42,6 +43,63 @@ export default class extends Command {
 			],
 		},
 	];
+
+	//-------------------ADDED PDF GENERATATOR METHOD----------------------
+	private async generateJobPDF(jobs: JobResult[]): Promise<Buffer> {
+		// Create a new PDF document.
+		const pdfDoc = await PDFDocument.create();
+		let currentPage = pdfDoc.addPage();
+		const { width, height } = currentPage.getSize();
+		const margin = 50;
+		let yPosition = height - margin;
+		const fontSize = 12;
+		const titleFontSize = 20;
+
+		// Embed a standard font.
+		const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
+
+		// Draw the title.
+		currentPage.drawText("Job Listings", {
+			x: margin,
+			y: yPosition,
+			size: titleFontSize,
+			font: timesRomanFont,
+			color: rgb(0, 0, 0),
+		});
+		yPosition -= 30;
+
+		// Loop through each job and add its details.
+		for (let i = 0; i < jobs.length; i++) {
+			const job = jobs[i];
+			// Use your existing formatter or adjust as needed.
+			const jobText = `${i + 1}. ${job.title}\nLocation: ${
+				job.location
+			}\nSalary: ${this.formatSalary(job)}\nApply Here: ${job.link}\n\n`;
+
+			// Estimate the text height.
+			const lines = jobText.split("\n").length;
+			const textHeight = lines * fontSize + 10;
+
+			// Check for space and add a new page if needed.
+			if (yPosition - textHeight < margin) {
+				currentPage = pdfDoc.addPage();
+				yPosition = currentPage.getHeight() - margin;
+			}
+
+			currentPage.drawText(jobText, {
+				x: margin,
+				y: yPosition,
+				size: fontSize,
+				font: timesRomanFont,
+				color: rgb(0, 0, 0),
+				maxWidth: currentPage.getWidth() - margin * 2,
+			});
+			yPosition -= textHeight;
+		}
+
+		const pdfBytes = await pdfDoc.save();
+		return Buffer.from(pdfBytes);
+	}
 
 	async run(
 		interaction: ChatInputCommandInteraction
@@ -141,6 +199,28 @@ export default class extends Command {
 					}
 					index = index >= jobs.length ? 0 : index;
 					break;
+				//----------------ADDED DOWNLOAD BUTTON--------------------
+				case "download":
+					await i.deferReply({ ephemeral: true });
+					try {
+						// Generate the PDF from all stored jobs.
+						const pdfBuffer = await this.generateJobPDF(jobs);
+						const attachment = new AttachmentBuilder(
+							pdfBuffer
+						).setName("jobs.pdf");
+						await i.editReply({
+							content:
+								"Here is your PDF file with all job listings:",
+							files: [attachment],
+						});
+					} catch (error) {
+						console.error("Error generating PDF:", error);
+						await i.editReply({
+							content:
+								"An error occurred while generating the PDF. Please try again later.",
+						});
+					}
+					return; // Exit early so we don't update the embed.
 			}
 
 			// Update user data
@@ -198,7 +278,12 @@ export default class extends Command {
 				.setCustomId("next")
 				.setLabel("Next")
 				.setStyle(ButtonStyle.Primary)
-				.setDisabled(totalJobs === 1)
+				.setDisabled(totalJobs === 1),
+			//----------------ADDED DOWNLOAD BUTTON-------------------
+			new ButtonBuilder()
+				.setCustomId("download")
+				.setLabel("Download")
+				.setStyle(ButtonStyle.Success)
 		);
 
 		return { embed, row };
