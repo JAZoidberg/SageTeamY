@@ -73,3 +73,4 @@ Write-Host "Verifying installed packages..."
 & "$msys2Path" -lc "pacman -Q mingw-w64-x86_64-cairo mingw-w64-x86_64-pango mingw-w64-x86_64-libjpeg-turbo mingw-w64-x86_64-giflib"
 
 
+Write-Host "All dependencies installed successfully!"
