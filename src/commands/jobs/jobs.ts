@@ -109,28 +109,28 @@ Here's your personalized list:
 		const pubChan = interaction.channel;
 		if (pubChan) {
 			for (let i = 0; i < Math.min(3, jobFormData[2].length); i++) {
-				const job = jobFormData[2][i]; 
-		
+				const job = jobFormData[2][i];
+
 				// calc avg salary for display
 				const avgSalary = (Number(job.salaryMax) + Number(job.salaryMin)) / 2;
 				const formattedAvgSalary = this.formatCurrency(avgSalary);
-		
+
 				// Formating date the job was posted
 				const postedDate = new Date(job.created).toDateString();
-		
+
 				// Building a rich embed message to display job info
 				const embed = new EmbedBuilder()
-					.setTitle(`${job.title}`)                    // Set the job title as the embed title
-					.setURL(job.link)                            // Make the embed title clickable to the job listing
-					.setDescription(`Job opportunity found for you!`) 
-					.addFields(                                  // Add relevant fields as name-value pairs
+					.setTitle(`${job.title}`) // Set the job title as the embed title
+					.setURL(job.link) // Make the embed title clickable to the job listing
+					.setDescription(`Job opportunity found for you!`)
+					.addFields( // Add relevant fields as name-value pairs
 						{ name: 'Average Salary', value: formattedAvgSalary || 'N/A', inline: true },
 						{ name: 'Location', value: job.location || 'N/A', inline: true },
-						{ name: 'Date Posted', value: postedDate, inline: true },
+						{ name: 'Date Posted', value: postedDate, inline: true }
 					)
-					.setColor(0x00AE86)                          
-					.setFooter({ text: 'Powered by SageBot & Adzuna' }); 
-		
+					.setColor(0x00AE86)
+					.setFooter({ text: 'Powered by SageBot & Adzuna' });
+
 				// Send the embed into the same channel the command was triggered in
 				await pubChan.send({ embeds: [embed] });
 			}
@@ -145,17 +145,16 @@ Here's your personalized list:
 			jobData.sort((a, b) => {
 				const avgA = (Number(a.salaryMax) + Number(a.salaryMin)) / 2;
 				const avgB = (Number(b.salaryMax) + Number(b.salaryMin)) / 2;
-	
+
 				// Handle cases where salaryMax or salaryMin is "Not listed"
 				if (isNaN(avgA)) return 1; // Treat jobs with no salary info as lowest
 				if (isNaN(avgB)) return -1;
-	
+
 				return avgB - avgA; // Descending order
 			});
 		} else if (filterBy === 'alphabetical') {
-			jobData.sort((a, b) => (a.title > b.title ? 1 : -1));
-		}
-		else if (filterBy === 'date') {
+			jobData.sort((a, b) => a.title > b.title ? 1 : -1);
+		} else if (filterBy === 'date') {
 			jobData.sort((a, b) => new Date(a.created).getTime() - new Date(b.created).getTime());
 		}
 
@@ -166,11 +165,11 @@ Here's your personalized list:
 			const formattedAvgSalary = this.formatCurrency(avgSalary);
 			const formattedSalaryMax = this.formatCurrency(Number(jobData[i].salaryMax)) !== 'N/A' ? this.formatCurrency(Number(jobData[i].salaryMax)) : '';
 			const formattedSalaryMin = this.formatCurrency(Number(jobData[i].salaryMin)) !== 'N/A' ? this.formatCurrency(Number(jobData[i].salaryMin)) : '';
-	
-			const salaryDetails = (formattedSalaryMin && formattedSalaryMax)
+
+			const salaryDetails = formattedSalaryMin && formattedSalaryMax
 				? `, Min: ${formattedSalaryMin}, Max: ${formattedSalaryMax}`
 				: formattedAvgSalary;
-	
+
 			jobList += `${i + 1}. **${jobData[i].title}**  
 			  \t\t* **Salary Average:** ${formattedAvgSalary}${salaryDetails}  
 			  \t\t* **Location:** ${jobData[i].location}  
@@ -178,7 +177,7 @@ Here's your personalized list:
 			  \t\t* **Apply here:** [read more about the job and apply here](${jobData[i].link})  
 			  ${i !== jobData.length - 1 ? '\n' : ''}`;
 		}
-	
+
 		return jobList || '### Unfortunately, there were no jobs found based on your interests :(. Consider updating your interests or waiting until something is found.';
 	}
 
@@ -188,6 +187,6 @@ Here's your personalized list:
 			currency: 'USD'
 		}).format(Number(currency))}`;
 	}
-	
+
 
 }
