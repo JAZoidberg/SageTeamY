@@ -108,7 +108,32 @@ Here's your personalized list:
 
 		const pubChan = interaction.channel;
 		if (pubChan) {
-			pubChan.send({ content: message });
+			for (let i = 0; i < Math.min(3, jobFormData[2].length); i++) {
+				const job = jobFormData[2][i]; 
+		
+				// calc avg salary for display
+				const avgSalary = (Number(job.salaryMax) + Number(job.salaryMin)) / 2;
+				const formattedAvgSalary = this.formatCurrency(avgSalary);
+		
+				// Formating date the job was posted
+				const postedDate = new Date(job.created).toDateString();
+		
+				// Building a rich embed message to display job info
+				const embed = new EmbedBuilder()
+					.setTitle(`${job.title}`)                    // Set the job title as the embed title
+					.setURL(job.link)                            // Make the embed title clickable to the job listing
+					.setDescription(`Job opportunity found for you!`) 
+					.addFields(                                  // Add relevant fields as name-value pairs
+						{ name: 'Average Salary', value: formattedAvgSalary || 'N/A', inline: true },
+						{ name: 'Location', value: job.location || 'N/A', inline: true },
+						{ name: 'Date Posted', value: postedDate, inline: true },
+					)
+					.setColor(0x00AE86)                          
+					.setFooter({ text: 'Powered by SageBot & Adzuna' }); 
+		
+				// Send the embed into the same channel the command was triggered in
+				await pubChan.send({ embeds: [embed] });
+			}
 		} else {
 			console.error('Channel not found');
 		}
