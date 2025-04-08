@@ -6,27 +6,28 @@
         "esModuleInterop": true,
         "outDir": "./dist",
         "paths": {
-			"@root/*": ["*"],
-			"@lib/*": ["src/lib/*"],
-			"@pieces/*": ["src/pieces/*"]
+            "@root/*": ["*"],
+            "@lib/*": ["src/lib/*"],
+            "@pieces/*": ["src/pieces/*"]
         },
         "resolveJsonModule": true,
         "rootDir": "./",
-		"skipLibCheck": true,
-		"target": "ES2019",
-		"types": [
-			"node",
-			"discord.js"
-		],
+        "skipLibCheck": true,
+        "target": "ES2019",
+        "lib": ["ES2020", "DOM"],
+        "types": [
+            "node",
+            "discord.js"
+        ],
         "module": "commonjs"
     },
-	"include": [
-		"config.ts",
-		"src/**/*"
-	],
+    "include": [
+        "config.ts",
+        "src/**/*"
+    ],
     "exclude": [
         "**/node_modules",
-		"**/node_modules/discord.js/typings/index.d.ts", // problematic in djs versions >13.1
-		"**/dist"
+        "**/node_modules/discord.js/typings/index.d.ts",
+        "**/dist"
     ]
 }
