@@ -139,11 +139,11 @@ Here's your personalized list:
 
 		let jobList = '';
 		for (let i = 0; i < jobForm[3].length; i++) {
-			const avgSalary = (Number(jobForm[2][i].salaryMax) + Number(jobForm[2][i].salaryMin)) / 2;
+			const avgSalary = (Number(jobForm[3][i].salaryMax) + Number(jobForm[3][i].salaryMin)) / 2;
 			const formattedAvgSalary = this.formatCurrency(avgSalary);
-			const formattedSalaryMax = this.formatCurrency(Number(jobForm[2][i].salaryMax)) !== 'N/A' ? this.formatCurrency(Number(jobForm[2][i].salaryMax)) : '';
-			const formattedSalaryMin = this.formatCurrency(Number(jobForm[2][i].salaryMin)) !== 'N/A' ? this.formatCurrency(Number(jobForm[2][i].salaryMin)) : '';
-			const jobDistance = this.calculateDistance(cityCoordinates.lat, cityCoordinates.lng, Number(jobForm[2][i].latitude), Number(jobForm[2][i].longitude));
+			const formattedSalaryMax = this.formatCurrency(Number(jobForm[3][i].salaryMax)) !== 'N/A' ? this.formatCurrency(Number(jobForm[3][i].salaryMax)) : '';
+			const formattedSalaryMin = this.formatCurrency(Number(jobForm[3][i].salaryMin)) !== 'N/A' ? this.formatCurrency(Number(jobForm[3][i].salaryMin)) : '';
+			const jobDistance = this.calculateDistance(cityCoordinates.lat, cityCoordinates.lng, Number(jobForm[3][i].latitude), Number(jobForm[3][i].longitude));
 			const formattedDistance = (jobDistance !== -1) ? `${jobDistance.toFixed(2)} miles` : 'N/A';
 
 			const salaryDetails = (formattedSalaryMin && formattedSalaryMax)
@@ -153,7 +153,7 @@ Here's your personalized list:
 			jobList += `${i + 1}. **${jobForm[3][i].title}**  
 			  \t\t* **Salary Average:** ${formattedAvgSalary}${salaryDetails}  
 			  \t\t* **Location:** ${jobForm[3][i].location}  
-			  \t\t* **Date Posted:** ${new Date(jobForm[2][i].created).toDateString()} at ${new Date(jobForm[2][i].created).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+			  \t\t* **Date Posted:** ${new Date(jobForm[3][i].created).toDateString()} at ${new Date(jobForm[3][i].created).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
 			  \t\t* **Apply here:** [read more about the job and apply here](${jobForm[3][i].link})  
 			  \t\t* **Distance:** ${formattedDistance}
 			  ${i !== jobForm[3].length - 1 ? '\n' : ''}`;
