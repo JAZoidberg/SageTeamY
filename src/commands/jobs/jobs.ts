@@ -125,9 +125,9 @@ export default class extends Command {
 		for (let i = 0; i < jobs.length; i++) {
 			const job = jobs[i];
 
-			if (yPosition - fontSize < margin) {
+			if (yPosition - fontSize*2 < margin) {
 				currentPage = pdfDoc.addPage();
-				yPosition = currentPage.getHeight() - margin;
+				yPosition = currentPage.getHeight() - margin-20;
 			}
 	
 			const maxWidth = width - margin * 2; // Calculate available width
@@ -137,9 +137,9 @@ export default class extends Command {
 
 			for (const line of wrappedTitle) {
 				// Check if there's enough space for the line
-				if (yPosition - fontSize < margin) {
+				if (yPosition - fontSize*2 < margin) {
 					currentPage = pdfDoc.addPage();
-					yPosition = currentPage.getHeight() - margin;
+					yPosition = currentPage.getHeight() - margin-20;
 				}
 
 				currentPage.drawText(line, {
@@ -164,7 +164,7 @@ export default class extends Command {
 				// Check if there's enough space on the page, and add a new page if needed.
 				if (yPosition - fontSize *2 < margin) {
 					currentPage = pdfDoc.addPage();
-					yPosition = currentPage.getHeight() - margin;
+					yPosition = currentPage.getHeight() - margin-20;
 				}
 
 				const maxLabelWidth = width - margin * 2 - bulletPointIndent - subBulletPointIndent;
@@ -173,9 +173,9 @@ export default class extends Command {
     			// Draw the wrapped label
 				for (const line of wrappedLabel) {
 					// Check if there's enough space for the line
-					if (yPosition - fontSize < margin) {
+					if (yPosition - fontSize*2 < margin) {
 						currentPage = pdfDoc.addPage();
-						yPosition = currentPage.getHeight() - margin;
+						yPosition = currentPage.getHeight() - margin-20;
 					}
 
 					currentPage.drawText(line, {
@@ -197,9 +197,9 @@ export default class extends Command {
 				
 				for (const line of wrappedValue) {
 					// Check if there's enough space for the line
-					if (yPosition - fontSize < margin) {
+					if (yPosition - fontSize*2 < margin) {
 						currentPage = pdfDoc.addPage();
-						yPosition = currentPage.getHeight() - margin;
+						yPosition = currentPage.getHeight() - margin-20;
 					}
 
 					currentPage.drawText(line, {
