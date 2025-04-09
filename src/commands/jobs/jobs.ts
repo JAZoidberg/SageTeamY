@@ -110,7 +110,16 @@ export default class extends Command {
 			
 			color: rgb(114/255, 53/255, 9/255),
 		});
-		yPosition -= 50;
+		yPosition -= 40;
+
+		currentPage.drawRectangle({
+			x: margin,
+			y: yPosition+50,
+			width: lineWidth/2,
+			height: lineHeight-8,
+			color: rgb(135 / 255, 59 / 255, 29 / 255), // red color
+		});
+		yPosition -= 10;
 
 		// Loop through each job and add its details.
 		for (let i = 0; i < jobs.length; i++) {
@@ -181,7 +190,7 @@ export default class extends Command {
 				}
 				
 
-				const combinedText = `• ${point.value}`;
+				const combinedText = `•${point.value}`;
 				const maxValueWidth = width - margin * 2 - bulletPointIndent - subBulletPointIndent;
 				const wrappedValue = this.wrapText(combinedText, HelveticaBold, fontSize+4, maxValueWidth);
 
