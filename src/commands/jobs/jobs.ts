@@ -20,10 +20,11 @@ import { MongoClient } from "mongodb";
 import { sendToFile } from "@root/src/lib/utils/generalUtils";
 import axios from "axios";
 import { JobPreferences } from "@root/src/lib/types/JobPreferences";
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { PDFDocument, PDFFont, StandardFonts, rgb } from "pdf-lib";
 
 // Temporary storage for user job data
 const userJobData = new Map<string, { jobs: JobResult[]; index: number }>();
+
 
 export default class extends Command {
 	description = `Get a listing of jobs based on your interests and preferences.`;
@@ -36,10 +37,10 @@ export default class extends Command {
 			type: ApplicationCommandOptionType.String,
 			required: false,
 			choices: [
-				{ name: "Date Posted", value: "date" },
-				{ name: "Salary", value: "salary" },
-				{ name: "Alphabetical", value: "alphabetical" },
-				{ name: "Distance", value: "distance" },
+				{ name: "Date Posted: recent", value: "date" },
+				{ name: "Salary: high-low average", value: "salary" },
+				{ name: "Alphabetical: A-Z", value: "alphabetical" },
+				{ name: "Distance: shortest-longest", value: "distance" },
 			],
 		},
 	];
@@ -50,52 +51,168 @@ export default class extends Command {
 		const pdfDoc = await PDFDocument.create();
 		let currentPage = pdfDoc.addPage();
 		const { width, height } = currentPage.getSize();
-		const margin = 50;
-		let yPosition = height - margin;
-		const fontSize = 12;
-		const titleFontSize = 20;
+		const margin = 40;
+		let yPosition = height - margin- 50;
+		const fontSize = 10;
+		const titleFontSize = 30;
+		const bulletPointIndent = 20;
+		const subBulletPointIndent = 30; // Indentation for sub-bullet points
+
+
 
 		// Embed a standard font.
 		const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
+		const HelveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold );
+		const Helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica );
+
+		
+
 
 		// Draw the title.
-		currentPage.drawText("Job Listings", {
+		const lineHeight = 10; // Height of the line
+		const lineWidth = (width - margin * 2) / 3;
+
+		currentPage.drawRectangle({
 			x: margin,
-			y: yPosition,
-			size: titleFontSize,
-			font: timesRomanFont,
-			color: rgb(0, 0, 0),
+			y: yPosition+50,
+			width: lineWidth,
+			height: lineHeight,
+			color: rgb(135 / 255, 59 / 255, 29 / 255), // red color
 		});
-		yPosition -= 30;
+		
+		// Draw the second color segment
+		currentPage.drawRectangle({
+			x: margin + lineWidth,
+			y: yPosition+50,
+			width: lineWidth,
+			height: lineHeight,
+			color: rgb(237 / 255, 118 / 255, 71 / 255), // orangey color
+		});
+		
+		// Draw the third color segment
+		currentPage.drawRectangle({
+			x: margin + lineWidth * 2,
+			y: yPosition+50,
+			width: lineWidth,
+			height: lineHeight,
+			color: rgb(13/255, 158/255, 198/255), // Blue color
+		});
+		
+		yPosition -= 40; // Adjust spacing below the line
+
+
+
+		currentPage.drawText("List of Jobs PDF", {
+			x: margin,
+			y: yPosition+50,
+			size: titleFontSize,
+			font: HelveticaBold,
+			
+			color: rgb(114/255, 53/255, 9/255),
+		});
+		yPosition -= 50;
 
 		// Loop through each job and add its details.
 		for (let i = 0; i < jobs.length; i++) {
 			const job = jobs[i];
-			// Use your existing formatter or adjust as needed.
-			const jobText = `${i + 1}. ${job.title}\nLocation: ${
-				job.location
-			}\nSalary: ${this.formatSalary(job)}\nApply Here: ${job.link}\n\n`;
 
-			// Estimate the text height.
-			const lines = jobText.split("\n").length;
-			const textHeight = lines * fontSize + 10;
-
-			// Check for space and add a new page if needed.
-			if (yPosition - textHeight < margin) {
+			if (yPosition - fontSize < margin) {
 				currentPage = pdfDoc.addPage();
 				yPosition = currentPage.getHeight() - margin;
 			}
+	
+			const maxWidth = width - margin * 2; // Calculate available width
+			const wrappedTitle = this.wrapText(`${i + 1}. ${job.title}`, HelveticaBold, fontSize + 10, maxWidth);
 
-			currentPage.drawText(jobText, {
-				x: margin,
-				y: yPosition,
-				size: fontSize,
-				font: timesRomanFont,
-				color: rgb(0, 0, 0),
-				maxWidth: currentPage.getWidth() - margin * 2,
-			});
-			yPosition -= textHeight;
+			
+
+			for (const line of wrappedTitle) {
+				// Check if there's enough space for the line
+				if (yPosition - fontSize < margin) {
+					currentPage = pdfDoc.addPage();
+					yPosition = currentPage.getHeight() - margin;
+				}
+
+				currentPage.drawText(line, {
+					x: margin,
+					y: yPosition+30,
+					size: fontSize + 10,
+					font: HelveticaBold,
+					color: rgb(241 / 255, 113 / 255, 34 / 255),
+				});
+
+				yPosition -= 30; // Adjust spacing between lines
+			}
+	
+			// Draw the bullet points for location, salary, and apply link.
+			const bulletPoints = [
+				{ label: "Location", value: job.location },
+				{ label: "Salary", value: this.formatSalaryforPDF(job) },
+				{ label: "Apply Here", value: job.link },
+			];
+	
+			for (const point of bulletPoints) {
+				// Check if there's enough space on the page, and add a new page if needed.
+				if (yPosition - fontSize *2 < margin) {
+					currentPage = pdfDoc.addPage();
+					yPosition = currentPage.getHeight() - margin;
+				}
+
+				const maxLabelWidth = width - margin * 2 - bulletPointIndent - subBulletPointIndent;
+    			const wrappedLabel = this.wrapText(`• ${point.label}`, HelveticaBold, fontSize + 5, maxLabelWidth);
+
+    			// Draw the wrapped label
+				for (const line of wrappedLabel) {
+					// Check if there's enough space for the line
+					if (yPosition - fontSize < margin) {
+						currentPage = pdfDoc.addPage();
+						yPosition = currentPage.getHeight() - margin;
+					}
+
+					currentPage.drawText(line, {
+						x: margin + bulletPointIndent,
+						y: yPosition+25,
+						size: fontSize + 5,
+						font: HelveticaBold,
+						color: rgb(94 / 255, 74 / 255, 74 / 255),
+					});
+
+					yPosition -= fontSize + 10; // Adjust spacing between lines
+				}
+				
+
+				const combinedText = `• ${point.value}`;
+				const maxValueWidth = width - margin * 2 - bulletPointIndent - subBulletPointIndent;
+				const wrappedValue = this.wrapText(combinedText, HelveticaBold, fontSize+4, maxValueWidth);
+
+				
+				for (const line of wrappedValue) {
+					// Check if there's enough space for the line
+					if (yPosition - fontSize < margin) {
+						currentPage = pdfDoc.addPage();
+						yPosition = currentPage.getHeight() - margin;
+					}
+
+					currentPage.drawText(line, {
+						x: margin + bulletPointIndent + subBulletPointIndent,
+						y: yPosition+20,
+						size: fontSize+3,
+						font: HelveticaBold,
+						color: rgb(13 / 255, 158 / 255, 198 / 255),
+					});
+
+					yPosition -= fontSize + 5; // Adjust spacing between lines
+				}
+
+				yPosition -= 20; // Add extra spacing between items
+			}
+
+			yPosition -= 40; // Add extra spacing between jobs.
+
+			
+			
 		}
+		
 
 		const pdfBytes = await pdfDoc.save();
 		return Buffer.from(pdfBytes);
@@ -240,6 +357,42 @@ export default class extends Command {
 		});
 	}
 
+	wrapText(text: string, font: PDFFont, fontSize: number, maxWidth: number): string[] {
+		const words = text.split(" ");
+		const lines: string[] = [];
+		let currentLine = "";
+	
+		for (const word of words) {
+			const testLine = currentLine ? `${currentLine} ${word}` : word;
+			const textWidth = font.widthOfTextAtSize(testLine, fontSize);
+	
+			if (textWidth <= maxWidth) {
+				currentLine = testLine;
+			} else {
+				if (currentLine) {
+					lines.push(currentLine);
+				}
+				currentLine = "";
+	
+				// Handle long words that exceed maxWidth
+				let remainingWord = word;
+				while (font.widthOfTextAtSize(remainingWord, fontSize) > maxWidth) {
+					let splitIndex = Math.floor((maxWidth / font.widthOfTextAtSize(remainingWord, fontSize)) * remainingWord.length);
+					const chunk = remainingWord.slice(0, splitIndex);
+					lines.push(chunk);
+					remainingWord = remainingWord.slice(splitIndex);
+				}
+				currentLine = remainingWord;
+			}
+		}
+	
+		if (currentLine) {
+			lines.push(currentLine);
+		}
+	
+		return lines;
+	}
+
 	createJobEmbed(
 		job: JobResult,
 		index: number,
@@ -303,6 +456,23 @@ export default class extends Command {
 
 		return formattedSalaryMin && formattedSalaryMax
 			? `Avg: ${formattedAvgSalary}\nMin: ${formattedSalaryMin}\nMax: ${formattedSalaryMax}`
+			: formattedAvgSalary;
+	}
+
+	formatSalaryforPDF(job: JobResult): string {
+		const avgSalary = (Number(job.salaryMax) + Number(job.salaryMin)) / 2;
+		const formattedAvgSalary = this.formatCurrency(avgSalary);
+		const formattedSalaryMax =
+			this.formatCurrency(Number(job.salaryMax)) !== "N/A"
+				? this.formatCurrency(Number(job.salaryMax))
+				: "";
+		const formattedSalaryMin =
+			this.formatCurrency(Number(job.salaryMin)) !== "N/A"
+				? this.formatCurrency(Number(job.salaryMin))
+				: "";
+
+		return formattedSalaryMin && formattedSalaryMax
+			? `Avg: ${formattedAvgSalary}, Min: ${formattedSalaryMin}, Max: ${formattedSalaryMax}`
 			: formattedAvgSalary;
 	}
 
