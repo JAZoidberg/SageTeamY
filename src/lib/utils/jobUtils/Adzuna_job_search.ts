@@ -36,7 +36,7 @@ export default async function fetchJobListings(jobData: JobData, interests?: Int
 	let whatGoalStrengths = '';
 	if (goalstrength) {
 		const keys2 = Object.keys(goalstrength);
-		const lastKey2 = keys2[keys2.goalstrength - 1];
+		const lastKey2 = keys2[keys2.length - 1];
 		const lastValue2 = goalstrength[lastKey2];
 
 		for (const goalstren in goalstrength) {

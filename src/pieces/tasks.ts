@@ -86,7 +86,7 @@ async function checkPolls(bot: Client): Promise<void> {
 }
 
 // eslint-disable-next-line no-warning-comments
-async function getJobFormData(userID:string, filterBy: string):Promise<[JobData, Interest, JobResult[]]> {
+async function getJobFormData(userID:string, filterBy: string):Promise<[JobData, Interest, goalStrength, JobResult[]]> {
 	const client = await MongoClient.connect(DB.CONNECTION, { useUnifiedTopology: true });
 	const db = client.db(BOT.NAME).collection(DB.JOB_FORMS);
 	const jobformAnswers:Job[] = await db.find({ owner: userID }).toArray();
@@ -152,7 +152,7 @@ function listJobs(jobData: JobResult[], filterBy: string): string {
 		const formattedSalaryMax = formatCurrency(Number(jobData[i].salaryMax)) !== 'N/A' ? formatCurrency(Number(jobData[i].salaryMax)) : '';
 		const formattedSalaryMin = formatCurrency(Number(jobData[i].salaryMin)) !== 'N/A' ? formatCurrency(Number(jobData[i].salaryMin)) : '';
 
-		const salaryDetails = (formattedSalaryMin && formattedSalaryMax)
+		const salaryDetails = formattedSalaryMin && formattedSalaryMax
 			? `, Min: ${formattedSalaryMin}, Max: ${formattedSalaryMax}`
 			: formattedAvgSalary;
 

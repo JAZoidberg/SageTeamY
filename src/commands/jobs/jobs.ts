@@ -74,7 +74,9 @@ export default class extends Command {
 		const message = `## Hey <@${userID}>!  
 			## Here's your list of job/internship recommendations:  
 Based on your interests in **${jobFormData[1].interest1}**, **${jobFormData[1].interest2}**, \
-**${jobFormData[1].interest3}**, **${jobFormData[1].interest4}**, and **${jobFormData[1].interest5}**, I've found these jobs you may find interesting. Please note that while you may get\
+**${jobFormData[1].interest3}**, **${jobFormData[1].interest4}**, and **${jobFormData[1].interest5}**, as well as
+your strengths **${jobFormData[2].strength1}**, **${jobFormData[2].strength2}**, **${jobFormData[2].strength3}**, and your goals
+**${jobFormData[2].goal1}**, and **${jobFormData[2].goal2}**. I've found these jobs you may find interesting. Please note that while you may get\
 job/internship recommendations from the same company,\
 their positions/details/applications/salary WILL be different and this is not a glitch/bug!
 Here's your personalized list:
