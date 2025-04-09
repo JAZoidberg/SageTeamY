@@ -119,7 +119,7 @@ Here's your personalized list:
 				return avgB - avgA; // Descending order
 			});
 		} else if (filterBy === 'alphabetical') {
-			jobForm[3].sort((a, b) => (a.title > b.title ? 1 : -1));
+			jobForm[3].sort((a, b) => a.title > b.title ? 1 : -1);
 		} else if (filterBy === 'date') {
 			jobForm[3].sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime());
 		} else if (filterBy === 'distance') {
@@ -144,9 +144,9 @@ Here's your personalized list:
 			const formattedSalaryMax = this.formatCurrency(Number(jobForm[3][i].salaryMax)) !== 'N/A' ? this.formatCurrency(Number(jobForm[3][i].salaryMax)) : '';
 			const formattedSalaryMin = this.formatCurrency(Number(jobForm[3][i].salaryMin)) !== 'N/A' ? this.formatCurrency(Number(jobForm[3][i].salaryMin)) : '';
 			const jobDistance = this.calculateDistance(cityCoordinates.lat, cityCoordinates.lng, Number(jobForm[3][i].latitude), Number(jobForm[3][i].longitude));
-			const formattedDistance = (jobDistance !== -1) ? `${jobDistance.toFixed(2)} miles` : 'N/A';
+			const formattedDistance = jobDistance !== -1 ? `${jobDistance.toFixed(2)} miles` : 'N/A';
 
-			const salaryDetails = (formattedSalaryMin && formattedSalaryMax)
+			const salaryDetails = formattedSalaryMin && formattedSalaryMax
 				? `, Min: ${formattedSalaryMin}, Max: ${formattedSalaryMax}`
 				: formattedAvgSalary;
 
@@ -197,14 +197,14 @@ Here's your personalized list:
 	calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
 		const toRadians = (degrees: number) => degrees * (Math.PI / 180);
 
-		const R = 3958.8; // Radius of the Earth in miles
+		const Rad = 3958.8; // Radius of the Earth in miles
 		const dLat = toRadians(lat2 - lat1);
 		const dLon = toRadians(lon2 - lon1);
 		const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
 			Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
 			Math.sin(dLon / 2) * Math.sin(dLon / 2);
 		const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-		const distance = (lat1 === 0 && lon1 === 0) || (lat2 === 0 && lon2 === 0) ? -1 : R * c;
+		const distance = (lat1 === 0 && lon1 === 0) || (lat2 === 0 && lon2 === 0) ? -1 : Rad * c;
 		return distance;
 	}
 
