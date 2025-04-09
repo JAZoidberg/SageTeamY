@@ -105,7 +105,7 @@ export default class extends Command {
 		interaction: ChatInputCommandInteraction
 	): Promise<void | InteractionResponse<boolean>> {
 		const userID = interaction.user.id;
-		const filterBy = interaction.options.getString("filter") ?? "default";
+		const filterBy = interaction.options.getString("filter") ?? "salary";
 
 		const client = await MongoClient.connect(DB.CONNECTION, {
 			useUnifiedTopology: true,
@@ -123,10 +123,10 @@ export default class extends Command {
 		}
 
 		const jobData: JobData = {
-			city: "New York", // You might want to get this from jobformAnswers
-			preference: "Software Engineer", // You might want to get this from jobformAnswers
-			jobType: "Full Time", // You might want to get this from jobformAnswers
-			distance: "10", // You might want to get this from jobformAnswers
+			city: jobformAnswers.answers.city, 
+			preference: jobformAnswers.answers.employmentType, 
+			jobType: jobformAnswers.answers.workType, 
+			distance: jobformAnswers.answers.travelDistance, 
 			filterBy: filterBy,
 		};
 
