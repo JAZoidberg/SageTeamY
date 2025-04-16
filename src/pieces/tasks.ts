@@ -212,7 +212,8 @@ async function listJobs(jobForm: [JobData, Interest, JobResult[]], filterBy: str
 
 export async function jobMessage(reminder: Reminder | string, userID: string): Promise<string> {
 	const jobFormData: [JobData, Interest, JobResult[]] = await getJobFormData(userID, typeof reminder === 'object' && 'filterBy' in reminder ? reminder.filterBy : 'default');
-	const filterBy = typeof reminder === 'object' && 'filterBy' in reminder ? String((reminder as Reminder).filterBy) : String(reminder);
+	// const filterBy = typeof reminder === 'object' && 'filterBy' in reminder ? String((reminder as Reminder).filterBy) : String(reminder);
+	const filterBy = (typeof reminder === 'object' && 'filterBy' in reminder && reminder.filterBy) ? String(reminder.filterBy) : 'default';
 	const message = `## Hey <@${userID}>!  
 	## Here's your list of job/internship recommendations:  
 Based on your interests in **${jobFormData[1].interest1}**, **${jobFormData[1].interest2}**, \
