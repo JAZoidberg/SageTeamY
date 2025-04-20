@@ -25,7 +25,8 @@ const EMOJI = {
    VIEW: '📋',
    CANCEL: '✖️',
    TIME: '🕒',
-   REPEAT: '🔄'
+   REPEAT: '🔄',
+   BACK: '↩️'  // Added back button emoji
 };
 
 // Color constants for embeds (using Discord.js ColorResolvable)
@@ -46,6 +47,11 @@ export default class extends Command {
    async run(
       interaction: ChatInputCommandInteraction
    ): Promise<InteractionResponse<boolean> | void> {
+      await this.showMainMenu(interaction);
+   }
+
+   // Create and display the main menu
+   private async showMainMenu(interaction: ChatInputCommandInteraction | any) {
       // Create a stylish initial embed
       const embed = new EmbedBuilder()
          .setColor(COLORS.PRIMARY)
@@ -82,14 +88,28 @@ export default class extends Command {
                .setStyle(ButtonStyle.Danger)
          );
 
-      // Send the initial message with embed and buttons
-      const response = await interaction.reply({
-         embeds: [embed],
-         components: [row],
-         ephemeral: true
-      });
+      // Check if this is the initial interaction or a follow-up
+      if (interaction instanceof ChatInputCommandInteraction) {
+         // Initial command interaction
+         const response = await interaction.reply({
+            embeds: [embed],
+            components: [row],
+            ephemeral: true
+         });
 
-      // Create collector for button interactions
+         // Create collector for button interactions
+         this.createButtonCollector(response);
+      } else {
+         // A button interaction (going back to main menu)
+         await interaction.update({
+            embeds: [embed],
+            components: [row]
+         });
+      }
+   }
+
+   // Create button collector for the main menu
+   private createButtonCollector(response: any) {
       const collector = response.createMessageComponentCollector({
          componentType: ComponentType.Button,
          time: 120000 // 2 minute timeout (extended)
@@ -105,6 +125,9 @@ export default class extends Command {
             await this.handleViewReminders(buttonInteraction);
          } else if (buttonInteraction.customId === 'cancel_reminder') {
             await this.handleCancelReminder(buttonInteraction);
+         } else if (buttonInteraction.customId === 'back_to_menu') {
+            // Handle going back to the main menu
+            await this.showMainMenu(buttonInteraction);
          }
       });
 
@@ -116,7 +139,7 @@ export default class extends Command {
                .setDescription('You can run the command again to set up a reminder.')
                .setTimestamp();
                
-            await interaction.editReply({
+            await response.interaction.editReply({
                embeds: [timeoutEmbed],
                components: []
             });
@@ -124,8 +147,23 @@ export default class extends Command {
       });
    }
 
+   // Helper function to create a back button
+   private createBackButton() {
+      return new ActionRowBuilder<ButtonBuilder>()
+         .addComponents(
+            new ButtonBuilder()
+               .setCustomId('back_to_menu')
+               .setLabel('Back to Menu')
+               .setEmoji(EMOJI.BACK)
+               .setStyle(ButtonStyle.Secondary)
+         );
+   }
+
    // Handle creating a standard reminder via a modal
    private async handleCreateReminder(buttonInteraction: any) {
+      // Store reference to original message
+      const originalMessage = buttonInteraction.message;
+      
       // Create modal for reminder details
       const modal = new ModalBuilder()
          .setCustomId('reminder_modal')
@@ -176,11 +214,17 @@ export default class extends Command {
                .setTitle(`${EMOJI.TIME} Invalid Time Format`)
                .setDescription(`**"${rawDuration}"** is not a valid duration.\nYou can use words like hours, minutes, seconds, days, weeks, months, or years.`)
                .setFooter({ text: 'Try something like "3 hours" or "2 days"' });
-               
-            return modalInteraction.reply({
+            
+            // Defer the modal reply to acknowledge it without sending a visible message
+            await modalInteraction.deferUpdate();
+            
+            // Update the original message with the error
+            await buttonInteraction.editReply({
                embeds: [errorEmbed],
-               ephemeral: true
+               components: [this.createBackButton()], // Add back button
             });
+            
+            return;
          }
 
          // Calculate the expiry date
@@ -208,10 +252,14 @@ export default class extends Command {
                value: `> ${content}` 
             })
             .setTimestamp();
+         
+         // Defer the modal reply to acknowledge it without sending a visible message
+         await modalInteraction.deferUpdate();
             
-         await modalInteraction.reply({
+         // Update the original message with the success info
+         await buttonInteraction.editReply({
             embeds: [successEmbed],
-            ephemeral: true
+            components: [this.createBackButton()], // Add back button
          });
 
       } catch (error) {
@@ -223,9 +271,10 @@ export default class extends Command {
             .setDescription('The reminder creation process timed out or an error occurred.')
             .setTimestamp();
             
-         await buttonInteraction.followUp({
+         // Update the original button interaction
+         await buttonInteraction.editReply({
             embeds: [errorEmbed],
-            ephemeral: true
+            components: [this.createBackButton()], // Add back button
          });
       }
    }
@@ -241,9 +290,9 @@ export default class extends Command {
                'You currently already have a job reminder set. To clear your existing job reminder, use the CANCEL button and provide the reminder number.'
             );
             
-         return buttonInteraction.reply({
+         return buttonInteraction.update({
             embeds: [errorEmbed],
-            ephemeral: true
+            components: [this.createBackButton()], // Add back button
          });
       }
 
@@ -298,10 +347,16 @@ export default class extends Command {
                .setTitle(`${EMOJI.REPEAT} Invalid Repeat Option`)
                .setDescription(`**"${repeatValue}"** is not a valid repeat option. Please use "daily", "weekly", or "monthly".`);
                
-            return modalInteraction.reply({
+            // Defer the modal reply to acknowledge it without sending a visible message
+            await modalInteraction.deferUpdate();
+            
+            // Update the original message with the error
+            await buttonInteraction.editReply({
                embeds: [errorEmbed],
-               ephemeral: true
+               components: [this.createBackButton()], // Add back button
             });
+            
+            return;
          }
          
          // Validate filter input
@@ -337,9 +392,13 @@ export default class extends Command {
             .setFooter({ text: 'You can update your preferences anytime' })
             .setTimestamp();
             
-         await modalInteraction.reply({
+         // Defer the modal reply to acknowledge it without sending a visible message
+         await modalInteraction.deferUpdate();
+            
+         // Update the original message with the success info
+         await buttonInteraction.editReply({
             embeds: [successEmbed],
-            ephemeral: true
+            components: [this.createBackButton()], // Add back button
          });
 
       } catch (error) {
@@ -350,9 +409,10 @@ export default class extends Command {
             .setDescription('The job alert creation process timed out or an error occurred.')
             .setTimestamp();
             
-         await buttonInteraction.followUp({
+         // Update the original button interaction instead of creating a new message
+         await buttonInteraction.editReply({
             embeds: [errorEmbed],
-            ephemeral: true
+            components: [this.createBackButton()], // Add back button
          });
       }
    }
@@ -374,9 +434,10 @@ export default class extends Command {
             .setFooter({ text: 'Use the CREATE REMINDER button to set one up' })
             .setTimestamp();
             
-         return buttonInteraction.reply({
+         // Update instead of reply to replace the message
+         return buttonInteraction.update({
             embeds: [noRemindersEmbed],
-            ephemeral: true
+            components: [this.createBackButton()], // Add back button
          });
       }
       
@@ -413,9 +474,13 @@ export default class extends Command {
          });
       });
       
-      await buttonInteraction.reply({ 
+      // Add back button to the response
+      const backButton = this.createBackButton();
+      
+      // Update instead of reply to replace the message
+      await buttonInteraction.update({ 
          embeds,
-         ephemeral: true 
+         components: [backButton], // Add back button
       });
    }
 
@@ -463,10 +528,16 @@ export default class extends Command {
                .setDescription(`**"${reminderNumStr}"** is not a valid reminder number. Please enter a positive integer.`)
                .setFooter({ text: 'Use the VIEW REMINDERS button to see your reminders and their numbers' });
                
-            return modalInteraction.reply({
+            // Defer the modal reply to acknowledge it without sending a visible message
+            await modalInteraction.deferUpdate();
+            
+            // Update the original message with the error
+            await buttonInteraction.editReply({
                embeds: [errorEmbed],
-               ephemeral: true
+               components: [this.createBackButton()], // Add back button
             });
+            
+            return;
          }
 
          // Get user's reminders and sort them
@@ -485,11 +556,17 @@ export default class extends Command {
                .setTitle(`${EMOJI.CANCEL} Reminder Not Found`)
                .setDescription(`I couldn't find reminder **#${reminderNum + 1}**.`)
                .setFooter({ text: 'Use the VIEW REMINDERS button to see your current reminders' });
-               
-            return modalInteraction.reply({
+            
+            // Defer the modal reply to acknowledge it without sending a visible message
+            await modalInteraction.deferUpdate();
+            
+            // Update the original message with the error
+            await buttonInteraction.editReply({
                embeds: [notFoundEmbed],
-               ephemeral: true
+               components: [this.createBackButton()], // Add back button
             });
+            
+            return;
          }
 
          // Delete the reminder
@@ -512,9 +589,13 @@ export default class extends Command {
             )
             .setTimestamp();
             
-         return modalInteraction.reply({
+         // Defer the modal reply to acknowledge it without sending a visible message
+         await modalInteraction.deferUpdate();
+            
+         // Update the original message with the success info
+         await buttonInteraction.editReply({
             embeds: [successEmbed],
-            ephemeral: true
+            components: [this.createBackButton()], // Add back button
          });
 
       } catch (error) {
@@ -526,9 +607,10 @@ export default class extends Command {
             .setDescription('The reminder cancellation process timed out or an error occurred.')
             .setTimestamp();
             
-         await buttonInteraction.followUp({
+         // Update the original button interaction
+         await buttonInteraction.editReply({
             embeds: [errorEmbed],
-            ephemeral: true
+            components: [this.createBackButton()], // Add back button
          });
       }
    }
