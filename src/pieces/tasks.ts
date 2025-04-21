@@ -1,4 +1,4 @@
-import { BOT, CHANNELS, DB, MAP_KEY } from '@root/config';
+import { APP_ID, APP_KEY, BOT, CHANNELS, DB, MAP_KEY } from '@root/config';
 import { AttachmentBuilder, ChannelType, Client, EmbedBuilder, TextChannel } from 'discord.js';
 import { schedule } from 'node-cron';
 import { Reminder } from '@lib/types/Reminder';
@@ -12,6 +12,8 @@ import { Interest } from '../lib/types/Interest';
 import { JobResult } from '../lib/types/JobResult';
 import { JobPreferences } from '../lib/types/JobPreferences';
 import axios from 'axios';
+import { PDFDocument, PDFFont, rgb, StandardFonts } from 'pdf-lib';
+import { generateHistogram } from '../commands/jobs/histogram';
 
 async function register(bot: Client): Promise<void> {
 	schedule('0/30 * * * * *', () => {
@@ -125,8 +127,8 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 	const dLat = toRadians(lat2 - lat1);
 	const dLon = toRadians(lon2 - lon1);
 	const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-		Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
-		Math.sin(dLon / 2) * Math.sin(dLon / 2);
+		Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2))
+		* Math.sin(dLon / 2) * Math.sin(dLon / 2);
 	const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 	const distance = (lat1 === 0 && lon1 === 0) || (lat2 === 0 && lon2 === 0) ? -1 : R * c;
 	return distance;
@@ -165,7 +167,7 @@ async function listJobs(jobForm: [JobData, Interest, JobResult[]], filterBy: str
 			return avgB - avgA; // Descending order
 		});
 	} else if (filterBy === 'alphabetical') {
-		jobForm[2].sort((a, b) => (a.title > b.title ? 1 : -1));
+		jobForm[2].sort((a, b) => a.title > b.title ? 1 : -1);
 	} else if (filterBy === 'date') {
 		jobForm[2].sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime());
 	} else if (filterBy === 'distance') {
@@ -184,7 +186,6 @@ async function listJobs(jobForm: [JobData, Interest, JobResult[]], filterBy: str
 	}
 
 
-
 	let jobList = '';
 	for (let i = 0; i < jobForm[2].length; i++) {
 		const avgSalary = (Number(jobForm[2][i].salaryMax) + Number(jobForm[2][i].salaryMin)) / 2;
@@ -192,9 +193,9 @@ async function listJobs(jobForm: [JobData, Interest, JobResult[]], filterBy: str
 		const formattedSalaryMax = formatCurrency(Number(jobForm[2][i].salaryMax)) !== 'N/A' ? formatCurrency(Number(jobForm[2][i].salaryMax)) : '';
 		const formattedSalaryMin = formatCurrency(Number(jobForm[2][i].salaryMin)) !== 'N/A' ? formatCurrency(Number(jobForm[2][i].salaryMin)) : '';
 		const jobDistance = calculateDistance(cityCoordinates.lat, cityCoordinates.lng, Number(jobForm[2][i].latitude), Number(jobForm[2][i].longitude));
-		const formattedDistance = (jobDistance !== -1) ? `${jobDistance.toFixed(2)} miles` : 'N/A';
+		const formattedDistance = jobDistance !== -1 ? `${jobDistance.toFixed(2)} miles` : 'N/A';
 
-		const salaryDetails = (formattedSalaryMin && formattedSalaryMax)
+		const salaryDetails = formattedSalaryMin && formattedSalaryMax
 			? `, Min: ${formattedSalaryMin}, Max: ${formattedSalaryMax}`
 			: formattedAvgSalary;
 
@@ -210,10 +211,15 @@ async function listJobs(jobForm: [JobData, Interest, JobResult[]], filterBy: str
 	return jobList || '### Unfortunately, there were no jobs found based on your interests :(. Consider updating your interests or waiting until something is found.';
 }
 
-export async function jobMessage(reminder: Reminder | string, userID: string): Promise<string> {
+export async function jobMessage(reminder: Reminder | string, userID: string): Promise<{ message: string; pdfBuffer: Buffer }> {
 	const jobFormData: [JobData, Interest, JobResult[]] = await getJobFormData(userID, typeof reminder === 'object' && 'filterBy' in reminder ? reminder.filterBy : 'default');
 	// const filterBy = typeof reminder === 'object' && 'filterBy' in reminder ? String((reminder as Reminder).filterBy) : String(reminder);
-	const filterBy = (typeof reminder === 'object' && 'filterBy' in reminder && reminder.filterBy) ? String(reminder.filterBy) : 'default';
+	const filterBy = typeof reminder === 'object' && 'filterBy' in reminder && reminder.filterBy ? String(reminder.filterBy) : 'default';
+
+
+	const pdfBuffer = await generateJobPDF(jobFormData[2]);
+
+
 	const message = `## Hey <@${userID}>!  
 	## Here's your list of job/internship recommendations:  
 Based on your interests in **${jobFormData[1].interest1}**, **${jobFormData[1].interest2}**, \
@@ -231,7 +237,7 @@ Here's your personalized list:
 	on external sites. Always verify the authenticity of job applications before proceeding. Additionally, \
 	some job postings may contain inaccuracies due to API limitations, which are beyond our control. We apologize for any inconvenience this may cause and appreciate your understanding.
 	`;
-	return message;
+	return { message, pdfBuffer };
 }
 
 export function stripMarkdown(message: string, owner: string): string {
@@ -267,7 +273,9 @@ async function checkReminders(bot: Client): Promise<void> {
 			pubChan.send(`<@${reminder.owner}>, here's the reminder you asked for: **${reminder.content}**`);
 		} else {
 			bot.users.fetch(reminder.owner).then(async (user) => {
-				const message = await jobMessage(reminder, user.id);
+				const result = await jobMessage(reminder, user.id);
+				const { message } = result;
+				const { pdfBuffer } = result;
 				if (message.length < 2000) {
 					user.send(message).catch((err) => {
 						console.log('ERROR:', err);
@@ -306,5 +314,257 @@ async function checkReminders(bot: Client): Promise<void> {
 		}
 	});
 }
+
+export async function generateJobPDF(jobs: JobResult[]): Promise<Buffer> {
+	// Create a new PDF document.
+	const pdfDoc = await PDFDocument.create();
+	let currentPage = pdfDoc.addPage();
+	const { width, height } = currentPage.getSize();
+	const margin = 40;
+	let yPosition = height - margin - 50;
+	const fontSize = 10;
+	const titleFontSize = 30;
+	const bulletPointIndent = 20;
+	const subBulletPointIndent = 30; // Indentation for sub-bullet points
+
+
+	// Embed a standard font.
+	const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
+	const HelveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+	const Helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+
+	// Draw the title.
+	const lineHeight = 10; // Height of the line
+	const lineWidth = (width - margin * 2) / 3;
+
+	currentPage.drawRectangle({
+		x: margin,
+		y: yPosition + 50,
+		width: lineWidth,
+		height: lineHeight,
+		color: rgb(135 / 255, 59 / 255, 29 / 255) // red color
+	});
+
+	// Draw the second color segment
+	currentPage.drawRectangle({
+		x: margin + lineWidth,
+		y: yPosition + 50,
+		width: lineWidth,
+		height: lineHeight,
+		color: rgb(237 / 255, 118 / 255, 71 / 255) // orangey color
+	});
+
+	// Draw the third color segment
+	currentPage.drawRectangle({
+		x: margin + lineWidth * 2,
+		y: yPosition + 50,
+		width: lineWidth,
+		height: lineHeight,
+		color: rgb(13 / 255, 158 / 255, 198 / 255) // Blue color
+	});
+
+	yPosition -= 40; // Adjust spacing below the line
+
+
+	currentPage.drawText('List of Jobs PDF', {
+		x: margin,
+		y: yPosition + 50,
+		size: titleFontSize,
+		font: HelveticaBold,
+
+		color: rgb(114 / 255, 53 / 255, 9 / 255)
+	});
+	yPosition -= 40;
+
+	currentPage.drawRectangle({
+		x: margin,
+		y: yPosition + 50,
+		width: lineWidth / 2,
+		height: lineHeight - 8,
+		color: rgb(135 / 255, 59 / 255, 29 / 255) // red color
+	});
+	yPosition -= 10;
+
+	// Loop through each job and add its details.
+	for (let i = 0; i < jobs.length; i++) {
+		const job = jobs[i];
+
+		if (yPosition - fontSize * 2 < margin) {
+			currentPage = pdfDoc.addPage();
+			yPosition = currentPage.getHeight() - margin - 20;
+		}
+
+		const maxWidth = width - margin * 2; // Calculate available width
+		const wrappedTitle = wrapText(`${i + 1}. ${job.title}`, HelveticaBold, fontSize + 10, maxWidth);
+
+
+		for (const line of wrappedTitle) {
+			// Check if there's enough space for the line
+			if (yPosition - fontSize * 2 < margin) {
+				currentPage = pdfDoc.addPage();
+				yPosition = currentPage.getHeight() - margin - 20;
+			}
+
+			currentPage.drawText(line, {
+				x: margin,
+				y: yPosition + 30,
+				size: fontSize + 10,
+				font: HelveticaBold,
+				color: rgb(241 / 255, 113 / 255, 34 / 255)
+			});
+
+			yPosition -= 30; // Adjust spacing between lines
+		}
+
+		// Draw the bullet points for location, salary, and apply link.
+		const bulletPoints = [
+			{ label: 'Location', value: job.location },
+			{ label: 'Salary', value: formatSalaryforPDF(job) },
+			{ label: 'Apply Here', value: job.link }
+		];
+
+		const test = 'C++ developer'; // Replace with the actual job title you want to use for the histogram
+		const URL_BASE = `https://api.adzuna.com/v1/api/jobs/us/histogram?app_id=${APP_ID}&app_key=${APP_KEY}&what=${test}`;
+		
+		const response = await axios.get(URL_BASE);
+		const data = Object.entries(response.data.histogram).map(([value, frequency]: [string, number]) => ({
+			value,
+			frequency
+		}));
+
+		const image = await generateHistogram(data, job.title);
+		const imageBytes = await pdfDoc.embedPng(image);
+		const imageDims = imageBytes.scale(0.5); // Scale the image to 50% of its original size
+		const imageX = margin + bulletPointIndent + subBulletPointIndent;
+		const imageY = yPosition + 20 - imageDims.height; // Adjust Y position to place the image above the text
+		const imageField = currentPage.drawImage(imageBytes, {
+			x: imageX,
+			y: imageY,
+			width: imageDims.width,
+			height: imageDims.height
+		});
+
+
+		
+
+
+		for (const point of bulletPoints) {
+			// Check if there's enough space on the page, and add a new page if needed.
+			if (yPosition - fontSize * 2 < margin) {
+				currentPage = pdfDoc.addPage();
+				yPosition = currentPage.getHeight() - margin - 20;
+			}
+
+			const maxLabelWidth = width - margin * 2 - bulletPointIndent - subBulletPointIndent;
+			const wrappedLabel = wrapText(`• ${point.label}`, HelveticaBold, fontSize + 5, maxLabelWidth);
+
+			// Draw the wrapped label
+			for (const line of wrappedLabel) {
+				// Check if there's enough space for the line
+				if (yPosition - fontSize * 2 < margin) {
+					currentPage = pdfDoc.addPage();
+					yPosition = currentPage.getHeight() - margin - 20;
+				}
+
+				currentPage.drawText(line, {
+					x: margin + bulletPointIndent,
+					y: yPosition + 25,
+					size: fontSize + 5,
+					font: HelveticaBold,
+					color: rgb(94 / 255, 74 / 255, 74 / 255)
+				});
+
+				yPosition -= fontSize + 10; // Adjust spacing between lines
+			}
+
+
+			const combinedText = `•${point.value}`;
+			const maxValueWidth = width - margin * 2 - bulletPointIndent - subBulletPointIndent;
+			const wrappedValue = wrapText(combinedText, HelveticaBold, fontSize + 4, maxValueWidth);
+
+
+			for (const line of wrappedValue) {
+				// Check if there's enough space for the line
+				if (yPosition - fontSize * 2 < margin) {
+					currentPage = pdfDoc.addPage();
+					yPosition = currentPage.getHeight() - margin - 20;
+				}
+
+				currentPage.drawText(line, {
+					x: margin + bulletPointIndent + subBulletPointIndent,
+					y: yPosition + 20,
+					size: fontSize + 3,
+					font: HelveticaBold,
+					color: rgb(13 / 255, 158 / 255, 198 / 255)
+				});
+
+				yPosition -= fontSize + 5; // Adjust spacing between lines
+			}
+
+			yPosition -= 20; // Add extra spacing between items
+		}
+
+		yPosition -= 40; // Add extra spacing between jobs.
+	}
+
+
+	const pdfBytes = await pdfDoc.save();
+	return Buffer.from(pdfBytes);
+}
+
+function wrapText(text: string, font: PDFFont, fontSize: number, maxWidth: number): string[] {
+	const words = text.split(' ');
+	const lines: string[] = [];
+	let currentLine = '';
+
+	for (const word of words) {
+		const testLine = currentLine ? `${currentLine} ${word}` : word;
+		const textWidth = font.widthOfTextAtSize(testLine, fontSize);
+
+		if (textWidth <= maxWidth) {
+			currentLine = testLine;
+		} else {
+			if (currentLine) {
+				lines.push(currentLine);
+			}
+			currentLine = '';
+
+			// Handle long words that exceed maxWidth
+			let remainingWord = word;
+			while (font.widthOfTextAtSize(remainingWord, fontSize) > maxWidth) {
+				const splitIndex = Math.floor((maxWidth / font.widthOfTextAtSize(remainingWord, fontSize)) * remainingWord.length);
+				const chunk = remainingWord.slice(0, splitIndex);
+				lines.push(chunk);
+				remainingWord = remainingWord.slice(splitIndex);
+			}
+			currentLine = remainingWord;
+		}
+	}
+
+	if (currentLine) {
+		lines.push(currentLine);
+	}
+
+	return lines;
+}
+
+function formatSalaryforPDF(job: JobResult): string {
+	const avgSalary = (Number(job.salaryMax) + Number(job.salaryMin)) / 2;
+	const formattedAvgSalary = formatCurrency(avgSalary);
+	const formattedSalaryMax
+		= formatCurrency(Number(job.salaryMax)) !== 'N/A'
+			? formatCurrency(Number(job.salaryMax))
+			: '';
+	const formattedSalaryMin
+		= formatCurrency(Number(job.salaryMin)) !== 'N/A'
+			? formatCurrency(Number(job.salaryMin))
+			: '';
+
+	return formattedSalaryMin && formattedSalaryMax
+		? `Avg: ${formattedAvgSalary}, Min: ${formattedSalaryMin}, Max: ${formattedSalaryMax}`
+		: formattedAvgSalary;
+}
+
 
 export default register;

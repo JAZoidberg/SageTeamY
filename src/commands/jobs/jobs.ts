@@ -9,8 +9,7 @@ import { MongoClient } from 'mongodb';
 import { sendToFile } from '@root/src/lib/utils/generalUtils';
 import axios from 'axios';
 import { JobPreferences } from '@root/src/lib/types/JobPreferences';
-import { jobMessage, stripMarkdown, headerMessage } from '@root/src/pieces/tasks';
-
+import { jobMessage, stripMarkdown, headerMessage, generateJobPDF } from '@root/src/pieces/tasks';
 
 
 export default class extends Command {
@@ -28,18 +27,23 @@ export default class extends Command {
 				{ name: 'Date Posted', value: 'date' },
 				{ name: 'Salary', value: 'salary' },
 				{ name: 'Alphabetical', value: 'alphabetical' },
-				{name: 'Distance', value: 'distance' }
+				{ name: 'Distance', value: 'distance' }
 			]
 		}
 	]
 
 	async run(interaction: ChatInputCommandInteraction): Promise<void | InteractionResponse<boolean>> {
+		await interaction.deferReply(); // Defer the reply first
+
 		const filter = interaction.options.getString('filter') ?? 'default';
-		const message = await jobMessage(filter, interaction.user.id);
+		const result = await jobMessage(filter, interaction.user.id);
+		const { message } = result;
+		const { pdfBuffer } = result;
 		const attachments: AttachmentBuilder[] = [];
 		attachments.push(await sendToFile(stripMarkdown(message.split('---')[0], interaction.user.id), 'txt', 'list-of-jobs-internships', false));
+		attachments.push(new AttachmentBuilder(pdfBuffer).setName('jobs.pdf'));
 		const pubChan = interaction.channel;
-		pubChan.send({ content: headerMessage(interaction.user.id, 'default'), files: attachments as AttachmentBuilder[] });
+		interaction.followUp({ content: headerMessage(interaction.user.id, 'default'), files: attachments as AttachmentBuilder[] });
 	}
 
 }
