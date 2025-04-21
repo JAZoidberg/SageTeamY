@@ -1,4 +1,4 @@
-import { BOT, DB } from '@root/config';
+import { BOT, DB, GMAIL } from '@root/config';
 import {
    ApplicationCommandOptionData,
    ChatInputCommandInteraction,
@@ -17,6 +17,7 @@ import { Reminder } from '@lib/types/Reminder';
 import parse from 'parse-duration';
 import { checkJobReminder, reminderTime } from '@root/src/lib/utils/generalUtils';
 import { Command } from '@lib/types/Command';
+import nodemailer from 'nodemailer';
 
 // Emoji constants for button icons
 const EMOJI = {
@@ -26,7 +27,8 @@ const EMOJI = {
    CANCEL: '✖️',
    TIME: '🕒',
    REPEAT: '🔄',
-   BACK: '↩️'  // Added back button emoji
+   BACK: '↩️',
+   EMAIL: '📧'  // Added email emoji
 };
 
 // Color constants for embeds (using Discord.js ColorResolvable)
@@ -41,7 +43,7 @@ const COLORS = {
 
 export default class extends Command {
    description = `Have ${BOT.NAME} give you a reminder.`;
-   extendedHelp = 'Create reminders for anything - one-time or recurring job alerts.';
+   extendedHelp = 'Create reminders for anything - one-time or recurring job alerts with optional email notifications.';
    options: ApplicationCommandOptionData[] = []; // No options needed as we're using buttons
 
    async run(
@@ -128,6 +130,12 @@ export default class extends Command {
          } else if (buttonInteraction.customId === 'back_to_menu') {
             // Handle going back to the main menu
             await this.showMainMenu(buttonInteraction);
+         } else if (buttonInteraction.customId === 'email_yes') {
+            // Handle yes for email notification
+            await this.showEmailModal(buttonInteraction);
+         } else if (buttonInteraction.customId === 'email_no') {
+            // Handle no for email notification
+            await this.finalizeReminderCreation(buttonInteraction, false, null);
          }
       });
 
@@ -230,37 +238,16 @@ export default class extends Command {
          // Calculate the expiry date
          const expiryDate = new Date(duration + Date.now());
 
-         // Create and store the reminder directly
-         const reminder: Reminder = {
-            owner: modalInteraction.user.id,
+         // Store the reminder data temporarily
+         const reminderData = {
             content,
-            mode: 'public', // could be changed to private if needed
-            expires: expiryDate,
-            repeat: null // No repeat by default
+            expiryDate,
+            buttonInteraction,
+            modalInteraction
          };
 
-         await modalInteraction.client.mongo
-            .collection(DB.REMINDERS)
-            .insertOne(reminder);
-
-         const successEmbed = new EmbedBuilder()
-            .setColor(COLORS.SUCCESS)
-            .setTitle(`${EMOJI.REMINDER} Reminder Set!`)
-            .setDescription(`I'll remind you about that at **${reminderTime(reminder)}**.`)
-            .addFields({ 
-               name: 'Reminder Content', 
-               value: `> ${content}` 
-            })
-            .setTimestamp();
-         
-         // Defer the modal reply to acknowledge it without sending a visible message
-         await modalInteraction.deferUpdate();
-            
-         // Update the original message with the success info
-         await buttonInteraction.editReply({
-            embeds: [successEmbed],
-            components: [this.createBackButton()], // Add back button
-         });
+         // Ask the user if they want email notifications
+         await this.askForEmailNotification(reminderData);
 
       } catch (error) {
          console.error('Error in modal submission:', error);
@@ -277,6 +264,180 @@ export default class extends Command {
             components: [this.createBackButton()], // Add back button
          });
       }
+   }
+
+   // Ask if the user wants email notifications
+   private async askForEmailNotification(reminderData: any) {
+      const { buttonInteraction, modalInteraction } = reminderData;
+      
+      // Create embed asking about email notifications
+      const emailEmbed = new EmbedBuilder()
+         .setColor(COLORS.INFO)
+         .setTitle(`${EMOJI.EMAIL} Would you like to receive this reminder by email too?`)
+         .setDescription('Choose whether you want to also receive this reminder via email when it triggers.')
+         .setFooter({ text: 'Email notifications are optional' })
+         .setTimestamp();
+      
+      // Create Yes/No buttons
+      const emailRow = new ActionRowBuilder<ButtonBuilder>()
+         .addComponents(
+            new ButtonBuilder()
+               .setCustomId('email_yes')
+               .setLabel('Yes, send email')
+               .setEmoji(EMOJI.EMAIL)
+               .setStyle(ButtonStyle.Success),
+            new ButtonBuilder()
+               .setCustomId('email_no')
+               .setLabel('No, Discord only')
+               .setStyle(ButtonStyle.Secondary)
+         );
+      
+      // Store the reminder data in the client's temporary collection
+      // This way we can access it when the user makes a choice
+      modalInteraction.client.reminderTemp = reminderData;
+      
+      // Defer the modal reply to acknowledge it
+      await modalInteraction.deferUpdate();
+      
+      // Update original message to ask about email
+      await buttonInteraction.editReply({
+         embeds: [emailEmbed],
+         components: [emailRow]
+      });
+   }
+
+   // Show modal to collect email address
+   private async showEmailModal(buttonInteraction: any) {
+      // Create modal for email address
+      const modal = new ModalBuilder()
+         .setCustomId('email_modal')
+         .setTitle(`${EMOJI.EMAIL} Email Notification`);
+
+      // Add input for email address
+      const emailInput = new TextInputBuilder()
+         .setCustomId('email')
+         .setLabel("Email address for notifications:")
+         .setStyle(TextInputStyle.Short)
+         .setPlaceholder("Enter your email address here...")
+         .setRequired(true);
+
+      // Create action row with input
+      const emailRow = new ActionRowBuilder<TextInputBuilder>().addComponents(emailInput);
+
+      // Add action row to the modal
+      modal.addComponents(emailRow);
+
+      // Show the modal
+      await buttonInteraction.showModal(modal);
+
+      // Wait for modal submission
+      try {
+         const modalInteraction = await buttonInteraction.awaitModalSubmit({
+            time: 180000, // 3 minutes (extended)
+            filter: (i: ModalSubmitInteraction) =>
+               i.customId === 'email_modal' &&
+               i.user.id === buttonInteraction.user.id
+         });
+
+         // Process modal submission
+         const email = modalInteraction.fields.getTextInputValue('email');
+         
+         // Simple email validation
+         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+         if (!emailRegex.test(email)) {
+            const errorEmbed = new EmbedBuilder()
+               .setColor(COLORS.DANGER)
+               .setTitle(`${EMOJI.CANCEL} Invalid Email Address`)
+               .setDescription(`**"${email}"** does not appear to be a valid email address.`)
+               .setFooter({ text: 'Please try again with a valid email address' });
+            
+            // Defer the modal reply
+            await modalInteraction.deferUpdate();
+            
+            // Update the original message with the error
+            await buttonInteraction.editReply({
+               embeds: [errorEmbed],
+               components: [this.createBackButton()], // Add back button
+            });
+            
+            return;
+         }
+
+         // Finalize the reminder creation with email
+         await this.finalizeReminderCreation(buttonInteraction, true, email, modalInteraction);
+
+      } catch (error) {
+         console.error('Error in email modal submission:', error);
+         
+         const errorEmbed = new EmbedBuilder()
+            .setColor(COLORS.DANGER)
+            .setTitle(`${EMOJI.CANCEL} Email Collection Failed`)
+            .setDescription('The email collection process timed out or an error occurred.')
+            .setTimestamp();
+            
+         // Update the original button interaction
+         await buttonInteraction.editReply({
+            embeds: [errorEmbed],
+            components: [this.createBackButton()], // Add back button
+         });
+      }
+   }
+
+   // Create and store the reminder with or without email
+   private async finalizeReminderCreation(buttonInteraction: any, withEmail: boolean, email: string | null, modalInteraction?: ModalSubmitInteraction) {
+      // Get the reminder data
+      const reminderData = buttonInteraction.client.reminderTemp;
+      const { content, expiryDate } = reminderData;
+      
+      // Create the reminder object
+      const reminder: Reminder = {
+         owner: buttonInteraction.user.id,
+         content,
+         mode: 'public', // could be changed to private if needed
+         expires: expiryDate,
+         repeat: null, // No repeat by default
+         emailNotification: withEmail,
+         emailAddress: withEmail ? email : null
+      };
+
+      // Store the reminder in the database
+      await buttonInteraction.client.mongo
+         .collection(DB.REMINDERS)
+         .insertOne(reminder);
+
+      // Create success embed
+      const successEmbed = new EmbedBuilder()
+         .setColor(COLORS.SUCCESS)
+         .setTitle(`${EMOJI.REMINDER} Reminder Set!`)
+         .setDescription(`I'll remind you about that at **${reminderTime(reminder)}**.`)
+         .addFields({ 
+            name: 'Reminder Content', 
+            value: `> ${content}` 
+         });
+         
+      // Add email info if applicable
+      if (withEmail) {
+         successEmbed.addFields({
+            name: 'Email Notification',
+            value: `You'll also receive an email at **${email}** when this reminder triggers.`
+         });
+      }
+      
+      successEmbed.setTimestamp();
+      
+      // Defer the modal reply if provided
+      if (modalInteraction) {
+         await modalInteraction.deferUpdate();
+      }
+      
+      // Update the original message with success info
+      await buttonInteraction.editReply({
+         embeds: [successEmbed],
+         components: [this.createBackButton()], // Add back button
+      });
+      
+      // Clean up temporary data
+      delete buttonInteraction.client.reminderTemp;
    }
 
    // Handle creating a job reminder using a modal
@@ -365,41 +526,16 @@ export default class extends Command {
             filterValue = 'default'; // Fallback to default if invalid
          }
          
-         // Create and store the job reminder
-         const jobReminder: Reminder = {
-            owner: modalInteraction.user.id,
-            content: 'Job Reminder',
-            mode: 'private',
-            expires: new Date(), // Set to now, will be handled by the job scheduler
-            repeat: repeatValue as 'daily' | 'weekly',
-            filterBy: filterValue as 'default' | 'relevance' | 'salary' | 'date'
+         // Store job reminder data
+         const jobReminderData = {
+            repeatValue,
+            filterValue,
+            buttonInteraction,
+            modalInteraction
          };
-
-         await modalInteraction.client.mongo
-            .collection(DB.REMINDERS)
-            .insertOne(jobReminder);
-
-         const successEmbed = new EmbedBuilder()
-            .setColor(COLORS.SECONDARY)
-            .setTitle(`${EMOJI.JOB} Job Alert Created`)
-            .setDescription(
-               `I'll send you job opportunities **${repeatValue}** starting at **${reminderTime(jobReminder)}**.`
-            )
-            .addFields(
-               { name: 'Frequency', value: `${repeatValue.charAt(0).toUpperCase() + repeatValue.slice(1)}`, inline: true },
-               { name: 'Sorted By', value: `${filterValue.charAt(0).toUpperCase() + filterValue.slice(1)}`, inline: true }
-            )
-            .setFooter({ text: 'You can update your preferences anytime' })
-            .setTimestamp();
-            
-         // Defer the modal reply to acknowledge it without sending a visible message
-         await modalInteraction.deferUpdate();
-            
-         // Update the original message with the success info
-         await buttonInteraction.editReply({
-            embeds: [successEmbed],
-            components: [this.createBackButton()], // Add back button
-         });
+         
+         // Ask about email notifications
+         await this.askForJobEmailNotification(jobReminderData);
 
       } catch (error) {
          console.error('Error in modal submission:', error);
@@ -415,6 +551,213 @@ export default class extends Command {
             components: [this.createBackButton()], // Add back button
          });
       }
+   }
+
+   // Ask if the user wants email notifications for job reminders
+   private async askForJobEmailNotification(jobReminderData: any) {
+      const { buttonInteraction, modalInteraction } = jobReminderData;
+      
+      // Create embed asking about email notifications
+      const emailEmbed = new EmbedBuilder()
+         .setColor(COLORS.INFO)
+         .setTitle(`${EMOJI.EMAIL} Would you like to receive job alerts by email too?`)
+         .setDescription('Choose whether you want to also receive job alerts via email when they trigger.')
+         .setFooter({ text: 'Email notifications are optional' })
+         .setTimestamp();
+      
+      // Create Yes/No buttons
+      const emailRow = new ActionRowBuilder<ButtonBuilder>()
+         .addComponents(
+            new ButtonBuilder()
+               .setCustomId('job_email_yes')
+               .setLabel('Yes, send email')
+               .setEmoji(EMOJI.EMAIL)
+               .setStyle(ButtonStyle.Success),
+            new ButtonBuilder()
+               .setCustomId('job_email_no')
+               .setLabel('No, Discord only')
+               .setStyle(ButtonStyle.Secondary)
+         );
+      
+      // Store the job reminder data in the client's temporary collection
+      modalInteraction.client.jobReminderTemp = jobReminderData;
+      
+      // Defer the modal reply to acknowledge it
+      await modalInteraction.deferUpdate();
+      
+      // Update original message to ask about email
+      await buttonInteraction.editReply({
+         embeds: [emailEmbed],
+         components: [emailRow]
+      });
+      
+      // Create collector for the email choice buttons
+      const collector = buttonInteraction.message.createMessageComponentCollector({
+         componentType: ComponentType.Button,
+         time: 60000, // 1 minute timeout
+         filter: (i) => 
+            (i.customId === 'job_email_yes' || i.customId === 'job_email_no') &&
+            i.user.id === buttonInteraction.user.id
+      });
+      
+      // Handle button collection
+      collector.on('collect', async (i) => {
+         // Clear the collector
+         collector.stop();
+         
+         if (i.customId === 'job_email_yes') {
+            // Show email modal for job reminders
+            await this.showJobEmailModal(buttonInteraction);
+         } else {
+            // Finalize job reminder without email
+            await this.finalizeJobReminderCreation(buttonInteraction, false, null);
+         }
+      });
+      
+      collector.on('end', (collected) => {
+         if (collected.size === 0) {
+            // Timeout - just create the reminder without email
+            this.finalizeJobReminderCreation(buttonInteraction, false, null);
+         }
+      });
+   }
+
+   // Show modal to collect email address for job reminders
+   private async showJobEmailModal(buttonInteraction: any) {
+      // Create modal for email address
+      const modal = new ModalBuilder()
+         .setCustomId('job_email_modal')
+         .setTitle(`${EMOJI.EMAIL} Email Notification for Job Alerts`);
+
+      // Add input for email address
+      const emailInput = new TextInputBuilder()
+         .setCustomId('email')
+         .setLabel("What email address should receive job alerts?")
+         .setStyle(TextInputStyle.Short)
+         .setPlaceholder("Enter your email address here...")
+         .setRequired(true);
+
+      // Create action row with input
+      const emailRow = new ActionRowBuilder<TextInputBuilder>().addComponents(emailInput);
+
+      // Add action row to the modal
+      modal.addComponents(emailRow);
+
+      // Show the modal
+      await buttonInteraction.showModal(modal);
+
+      // Wait for modal submission
+      try {
+         const modalInteraction = await buttonInteraction.awaitModalSubmit({
+            time: 180000, // 3 minutes (extended)
+            filter: (i: ModalSubmitInteraction) =>
+               i.customId === 'job_email_modal' &&
+               i.user.id === buttonInteraction.user.id
+         });
+
+         // Process modal submission
+         const email = modalInteraction.fields.getTextInputValue('email');
+         
+         // Simple email validation
+         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+         if (!emailRegex.test(email)) {
+            const errorEmbed = new EmbedBuilder()
+               .setColor(COLORS.DANGER)
+               .setTitle(`${EMOJI.CANCEL} Invalid Email Address`)
+               .setDescription(`**"${email}"** does not appear to be a valid email address.`)
+               .setFooter({ text: 'Please try again with a valid email address' });
+            
+            // Defer the modal reply
+            await modalInteraction.deferUpdate();
+            
+            // Update the original message with the error
+            await buttonInteraction.editReply({
+               embeds: [errorEmbed],
+               components: [this.createBackButton()], // Add back button
+            });
+            
+            return;
+         }
+
+         // Finalize the job reminder creation with email
+         await this.finalizeJobReminderCreation(buttonInteraction, true, email, modalInteraction);
+
+      } catch (error) {
+         console.error('Error in job email modal submission:', error);
+         
+         const errorEmbed = new EmbedBuilder()
+            .setColor(COLORS.DANGER)
+            .setTitle(`${EMOJI.CANCEL} Email Collection Failed`)
+            .setDescription('The email collection process timed out or an error occurred.')
+            .setTimestamp();
+            
+         // Update the original button interaction
+         await buttonInteraction.editReply({
+            embeds: [errorEmbed],
+            components: [this.createBackButton()], // Add back button
+         });
+      }
+   }
+
+   // Create and store the job reminder with or without email
+   private async finalizeJobReminderCreation(buttonInteraction: any, withEmail: boolean, email: string | null, modalInteraction?: ModalSubmitInteraction) {
+      // Get the job reminder data
+      const jobReminderData = buttonInteraction.client.jobReminderTemp;
+      const { repeatValue, filterValue } = jobReminderData;
+      
+      // Create the job reminder object
+      const jobReminder: Reminder = {
+         owner: buttonInteraction.user.id,
+         content: 'Job Reminder',
+         mode: 'private',
+         expires: new Date(), // Set to now, will be handled by the job scheduler
+         repeat: repeatValue as 'daily' | 'weekly',
+         filterBy: filterValue as 'default' | 'relevance' | 'salary' | 'date',
+         emailNotification: withEmail,
+         emailAddress: withEmail ? email : null
+      };
+
+      // Store the job reminder in the database
+      await buttonInteraction.client.mongo
+         .collection(DB.REMINDERS)
+         .insertOne(jobReminder);
+
+      // Create success embed
+      const successEmbed = new EmbedBuilder()
+         .setColor(COLORS.SECONDARY)
+         .setTitle(`${EMOJI.JOB} Job Alert Created`)
+         .setDescription(
+            `I'll send you job opportunities **${repeatValue}** starting at **${reminderTime(jobReminder)}**.`
+         )
+         .addFields(
+            { name: 'Frequency', value: `${repeatValue.charAt(0).toUpperCase() + repeatValue.slice(1)}`, inline: true },
+            { name: 'Sorted By', value: `${filterValue.charAt(0).toUpperCase() + filterValue.slice(1)}`, inline: true }
+         );
+         
+      // Add email info if applicable
+      if (withEmail) {
+         successEmbed.addFields({
+            name: 'Email Notification',
+            value: `You'll also receive job alerts at **${email}** when they trigger.`
+         });
+      }
+      
+      successEmbed.setFooter({ text: 'You can update your preferences anytime' })
+                  .setTimestamp();
+      
+      // Defer the modal reply if provided
+      if (modalInteraction) {
+         await modalInteraction.deferUpdate();
+      }
+      
+      // Update the original message with the success info
+      await buttonInteraction.editReply({
+         embeds: [successEmbed],
+         components: [this.createBackButton()], // Add back button
+      });
+      
+      // Clean up temporary data
+      delete buttonInteraction.client.jobReminderTemp;
    }
 
    // Handle viewing reminders
@@ -459,9 +802,10 @@ export default class extends Command {
          const hidden = reminder.mode === 'private';
          const isJobReminder = reminder.content === 'Job Reminder';
          const icon = isJobReminder ? EMOJI.JOB : EMOJI.REMINDER;
+         const emailIcon = reminder.emailNotification ? ` ${EMOJI.EMAIL}` : '';
          
          embeds[Math.floor(i / 10)].addFields({
-            name: `${i + 1}. ${icon} ${
+            name: `${i + 1}. ${icon}${emailIcon} ${
                hidden
                   ? isJobReminder
                      ? 'Job Alert'
@@ -469,8 +813,12 @@ export default class extends Command {
                   : reminder.content
             }`,
             value: hidden
-               ? `${EMOJI.REPEAT} **${reminder.repeat}** job reminder filtered by **${reminder.filterBy}**`
-               : `${EMOJI.TIME} Due: **${reminderTime(reminder)}**`
+               ? `${EMOJI.REPEAT} **${reminder.repeat}** job reminder filtered by **${reminder.filterBy}**${
+                  reminder.emailNotification ? `\n${EMOJI.EMAIL} Email notifications to: ${reminder.emailAddress}` : ''
+               }`
+               : `${EMOJI.TIME} Due: **${reminderTime(reminder)}**${
+                  reminder.emailNotification ? `\n${EMOJI.EMAIL} Email notifications to: ${reminder.emailAddress}` : ''
+               }`
          });
       });
       
@@ -576,6 +924,7 @@ export default class extends Command {
 
          const hidden = reminder.mode === 'private';
          const isJobReminder = reminder.content === 'Job Reminder';
+         const emailInfo = reminder.emailNotification ? `\nEmail notifications to ${reminder.emailAddress} have been canceled.` : '';
          
          const successEmbed = new EmbedBuilder()
             .setColor(COLORS.SUCCESS)
@@ -585,7 +934,7 @@ export default class extends Command {
                   hidden 
                      ? (isJobReminder ? 'Job Alert' : 'Private Reminder') 
                      : `"${reminder.content}"`
-               }`
+               }${emailInfo}`
             )
             .setTimestamp();
             
