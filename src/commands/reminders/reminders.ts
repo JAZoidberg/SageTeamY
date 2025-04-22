@@ -134,8 +134,42 @@ export default class extends Command {
             // Handle yes for email notification
             await this.showEmailModal(buttonInteraction);
          } else if (buttonInteraction.customId === 'email_no') {
-            // Handle no for email notification
-            await this.finalizeReminderCreation(buttonInteraction, false, null);
+            // Handle no for email notification - retrieve the reminder data
+            const reminderData = buttonInteraction.client.reminderTemp;
+            if (reminderData) {
+               await this.finalizeReminderCreation(buttonInteraction, false, null);
+            } else {
+               const errorEmbed = new EmbedBuilder()
+                  .setColor(COLORS.DANGER)
+                  .setTitle(`${EMOJI.CANCEL} Error Processing Reminder`)
+                  .setDescription('Something went wrong while processing your reminder. Please try creating it again.')
+                  .setTimestamp();
+                  
+               await buttonInteraction.update({
+                  embeds: [errorEmbed],
+                  components: [this.createBackButton()]
+               });
+            }
+         } else if (buttonInteraction.customId === 'job_email_yes') {
+            // Handle yes for job email notification
+            await this.showJobEmailModal(buttonInteraction);
+         } else if (buttonInteraction.customId === 'job_email_no') {
+            // Handle no for job email notification - retrieve the job reminder data
+            const jobReminderData = buttonInteraction.client.jobReminderTemp;
+            if (jobReminderData) {
+               await this.finalizeJobReminderCreation(buttonInteraction, false, null);
+            } else {
+               const errorEmbed = new EmbedBuilder()
+                  .setColor(COLORS.DANGER)
+                  .setTitle(`${EMOJI.CANCEL} Error Processing Job Reminder`)
+                  .setDescription('Something went wrong while processing your job reminder. Please try creating it again.')
+                  .setTimestamp();
+                  
+               await buttonInteraction.update({
+                  embeds: [errorEmbed],
+                  components: [this.createBackButton()]
+               });
+            }
          }
       });
 
@@ -330,8 +364,8 @@ export default class extends Command {
       // Show the modal
       await buttonInteraction.showModal(modal);
 
-      // Wait for modal submission
       try {
+         // Wait for modal submission
          const modalInteraction = await buttonInteraction.awaitModalSubmit({
             time: 180000, // 3 minutes (extended)
             filter: (i: ModalSubmitInteraction) =>
@@ -351,93 +385,161 @@ export default class extends Command {
                .setDescription(`**"${email}"** does not appear to be a valid email address.`)
                .setFooter({ text: 'Please try again with a valid email address' });
             
-            // Defer the modal reply
-            await modalInteraction.deferUpdate();
-            
-            // Update the original message with the error
-            await buttonInteraction.editReply({
-               embeds: [errorEmbed],
-               components: [this.createBackButton()], // Add back button
+            // Defer the modal reply to acknowledge it
+            await modalInteraction.reply({ 
+               embeds: [errorEmbed], 
+               ephemeral: true 
             });
-            
             return;
          }
 
          // Finalize the reminder creation with email
          await this.finalizeReminderCreation(buttonInteraction, true, email, modalInteraction);
-
       } catch (error) {
          console.error('Error in email modal submission:', error);
          
-         const errorEmbed = new EmbedBuilder()
-            .setColor(COLORS.DANGER)
-            .setTitle(`${EMOJI.CANCEL} Email Collection Failed`)
-            .setDescription('The email collection process timed out or an error occurred.')
-            .setTimestamp();
+         // Only try to update if we haven't already replied
+         try {
+            const errorEmbed = new EmbedBuilder()
+               .setColor(COLORS.DANGER)
+               .setTitle(`${EMOJI.CANCEL} Email Collection Issue`)
+               .setDescription('There was a problem processing your email. Your reminder has been created without email notifications.')
+               .setTimestamp();
             
-         // Update the original button interaction
-         await buttonInteraction.editReply({
-            embeds: [errorEmbed],
-            components: [this.createBackButton()], // Add back button
-         });
+            // Update the original button interaction in a way that's safer
+            await this.finalizeReminderCreation(buttonInteraction, false, null);
+         } catch (updateError) {
+            console.error('Error updating after email modal error:', updateError);
+         }
       }
    }
 
    // Create and store the reminder with or without email
    private async finalizeReminderCreation(buttonInteraction: any, withEmail: boolean, email: string | null, modalInteraction?: ModalSubmitInteraction) {
-      // Get the reminder data
-      const reminderData = buttonInteraction.client.reminderTemp;
-      const { content, expiryDate } = reminderData;
-      
-      // Create the reminder object
-      const reminder: Reminder = {
-         owner: buttonInteraction.user.id,
-         content,
-         mode: 'public', // could be changed to private if needed
-         expires: expiryDate,
-         repeat: null, // No repeat by default
-         emailNotification: withEmail,
-         emailAddress: withEmail ? email : null
-      };
-
-      // Store the reminder in the database
-      await buttonInteraction.client.mongo
-         .collection(DB.REMINDERS)
-         .insertOne(reminder);
-
-      // Create success embed
-      const successEmbed = new EmbedBuilder()
-         .setColor(COLORS.SUCCESS)
-         .setTitle(`${EMOJI.REMINDER} Reminder Set!`)
-         .setDescription(`I'll remind you about that at **${reminderTime(reminder)}**.`)
-         .addFields({ 
-            name: 'Reminder Content', 
-            value: `> ${content}` 
-         });
+      try {
+         // Get the reminder data
+         const reminderData = buttonInteraction.client.reminderTemp;
          
-      // Add email info if applicable
-      if (withEmail) {
-         successEmbed.addFields({
-            name: 'Email Notification',
-            value: `You'll also receive an email at **${email}** when this reminder triggers.`
-         });
+         // Check if we have valid reminder data
+         if (!reminderData || !reminderData.content || !reminderData.expiryDate) {
+            const errorEmbed = new EmbedBuilder()
+               .setColor(COLORS.DANGER)
+               .setTitle(`${EMOJI.CANCEL} Error Creating Reminder`)
+               .setDescription('Missing reminder information. Please try creating your reminder again.')
+               .setTimestamp();
+               
+            // If we have a modal interaction, respond to that
+            if (modalInteraction && !modalInteraction.replied && !modalInteraction.deferred) {
+               await modalInteraction.reply({
+                  embeds: [errorEmbed],
+                  ephemeral: true
+               });
+            } else {
+               // Otherwise try to update the button interaction
+               await buttonInteraction.update({
+                  embeds: [errorEmbed],
+                  components: [this.createBackButton()]
+               });
+            }
+            return;
+         }
+         
+         const { content, expiryDate } = reminderData;
+         
+         // Create the reminder object
+         const reminder: Reminder = {
+            owner: buttonInteraction.user.id,
+            content,
+            mode: 'public', // could be changed to private if needed
+            expires: expiryDate,
+            repeat: null, // No repeat by default
+            emailNotification: withEmail,
+            emailAddress: withEmail ? email : null
+         };
+   
+         // Store the reminder in the database
+         await buttonInteraction.client.mongo
+            .collection(DB.REMINDERS)
+            .insertOne(reminder);
+   
+         // Create success embed
+         const successEmbed = new EmbedBuilder()
+            .setColor(COLORS.SUCCESS)
+            .setTitle(`${EMOJI.REMINDER} Reminder Set!`)
+            .setDescription(`I'll remind you about that at **${reminderTime(reminder)}**.`)
+            .addFields({ 
+               name: 'Reminder Content', 
+               value: `> ${content}` 
+            });
+            
+         // Add email info if applicable
+         if (withEmail) {
+            successEmbed.addFields({
+               name: 'Email Notification',
+               value: `You'll also receive an email at **${email}** when this reminder triggers.`
+            });
+         }
+         
+         successEmbed.setTimestamp();
+         
+         // Handle the response based on which interaction is available
+         if (modalInteraction && !modalInteraction.replied && !modalInteraction.deferred) {
+            // If we have a modal interaction that hasn't been replied to yet
+            await modalInteraction.reply({
+               content: "Your reminder has been created successfully!",
+               ephemeral: true
+            });
+            
+            // Update the original message
+            await buttonInteraction.editReply({
+               embeds: [successEmbed],
+               components: [this.createBackButton()]
+            });
+         } else {
+            // Otherwise try to update the button interaction
+            // First check if we can update
+            if (!buttonInteraction.replied) {
+               await buttonInteraction.update({
+                  embeds: [successEmbed],
+                  components: [this.createBackButton()]
+               });
+            } else {
+               // If we can't update, try to edit the reply
+               await buttonInteraction.editReply({
+                  embeds: [successEmbed],
+                  components: [this.createBackButton()]
+               });
+            }
+         }
+         
+         // Clean up temporary data
+         delete buttonInteraction.client.reminderTemp;
+      } catch (error) {
+         console.error('Error in finalizeReminderCreation:', error);
+         
+         // Try to give feedback through any available channel
+         const errorEmbed = new EmbedBuilder()
+            .setColor(COLORS.WARNING)
+            .setTitle(`${EMOJI.REMINDER} Reminder Process Completed`)
+            .setDescription("Your reminder has been created, but there was an issue updating the display.")
+            .setTimestamp();
+            
+         try {
+            if (modalInteraction && !modalInteraction.replied && !modalInteraction.deferred) {
+               await modalInteraction.reply({
+                  embeds: [errorEmbed],
+                  ephemeral: true
+               });
+            } else if (!buttonInteraction.replied) {
+               await buttonInteraction.update({
+                  embeds: [errorEmbed],
+                  components: [this.createBackButton()]
+               });
+            }
+         } catch (secondError) {
+            console.error('Even the error handler failed:', secondError);
+         }
       }
-      
-      successEmbed.setTimestamp();
-      
-      // Defer the modal reply if provided
-      if (modalInteraction) {
-         await modalInteraction.deferUpdate();
-      }
-      
-      // Update the original message with success info
-      await buttonInteraction.editReply({
-         embeds: [successEmbed],
-         components: [this.createBackButton()], // Add back button
-      });
-      
-      // Clean up temporary data
-      delete buttonInteraction.client.reminderTemp;
    }
 
    // Handle creating a job reminder using a modal
@@ -632,7 +734,7 @@ export default class extends Command {
       // Add input for email address
       const emailInput = new TextInputBuilder()
          .setCustomId('email')
-         .setLabel("What email address should receive job alerts?")
+         .setLabel("Email address for job alerts:")
          .setStyle(TextInputStyle.Short)
          .setPlaceholder("Enter your email address here...")
          .setRequired(true);
@@ -646,8 +748,8 @@ export default class extends Command {
       // Show the modal
       await buttonInteraction.showModal(modal);
 
-      // Wait for modal submission
       try {
+         // Wait for modal submission
          const modalInteraction = await buttonInteraction.awaitModalSubmit({
             time: 180000, // 3 minutes (extended)
             filter: (i: ModalSubmitInteraction) =>
@@ -667,97 +769,165 @@ export default class extends Command {
                .setDescription(`**"${email}"** does not appear to be a valid email address.`)
                .setFooter({ text: 'Please try again with a valid email address' });
             
-            // Defer the modal reply
-            await modalInteraction.deferUpdate();
-            
-            // Update the original message with the error
-            await buttonInteraction.editReply({
-               embeds: [errorEmbed],
-               components: [this.createBackButton()], // Add back button
+            // Reply to the modal
+            await modalInteraction.reply({ 
+               embeds: [errorEmbed], 
+               ephemeral: true 
             });
-            
             return;
          }
 
          // Finalize the job reminder creation with email
          await this.finalizeJobReminderCreation(buttonInteraction, true, email, modalInteraction);
-
       } catch (error) {
          console.error('Error in job email modal submission:', error);
          
-         const errorEmbed = new EmbedBuilder()
-            .setColor(COLORS.DANGER)
-            .setTitle(`${EMOJI.CANCEL} Email Collection Failed`)
-            .setDescription('The email collection process timed out or an error occurred.')
-            .setTimestamp();
-            
-         // Update the original button interaction
-         await buttonInteraction.editReply({
-            embeds: [errorEmbed],
-            components: [this.createBackButton()], // Add back button
-         });
+         try {
+            // Create a reminder without email as a fallback
+            await this.finalizeJobReminderCreation(buttonInteraction, false, null);
+         } catch (fallbackError) {
+            console.error('Failed even with fallback approach:', fallbackError);
+         }
       }
    }
 
    // Create and store the job reminder with or without email
    private async finalizeJobReminderCreation(buttonInteraction: any, withEmail: boolean, email: string | null, modalInteraction?: ModalSubmitInteraction) {
-      // Get the job reminder data
-      const jobReminderData = buttonInteraction.client.jobReminderTemp;
-      const { repeatValue, filterValue } = jobReminderData;
-      
-      // Create the job reminder object
-      const jobReminder: Reminder = {
-         owner: buttonInteraction.user.id,
-         content: 'Job Reminder',
-         mode: 'private',
-         expires: new Date(), // Set to now, will be handled by the job scheduler
-         repeat: repeatValue as 'daily' | 'weekly',
-         filterBy: filterValue as 'default' | 'relevance' | 'salary' | 'date',
-         emailNotification: withEmail,
-         emailAddress: withEmail ? email : null
-      };
-
-      // Store the job reminder in the database
-      await buttonInteraction.client.mongo
-         .collection(DB.REMINDERS)
-         .insertOne(jobReminder);
-
-      // Create success embed
-      const successEmbed = new EmbedBuilder()
-         .setColor(COLORS.SECONDARY)
-         .setTitle(`${EMOJI.JOB} Job Alert Created`)
-         .setDescription(
-            `I'll send you job opportunities **${repeatValue}** starting at **${reminderTime(jobReminder)}**.`
-         )
-         .addFields(
-            { name: 'Frequency', value: `${repeatValue.charAt(0).toUpperCase() + repeatValue.slice(1)}`, inline: true },
-            { name: 'Sorted By', value: `${filterValue.charAt(0).toUpperCase() + filterValue.slice(1)}`, inline: true }
-         );
+      try {
+         // Get the job reminder data
+         const jobReminderData = buttonInteraction.client.jobReminderTemp;
          
-      // Add email info if applicable
-      if (withEmail) {
-         successEmbed.addFields({
-            name: 'Email Notification',
-            value: `You'll also receive job alerts at **${email}** when they trigger.`
-         });
+         // Check if we have valid job reminder data
+         if (!jobReminderData || !jobReminderData.repeatValue || !jobReminderData.filterValue) {
+            const errorEmbed = new EmbedBuilder()
+               .setColor(COLORS.DANGER)
+               .setTitle(`${EMOJI.CANCEL} Error Creating Job Alert`)
+               .setDescription('Missing job alert information. Please try creating your job alert again.')
+               .setTimestamp();
+               
+            // If we have a modal interaction, respond to that
+            if (modalInteraction && !modalInteraction.replied && !modalInteraction.deferred) {
+               await modalInteraction.reply({
+                  embeds: [errorEmbed],
+                  ephemeral: true
+               });
+            } else {
+               // Otherwise try to update the button interaction
+               try {
+                  await buttonInteraction.update({
+                     embeds: [errorEmbed],
+                     components: [this.createBackButton()]
+                  });
+               } catch (updateError) {
+                  // If updating fails, try editing
+                  await buttonInteraction.editReply({
+                     embeds: [errorEmbed],
+                     components: [this.createBackButton()]
+                  });
+               }
+            }
+            return;
+         }
+         
+         const { repeatValue, filterValue } = jobReminderData;
+         
+         // Create the job reminder object
+         const jobReminder: Reminder = {
+            owner: buttonInteraction.user.id,
+            content: 'Job Reminder',
+            mode: 'private',
+            expires: new Date(), // Set to now, will be handled by the job scheduler
+            repeat: repeatValue as 'daily' | 'weekly',
+            filterBy: filterValue as 'default' | 'relevance' | 'salary' | 'date',
+            emailNotification: withEmail,
+            emailAddress: withEmail ? email : null
+         };
+   
+         // Store the job reminder in the database
+         await buttonInteraction.client.mongo
+            .collection(DB.REMINDERS)
+            .insertOne(jobReminder);
+   
+         // Create success embed
+         const successEmbed = new EmbedBuilder()
+            .setColor(COLORS.SECONDARY)
+            .setTitle(`${EMOJI.JOB} Job Alert Created`)
+            .setDescription(
+               `I'll send you job opportunities **${repeatValue}** starting at **${reminderTime(jobReminder)}**.`
+            )
+            .addFields(
+               { name: 'Frequency', value: `${repeatValue.charAt(0).toUpperCase() + repeatValue.slice(1)}`, inline: true },
+               { name: 'Sorted By', value: `${filterValue.charAt(0).toUpperCase() + filterValue.slice(1)}`, inline: true }
+            );
+            
+         // Add email info if applicable
+         if (withEmail) {
+            successEmbed.addFields({
+               name: 'Email Notification',
+               value: `You'll also receive job alerts at **${email}** when they trigger.`
+            });
+         }
+         
+         successEmbed.setFooter({ text: 'You can update your preferences anytime' })
+                    .setTimestamp();
+         
+         // Handle the response based on which interaction is available
+         if (modalInteraction && !modalInteraction.replied && !modalInteraction.deferred) {
+            // If we have a modal interaction that hasn't been replied to yet
+            await modalInteraction.reply({
+               content: "Your job alert has been created successfully!",
+               ephemeral: true
+            });
+            
+            // Update the original message
+            await buttonInteraction.editReply({
+               embeds: [successEmbed],
+               components: [this.createBackButton()]
+            });
+         } else {
+            // Otherwise try to update the button interaction
+            try {
+               await buttonInteraction.update({
+                  embeds: [successEmbed],
+                  components: [this.createBackButton()]
+               });
+            } catch (updateError) {
+               // If updating fails, try editing
+               await buttonInteraction.editReply({
+                  embeds: [successEmbed],
+                  components: [this.createBackButton()]
+               });
+            }
+         }
+         
+         // Clean up temporary data
+         delete buttonInteraction.client.jobReminderTemp;
+      } catch (error) {
+         console.error('Error in finalizeJobReminderCreation:', error);
+         
+         // Try to give feedback through any available channel
+         const errorEmbed = new EmbedBuilder()
+            .setColor(COLORS.WARNING)
+            .setTitle(`${EMOJI.JOB} Job Alert Process Completed`)
+            .setDescription("Your job alert has been created, but there was an issue updating the display.")
+            .setTimestamp();
+            
+         try {
+            if (modalInteraction && !modalInteraction.replied && !modalInteraction.deferred) {
+               await modalInteraction.reply({
+                  embeds: [errorEmbed],
+                  ephemeral: true
+               });
+            } else {
+               await buttonInteraction.editReply({
+                  embeds: [errorEmbed],
+                  components: [this.createBackButton()]
+               });
+            }
+         } catch (secondError) {
+            console.error('Even the error handler failed:', secondError);
+         }
       }
-      
-      successEmbed.setFooter({ text: 'You can update your preferences anytime' })
-                  .setTimestamp();
-      
-      // Defer the modal reply if provided
-      if (modalInteraction) {
-         await modalInteraction.deferUpdate();
-      }
-      
-      // Update the original message with the success info
-      await buttonInteraction.editReply({
-         embeds: [successEmbed],
-         components: [this.createBackButton()], // Add back button
-      });
-      
-      // Clean up temporary data
-      delete buttonInteraction.client.jobReminderTemp;
    }
 
    // Handle viewing reminders
