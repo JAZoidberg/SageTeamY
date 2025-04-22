@@ -150,27 +150,8 @@ export default class extends Command {
                   components: [this.createBackButton()]
                });
             }
-         } else if (buttonInteraction.customId === 'job_email_yes') {
-            // Handle yes for job email notification
-            await this.showJobEmailModal(buttonInteraction);
-         } else if (buttonInteraction.customId === 'job_email_no') {
-            // Handle no for job email notification - retrieve the job reminder data
-            const jobReminderData = buttonInteraction.client.jobReminderTemp;
-            if (jobReminderData) {
-               await this.finalizeJobReminderCreation(buttonInteraction, false, null);
-            } else {
-               const errorEmbed = new EmbedBuilder()
-                  .setColor(COLORS.DANGER)
-                  .setTitle(`${EMOJI.CANCEL} Error Processing Job Reminder`)
-                  .setDescription('Something went wrong while processing your job reminder. Please try creating it again.')
-                  .setTimestamp();
-                  
-               await buttonInteraction.update({
-                  embeds: [errorEmbed],
-                  components: [this.createBackButton()]
-               });
-            }
          }
+         // We'll handle job email buttons through a different collector
       });
 
       collector.on('end', async (collected) => {
@@ -688,107 +669,93 @@ export default class extends Command {
       await modalInteraction.deferUpdate();
       
       // Update original message to ask about email
-      await buttonInteraction.editReply({
+      const message = await buttonInteraction.editReply({
          embeds: [emailEmbed],
          components: [emailRow]
       });
       
-      // Create collector for the email choice buttons
-      const collector = buttonInteraction.message.createMessageComponentCollector({
+      // Create a dedicated collector for this specific message
+      const collector = message.createMessageComponentCollector({
          componentType: ComponentType.Button,
-         time: 60000, // 1 minute timeout
-         filter: (i) => 
-            (i.customId === 'job_email_yes' || i.customId === 'job_email_no') &&
-            i.user.id === buttonInteraction.user.id
+         time: 60000 // 1 minute timeout
       });
       
-      // Handle button collection
       collector.on('collect', async (i) => {
-         // Clear the collector
-         collector.stop();
-         
-         if (i.customId === 'job_email_yes') {
-            // Show email modal for job reminders
-            await this.showJobEmailModal(buttonInteraction);
-         } else {
-            // Finalize job reminder without email
-            await this.finalizeJobReminderCreation(buttonInteraction, false, null);
-         }
-      });
-      
-      collector.on('end', (collected) => {
-         if (collected.size === 0) {
-            // Timeout - just create the reminder without email
-            this.finalizeJobReminderCreation(buttonInteraction, false, null);
-         }
-      });
-   }
-
-   // Show modal to collect email address for job reminders
-   private async showJobEmailModal(buttonInteraction: any) {
-      // Create modal for email address
-      const modal = new ModalBuilder()
-         .setCustomId('job_email_modal')
-         .setTitle(`${EMOJI.EMAIL} Email Notification for Job Alerts`);
-
-      // Add input for email address
-      const emailInput = new TextInputBuilder()
-         .setCustomId('email')
-         .setLabel("Email address for job alerts:")
-         .setStyle(TextInputStyle.Short)
-         .setPlaceholder("Enter your email address here...")
-         .setRequired(true);
-
-      // Create action row with input
-      const emailRow = new ActionRowBuilder<TextInputBuilder>().addComponents(emailInput);
-
-      // Add action row to the modal
-      modal.addComponents(emailRow);
-
-      // Show the modal
-      await buttonInteraction.showModal(modal);
-
-      try {
-         // Wait for modal submission
-         const modalInteraction = await buttonInteraction.awaitModalSubmit({
-            time: 180000, // 3 minutes (extended)
-            filter: (i: ModalSubmitInteraction) =>
-               i.customId === 'job_email_modal' &&
-               i.user.id === buttonInteraction.user.id
-         });
-
-         // Process modal submission
-         const email = modalInteraction.fields.getTextInputValue('email');
-         
-         // Simple email validation
-         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-         if (!emailRegex.test(email)) {
-            const errorEmbed = new EmbedBuilder()
-               .setColor(COLORS.DANGER)
-               .setTitle(`${EMOJI.CANCEL} Invalid Email Address`)
-               .setDescription(`**"${email}"** does not appear to be a valid email address.`)
-               .setFooter({ text: 'Please try again with a valid email address' });
-            
-            // Reply to the modal
-            await modalInteraction.reply({ 
-               embeds: [errorEmbed], 
-               ephemeral: true 
+         // Make sure it's the right user
+         if (i.user.id !== buttonInteraction.user.id) {
+            await i.reply({
+               content: 'This button is not for you.',
+               ephemeral: true
             });
             return;
          }
-
-         // Finalize the job reminder creation with email
-         await this.finalizeJobReminderCreation(buttonInteraction, true, email, modalInteraction);
-      } catch (error) {
-         console.error('Error in job email modal submission:', error);
          
-         try {
-            // Create a reminder without email as a fallback
+         // Stop the collector since we've handled the interaction
+         collector.stop();
+         
+         if (i.customId === 'job_email_yes') {
+            // Create modal for email address
+            const modal = new ModalBuilder()
+               .setCustomId('job_email_modal')
+               .setTitle(`${EMOJI.EMAIL} Email Notification for Job Alerts`);
+
+            // Add input for email address
+            const emailInput = new TextInputBuilder()
+               .setCustomId('email')
+               .setLabel("Email address for job alerts:")
+               .setStyle(TextInputStyle.Short)
+               .setPlaceholder("Enter your email address here...")
+               .setRequired(true);
+
+            // Create action row with input
+            const emailRow = new ActionRowBuilder<TextInputBuilder>().addComponents(emailInput);
+
+            // Add action row to the modal
+            modal.addComponents(emailRow);
+
+            // Show the modal using the NEW interaction from collector
+            await i.showModal(modal);
+            
+            try {
+               // Wait for modal submission
+               const modalSubmit = await i.awaitModalSubmit({
+                  time: 180000, // 3 minutes
+                  filter: (mi) => mi.customId === 'job_email_modal' && mi.user.id === i.user.id
+               });
+
+               // Process the email and finalize
+               const email = modalSubmit.fields.getTextInputValue('email');
+               
+               // Email validation
+               const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+               if (!emailRegex.test(email)) {
+                  await modalSubmit.reply({
+                     content: `Invalid email address format. Please try again.`,
+                     ephemeral: true
+                  });
+                  return;
+               }
+               
+               // Finalize job reminder creation with email
+               await this.finalizeJobReminderCreation(buttonInteraction, true, email, modalSubmit);
+            } catch (error) {
+               console.error('Error in modal submission:', error);
+               // Fallback to no email
+               await this.finalizeJobReminderCreation(buttonInteraction, false, null);
+            }
+         } else if (i.customId === 'job_email_no') {
+            // Handle "No, Discord only" option
             await this.finalizeJobReminderCreation(buttonInteraction, false, null);
-         } catch (fallbackError) {
-            console.error('Failed even with fallback approach:', fallbackError);
          }
-      }
+      });
+      
+      // Handle collector end (timeout)
+      collector.on('end', collected => {
+         if (collected.size === 0) {
+            // If no buttons were pressed, create without email
+            this.finalizeJobReminderCreation(buttonInteraction, false, null);
+         }
+      });
    }
 
    // Create and store the job reminder with or without email
