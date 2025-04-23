@@ -108,11 +108,11 @@ async function getJobFormData(userID:string, filterBy: string):Promise<[JobData,
 	};
 
 	const goalstrength: goalStrength = {
-		strength1: jobformAnswers[2].answers[0],
-		strength2: jobformAnswers[2].answers[1],
-		strength3: jobformAnswers[2].answers[2],
-		goal1: jobformAnswers[2].answers[3],
-		goal2: jobformAnswers[2].answers[4]
+		strength1: jobformAnswers[1].answers[5],
+		strength2: jobformAnswers[1].answers[6],
+		strength3: jobformAnswers[1].answers[7],
+		goal1: jobformAnswers[1].answers[8],
+		goal2: jobformAnswers[1].answers[9]
 	};
 
 	const APIResponse:JobResult[] = await fetchJobListings(jobData, interests, goalstrength);

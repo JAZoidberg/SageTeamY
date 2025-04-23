@@ -68,7 +68,7 @@ export default class extends Command {
 			goal2: jobformAnswers.answers.goal2
 		};
 
-		const APIResponse:JobResult[] = await fetchJobListings(jobData, interests);
+		const APIResponse:JobResult[] = await fetchJobListings(jobData, interests, goalstrength);
 		const jobFormData: [JobData, Interest, goalStrength, JobResult[]] = [jobData, interests, goalstrength, APIResponse];
 
 		const message = `## Hey <@${userID}>!  
