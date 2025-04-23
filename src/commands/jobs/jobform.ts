@@ -1,102 +1,120 @@
 import { Command } from '@root/src/lib/types/Command';
 import {
-	ActionRowBuilder,
-	ApplicationCommandOptionData,
-	ApplicationCommandOptionType,
 	ChatInputCommandInteraction,
-	InteractionResponse,
-	ModalBuilder,
-	ModalSubmitFields,
-	TextInputBuilder,
-	TextInputStyle
+	DMChannel,
+	Message
 } from 'discord.js';
 import { validatePreferences } from '../../lib/utils/jobUtils/validatePreferences';
+import { DB, BOT } from '@root/config';
+import { MongoClient } from 'mongodb';
+import { JobPreferences } from '@root/src/lib/types/JobPreferences';
 
-// prettier-ignore
-// Questions users will be asked to input into the API
+// All questions in sequence
 const questions = [
-	[
-		'What city do you want to be located?',
-		'Remote, hybrid, and/or in-person?',
-		'Full time, Part time, and/or Internship?',
-		'How far are you willing to travel? (in miles)'
-	],
-	['Interest 1', 'Interest 2', 'Interest 3', 'Interest 4', 'Interest 5']
+	'What city do you want to be located?',
+	'Remote, hybrid, and/or in-person?',
+	'Full time, Part time, and/or Internship?',
+	'How far are you willing to travel? (in miles)',
+	'Interest 1',
+	'Interest 2',
+	'Interest 3',
+	'Interest 4',
+	'Interest 5'
 ];
 
-// prettier-ignore
-export default class extends Command {
+export default class JobFormDM extends Command {
 
 	name = 'jobform';
-	description = 'Form to get your preferences for jobs to be used with the Job Alert System!';
+	description = 'Starts a job preferences form via direct message.';
+	options = [];
 
-	// Gives option to command to choose what question set user is answering.
-	options: ApplicationCommandOptionData[] = [
-		{
-			name: 'qset',
-			description: 'Which question set do you want to view (1 or 2).',
-			type: ApplicationCommandOptionType.Number,
-			required: true,
-			choices: [
-				{ name: 'qset 1', value: 1 },
-				{ name: 'qset 2', value: 2 }
-			]
-		}
-	];
+	async run(interaction: ChatInputCommandInteraction) {
+		const dm = await interaction.user.createDM();
+		await interaction.reply({
+			content: 'I’ve sent you a DM with the job form questions.',
+			flags: 64
+		});
+		this.collectAnswers(dm, interaction.user.id);
+	}
 
-	async run(interaction: ChatInputCommandInteraction): Promise<InteractionResponse<boolean> | void> {
-		const questionSet = interaction.options.getNumber('qset') - 1;
+	private async collectAnswers(channel: DMChannel, userId: string) {
+		const answers: string[] = [];
+		let current = 0;
 
-		if (questionSet !== 0 && questionSet !== 1) {
-			await interaction.reply({ content: 'Please enter either 1 or 2' });
-			return;
-		}
-
-		// Creates the modal that pops up once the command is run, giving it the correct title and set of questions.
-		const modal = new ModalBuilder()
-			.setCustomId(`jobModal${questionSet}`)
-			.setTitle(`Job Form (${questionSet + 1} of 2)`);
-
-		const askedQuestions = questions[questionSet];
-		const rows = askedQuestions.map((question) =>
-			this.getAnswerField(question, askedQuestions.indexOf(question))
+		// Send commands overview
+		await channel.send(
+			'Welcome to the job form!\n' +
+      'Type **skip** to skip a question, **back** to return to the previous one.'
 		);
 
-		for (const row of rows) {
-			// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-			// @ts-ignore
-			modal.addComponents(row);
-		}
+		const ask = () =>
+			channel.send(`**Question ${current + 1}/${questions.length}:** ${questions[current]}`);
 
-		await interaction.showModal(modal);
-		return;
-	}
-
-	getAnswer(fields: ModalSubmitFields, questionNum: number): string {
-		return fields.getField(`question${questionNum + 1}`).value;
-	}
-	// Creates the interface where the user can anwer the questions.
-	getAnswerField(question: string, questionNum: number): ActionRowBuilder {
-		return new ActionRowBuilder({ components: [new TextInputBuilder()
-			.setCustomId(`question${questionNum + 1}`)
-			.setLabel(`${question}`)
-			.setStyle(TextInputStyle.Short)
-			.setPlaceholder('Input Answer Here')
-			.setRequired(true)
-		] });
-	}
-	// Handles validation for qset1
-	async handleModalSubmit(interaction: ChatInputCommandInteraction, answers: string[], qSet: number): Promise<boolean> {
-		const validation = validatePreferences(answers, qSet, true);
-		if (!validation.isValid) {
-			await interaction.reply({ content: `Form validation failed:\n${validation.errors.join('\n')}`,
-				ephemeral: true });
-			return;
-		}
-		await interaction.reply({
-			content: 'Form submitted successfully!',
-			ephemeral: true
+		const collector = channel.createMessageCollector({
+			filter: m => m.author.id === userId,
+			idle: 5 * 60 * 1000
 		});
+
+		collector.on('collect', async msg => {
+			const content = msg.content.trim();
+
+			if (content.toLowerCase() === 'skip') {
+				answers[current] = '';
+			} else if (content.toLowerCase() === 'back') {
+				if (current > 0) current--;
+				return ask();
+			} else {
+				answers[current] = content;
+				// Validate formatting immediately
+				const { isValid, errors } = validatePreferences(answers, 0, true);
+				if (!isValid) {
+					// Show errors and re-ask same question
+					await channel.send(`**Formatting error:**\n${errors.join('\n')}`);
+					answers[current] = '';
+					return ask();
+				}
+			}
+
+			// Move on or finish
+			if (current < questions.length - 1) {
+				current++;
+				ask();
+			} else {
+				collector.stop('completed');
+			}
+		});
+
+		collector.on('end', async (_collected, reason) => {
+			if (reason !== 'completed') {
+				await channel.send('Form timed out. Please run `/jobform` again to restart.');
+				return;
+			}
+
+			// Final validation
+			const { isValid, errors } = validatePreferences(answers, 0, true);
+			if (!isValid) {
+				await channel.send(`Form validation failed:\n${errors.join('\n')}`);
+				return;
+			}
+
+			// Persist into Mongo
+			const client = await MongoClient.connect(DB.CONNECTION, { useUnifiedTopology: true });
+			const users = client.db(BOT.NAME).collection(DB.USERS);
+			const result = await users.updateOne(
+				{ discordId: userId },
+				{ $set: { jobPreferences: { answers } } },
+				{ upsert: true }
+			);
+
+			await channel.send(
+				`${`✅ Preferences saved! ` +
+        `matched=${result.matchedCount}, modified=${result.modifiedCount}`}${
+					result.upsertedId ? `, created new record` : ''}`
+			);
+		});
+
+		// Kick off the first question
+		ask();
 	}
 
 }

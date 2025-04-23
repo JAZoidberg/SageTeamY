@@ -2,67 +2,87 @@ import axios from 'axios';
 import { APP_ID, APP_KEY } from '@root/config';
 import { JobData } from '../../types/JobData';
 import { Interest } from '../../types/Interest';
-import { JobListing } from '../../types/JobListing';
 import { JobResult } from '../../types/JobResult';
 import { AdzunaJobResponse } from '../../types/AdzunaJobResponse';
 
-type JobCache = {
-	[key: string]: JobListing[] | JobResult[];
-};
-
+type JobCache = { [key: string]: JobResult[] };
 const jobCache: JobCache = {};
 
-export default async function fetchJobListings(jobData: JobData, interests?: Interest): Promise<JobResult[]> {
-	const LOCATION = encodeURIComponent(jobData.city);
-	const JOB_TYPE = encodeURIComponent(jobData.jobType);
-	const DISTANCE_KM = Number(jobData.distance) * 1.609; // Convert miles to kilometers
+export default async function fetchJobListings(
+	jobData: JobData,
+	interests?: Interest
+): Promise<JobResult[]> {
+	// 1) Trim & sanitize inputs
+	const city = jobData.city.trim();
+	const jobType = jobData.jobType.trim();
+	const distance = jobData.distance.trim();
+	const km = Math.round(Number(distance) * 1.609);
 
-	let whatInterests = '';
-	if (interests) {
-		const keys = Object.keys(interests);
-		const lastKey = keys[keys.length - 1];
-		const lastValue = interests[lastKey];
+	// 2) Build interests array
+	const interestArray = interests
+		? Object.values(interests)
+			.map(i => i.trim())
+			.filter(i => i.length > 0)
+		: [];
 
-		for (const interest in interests) {
-			whatInterests += interests[interest].replace(/\s+/g, '-'); // Replace spaces with dashes
-			if (interests[interest] !== lastValue) {
-				whatInterests += ' ';
-			}
-		}
-	}
-	whatInterests = encodeURIComponent(whatInterests);
+	// 3) URL-encode params
+	const WHAT = encodeURIComponent(jobType);
+	const WHAT_OR = encodeURIComponent(interestArray.join(','));
+	const WHERE = encodeURIComponent(city);
+	const DIST = encodeURIComponent(km.toString());
 
-	const cacheKey = `${jobData.jobType.toLowerCase()}-${jobData.city.toLowerCase()}-${whatInterests}`;
-	if (jobCache[cacheKey]) {
-		console.log('Fetching data from cache...');
-		return jobCache[cacheKey] as JobResult[];
-	}
+	// 4) Only remote sort for date/salary
+	const supported = ['date', 'salary'];
+	const sortParam
+    = supported.includes(jobData.filterBy)
+    	? `&sort_by=${encodeURIComponent(jobData.filterBy)}`
+    	: '';
 
-	// const URL = `https://api.adzuna.com/v1/api/jobs/us/search/1?app_id=${APP_ID}&app_key=${APP_KEY}&results_per_page=15&what=${JOB_TYPE}&what_or=${whatInterests}&where=
-	// ${LOCATION}&distance=${Math.round(DISTANCE_KM)}&sort_by=${jobData.filterBy}`;
+	// 5) Cache key
+	const cacheKey = `${jobType}|${city}|${interestArray.join(',')}|${jobData.filterBy}`;
+	if (jobCache[cacheKey]) return jobCache[cacheKey];
 
-	const URL_BASE = `https://api.adzuna.com/v1/api/jobs/us/search/1?app_id=${APP_ID}&app_key=${APP_KEY}&results_per_page=15&what=${JOB_TYPE}&what_or=${whatInterests}&where=\
-	${LOCATION}&distance=${Math.round(DISTANCE_KM)}`;
+	// 6) Build URL
+	const url
+    = `${`https://api.adzuna.com/v1/api/jobs/us/search/1` +
+    `?app_id=${APP_ID}` +
+    `&app_key=${APP_KEY}` +
+    `&results_per_page=15` +
+    `&what=${WHAT}` +
+    `&what_or=${WHAT_OR}` +
+    `&where=${WHERE}` +
+    `&distance=${DIST}`}${
+    	sortParam}`;
 
+	// 7) Fetch & map
+	let results: JobResult[];
 	try {
-		const response = await axios.get(jobData.filterBy && jobData.filterBy !== 'default' ? `${URL_BASE}&sort_by=${jobData.filterBy}` : URL_BASE);
-		const jobResults: JobResult[] = response.data.results.map((job: AdzunaJobResponse) => ({
-			company: job.company?.display_name || 'Not Provided',
-			title: job.title,
-			description: job.description || 'No description available',
-			location: `${job.location?.display_name || 'Not Provided'} (${job.location?.area?.toString().replace(/,/g, ', ') || ''})`,
-			created: job.created || 'Unknown',
-			salaryMax: job.salary_max || 'Not listed',
-			salaryMin: job.salary_min || 'Not listed',
-			link: job.redirect_url || 'No link available',
-			// Added latitude and longitude
-			longitude: job.longitude || 0,
-			latitude: job.latitude || 0
+		const { data } = await axios.get<{ results: AdzunaJobResponse[] }>(url);
+		results = data.results.map(j => ({
+			company: j.company?.display_name || 'Not Provided',
+			title: j.title,
+			description: j.description || 'No description available',
+			location: j.location?.display_name || 'Not Provided',
+			created: j.created,
+			salaryMax: j.salary_max?.toString() || 'Not listed',
+			salaryMin: j.salary_min?.toString() || 'Not listed',
+			link: j.redirect_url,
+			latitude: j.latitude || 0,
+			longitude: j.longitude || 0
 		}));
-
-		return jobResults.sort();
-	} catch (error) {
-		console.error('API error:', error);
-		throw error;
+	} catch (err) {
+		console.error('Adzuna API error:', err);
+		throw err;
 	}
+
+	// 8) Client-side alphabetical sort if requested
+	if (jobData.filterBy === 'alphabetical') {
+		results.sort((a, b) => a.title.localeCompare(b.title));
+	}
+
+	// (distance sort removed in this version)
+
+	// 9) Cache & return
+	jobCache[cacheKey] = results;
+	return results;
 }
