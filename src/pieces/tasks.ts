@@ -14,6 +14,7 @@ import { JobPreferences } from '../lib/types/JobPreferences';
 import axios from 'axios';
 import { PDFDocument, PDFFont, rgb, StandardFonts } from 'pdf-lib';
 import { generateHistogram } from '../commands/jobs/histogram';
+import jobform from '../commands/jobs/jobform';
 
 async function register(bot: Client): Promise<void> {
 	schedule('0/30 * * * * *', () => {
@@ -174,8 +175,8 @@ async function listJobs(jobForm: [JobData, Interest, JobResult[]], filterBy: str
 		// cityCoordinates = await this.queryCoordinates(jobForm[0].city);
 
 		jobForm[2].sort((a, b) => {
-			const distanceA = calculateDistance(cityCoordinates.lat, cityCoordinates.lng, Number(a.latitude), Number(a.longitude));
-			const distanceB = calculateDistance(cityCoordinates.lat, cityCoordinates.lng, Number(b.latitude), Number(b.longitude));
+			const distanceA = a.distance;
+			const distanceB = b.distance;
 
 			if (distanceA === -1) {
 				return 1; // Treat jobs with no location as lowest
@@ -211,32 +212,74 @@ async function listJobs(jobForm: [JobData, Interest, JobResult[]], filterBy: str
 	return jobList || '### Unfortunately, there were no jobs found based on your interests :(. Consider updating your interests or waiting until something is found.';
 }
 
-export async function jobMessage(reminder: Reminder | string, userID: string): Promise<{ message: string; pdfBuffer: Buffer }> {
+export async function jobMessage(reminder: Reminder | string, userID: string): Promise<{ message: string, pdfBuffer: Buffer }> {
 	const jobFormData: [JobData, Interest, JobResult[]] = await getJobFormData(userID, typeof reminder === 'object' && 'filterBy' in reminder ? reminder.filterBy : 'default');
-	// const filterBy = typeof reminder === 'object' && 'filterBy' in reminder ? String((reminder as Reminder).filterBy) : String(reminder);
-	const filterBy = typeof reminder === 'object' && 'filterBy' in reminder && reminder.filterBy ? String(reminder.filterBy) : 'default';
+	let filterBy: string;
+	if (typeof reminder === 'object' && 'filterBy' in reminder && reminder.filterBy) {
+		filterBy = String(reminder.filterBy);
+	} else if (typeof reminder === 'object') {
+		filterBy = 'default';
+	} else {
+		filterBy = typeof reminder === 'string' && reminder ? reminder : 'default';
+	}
+
+	const cityCoordinates = await queryCoordinates(jobFormData[0].city);
+	for (let i = 0; i < jobFormData[2].length; i++) {
+		const job = jobFormData[2][i];
+		const distance = Math.round(calculateDistance(cityCoordinates.lat, cityCoordinates.lng, Number(job.latitude), Number(job.longitude)) + Number.EPSILON) * 100 / 100; // Round to 2 decimal places
+		jobFormData[2][i].distance = distance;
+	}
+
+	const jobResults : JobResult[] = await sortJobResults(jobFormData, filterBy);
 
 
-	const pdfBuffer = await generateJobPDF(jobFormData[2]);
+	const pdfBuffer = await generateJobPDF(jobFormData);
+	const embedList: EmbedBuilder[] = [];
+
+	// for (let i = 0; i < jobFormData[2].length; i++) {
+	// 	const job = jobFormData[2][i];
+	// 	const cityCoordinates = await queryCoordinates(jobFormData[0].city);
+	// 	const distance = Math.round(calculateDistance(cityCoordinates.lat, cityCoordinates.lng, Number(job.latitude), Number(job.longitude)) + Number.EPSILON) * 100 / 100; // Round to 2 decimal places
+
+	// 	const avgSalary = (Number(job.salaryMax) + Number(job.salaryMin)) / 2;
+	// 	const formattedAvgSalary = formatCurrency(avgSalary);
+
+	// 	const postedDate = new Date(job.created).toDateString();
+	// 	const postedTime = new Date(job.created).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+	// 	embedList.push(new EmbedBuilder()
+	// 		.setTitle(job.title)
+	// 		.setURL(job.link)
+	// 		.setDescription(`Job oppourtunity found for you!`)
+	// 		.addFields(
+	// 			{ name: 'Salary', value: formattedAvgSalary, inline: true },
+	// 			{ name: 'Location', value: job.location, inline: true },
+	// 			{ name: 'Date Posted', value: `${postedDate} at ${postedTime}`, inline: true },
+	// 			{ name: 'Distance', value: `${distance} miles`, inline: true }
+	// 		)
+	// 		.setColor(0x00AE86)
+	// 		.setFooter({ text: 'Powered by SageBot & Adzuna' })
+	// 	);
+	// }
 
 
-	const message = `## Hey <@${userID}>!  
-	## Here's your list of job/internship recommendations:  
-Based on your interests in **${jobFormData[1].interest1}**, **${jobFormData[1].interest2}**, \
-**${jobFormData[1].interest3}**, **${jobFormData[1].interest4}**, and **${jobFormData[1].interest5}**, I've found these jobs you may find interesting. Please note that while you may get\
-job/internship recommendations from the same company,\
-their positions/details/applications/salary WILL be different and this is not a glitch/bug!
-Here's your personalized list:
+	const message = `## Hey <@${userID}>!
+		## Here's your list of job/internship recommendations:
+	Based on your interests in **${jobFormData[1].interest1}**, **${jobFormData[1].interest2}**, \
+	**${jobFormData[1].interest3}**, **${jobFormData[1].interest4}**, and **${jobFormData[1].interest5}**, I've found these jobs you may find interesting. Please note that while you may get\
+	job/internship recommendations from the same company,\
+	their positions/details/applications/salary WILL be different and this is not a glitch/bug!
+	Here's your personalized list:
 
-	${await listJobs(jobFormData, filterBy)}
-	---  
-	### **Disclaimer:**  
-	-# Please be aware that the job listings displayed are retrieved from a third-party API. \
-	While we strive to provide accurate information, we cannot guarantee the legitimacy or security\
-	of all postings. Exercise caution when sharing personal information, submitting resumes, or registering\
-	on external sites. Always verify the authenticity of job applications before proceeding. Additionally, \
-	some job postings may contain inaccuracies due to API limitations, which are beyond our control. We apologize for any inconvenience this may cause and appreciate your understanding.
-	`;
+		${await listJobs(jobFormData, filterBy)}
+		---
+		### **Disclaimer:**
+		-# Please be aware that the job listings displayed are retrieved from a third-party API. \
+		While we strive to provide accurate information, we cannot guarantee the legitimacy or security\
+		of all postings. Exercise caution when sharing personal information, submitting resumes, or registering\
+		on external sites. Always verify the authenticity of job applications before proceeding. Additionally, \
+		some job postings may contain inaccuracies due to API limitations, which are beyond our control. We apologize for any inconvenience this may cause and appreciate your understanding.`;
+
 	return { message, pdfBuffer };
 }
 
@@ -274,7 +317,8 @@ async function checkReminders(bot: Client): Promise<void> {
 		} else {
 			bot.users.fetch(reminder.owner).then(async (user) => {
 				const result = await jobMessage(reminder, user.id);
-				const { message } = result;
+				// const { message } = result;
+				const message = 'placeholder'; // Placeholder for the message variable
 				const { pdfBuffer } = result;
 				if (message.length < 2000) {
 					user.send(message).catch((err) => {
@@ -315,8 +359,13 @@ async function checkReminders(bot: Client): Promise<void> {
 	});
 }
 
-export async function generateJobPDF(jobs: JobResult[]): Promise<Buffer> {
+export async function generateJobPDF(jobForm: [JobData, Interest, JobResult[]]): Promise<Buffer> {
 	// Create a new PDF document.
+
+	// Seperate sorting in listjobs into its own function, call function here so sorting maintained
+
+	const jobs = jobForm[2];
+
 	const pdfDoc = await PDFDocument.create();
 	let currentPage = pdfDoc.addPage();
 	const { width, height } = currentPage.getSize();
@@ -419,34 +468,32 @@ export async function generateJobPDF(jobs: JobResult[]): Promise<Buffer> {
 
 		// Draw the bullet points for location, salary, and apply link.
 		const bulletPoints = [
-			{ label: 'Location', value: job.location },
+			{ label: 'Location', value: `${job.location}, ${job.distance} miles from ${jobForm[0].city} ` },
 			{ label: 'Salary', value: formatSalaryforPDF(job) },
 			{ label: 'Apply Here', value: job.link }
 		];
 
-		const test = 'C++ developer'; // Replace with the actual job title you want to use for the histogram
-		const URL_BASE = `https://api.adzuna.com/v1/api/jobs/us/histogram?app_id=${APP_ID}&app_key=${APP_KEY}&what=${test}`;
-		
+		const jobTitle = encodeURIComponent(job.title);
+		const URL_BASE = `https://api.adzuna.com/v1/api/jobs/us/histogram?app_id=${APP_ID}&app_key=${APP_KEY}&what=${jobTitle}`;
+
 		const response = await axios.get(URL_BASE);
 		const data = Object.entries(response.data.histogram).map(([value, frequency]: [string, number]) => ({
 			value,
 			frequency
 		}));
+		let noValues = true;
+
+		for (const item of data) {
+			if (item.frequency > 0) {
+				noValues = false;
+				break;
+			}
+		}
+
 
 		const image = await generateHistogram(data, job.title);
 		const imageBytes = await pdfDoc.embedPng(image);
-		const imageDims = imageBytes.scale(0.5); // Scale the image to 50% of its original size
-		const imageX = margin + bulletPointIndent + subBulletPointIndent;
-		const imageY = yPosition + 20 - imageDims.height; // Adjust Y position to place the image above the text
-		const imageField = currentPage.drawImage(imageBytes, {
-			x: imageX,
-			y: imageY,
-			width: imageDims.width,
-			height: imageDims.height
-		});
-
-
-		
+		const imageDims = imageBytes.scale(0.2);
 
 
 		for (const point of bulletPoints) {
@@ -474,6 +521,18 @@ export async function generateJobPDF(jobs: JobResult[]): Promise<Buffer> {
 					font: HelveticaBold,
 					color: rgb(94 / 255, 74 / 255, 74 / 255)
 				});
+
+				if (point.label === 'Salary' && !noValues) {
+					currentPage.drawImage(imageBytes, {
+						x: currentPage.getWidth() / 2 - imageDims.width / 2,
+						y: yPosition - imageDims.height - 10,
+						width: imageDims.width,
+						height: imageDims.height
+					});
+
+					yPosition -= imageDims.height + 30; // Adjust spacing for the image
+				}
+
 
 				yPosition -= fontSize + 10; // Adjust spacing between lines
 			}
@@ -564,6 +623,42 @@ function formatSalaryforPDF(job: JobResult): string {
 	return formattedSalaryMin && formattedSalaryMax
 		? `Avg: ${formattedAvgSalary}, Min: ${formattedSalaryMin}, Max: ${formattedSalaryMax}`
 		: formattedAvgSalary;
+}
+
+async function sortJobResults(jobForm: [JobData, Interest, JobResult[]], filterBy: string): Promise<JobResult[]> {
+	const cityCoordinates = await queryCoordinates(jobForm[0].city);
+
+	if (filterBy === 'salary') {
+		jobForm[2].sort((a, b) => {
+			const avgA = (Number(a.salaryMax) + Number(a.salaryMin)) / 2;
+			const avgB = (Number(b.salaryMax) + Number(b.salaryMin)) / 2;
+
+			// Handle cases where salaryMax or salaryMin is "Not listed"
+			if (isNaN(avgA)) return 1; // Treat jobs with no salary info as lowest
+			if (isNaN(avgB)) return -1;
+
+			return avgB - avgA; // Descending order
+		});
+	} else if (filterBy === 'alphabetical') {
+		jobForm[2].sort((a, b) => a.title > b.title ? 1 : -1);
+	} else if (filterBy === 'date') {
+		jobForm[2].sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime());
+	} else if (filterBy === 'distance') {
+		// cityCoordinates = await this.queryCoordinates(jobForm[0].city);
+
+		jobForm[2].sort((a, b) => {
+			const distanceA = a.distance;
+			const distanceB = b.distance;
+
+			if (distanceA === -1) {
+				return 1; // Treat jobs with no location as lowest
+			}
+
+			return distanceA - distanceB; // Might have to account for negative distances
+		});
+	}
+
+	return jobForm[2];
 }
 
 
