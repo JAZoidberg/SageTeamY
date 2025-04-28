@@ -24,8 +24,10 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y libcairo2-dev libjpeg-dev libpango1.0-dev libgif-dev build-essential g++
 
+
     - name: Install node-gyp
       run: npm install -g node-gyp
+
         
     - run: npm cache clean --force
     - run: npm ci
