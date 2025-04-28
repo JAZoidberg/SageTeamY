@@ -25,40 +25,55 @@ export default async function fetchJobListings(jobData: JobData, interests?: Int
 		const lastValue = interests[lastKey];
 
 		for (const interest in interests) {
-			whatInterests += interests[interest].replace(/\s+/g, '-'); // Replace spaces with dashes
-			if (interests[interest] !== lastValue) {
-				whatInterests += ' ';
+			const val = interests[interest];
+			if (typeof val === 'string') {
+				whatInterests += val.replace(/\s+/g, '-');
+				if (val !== lastValue) {
+					whatInterests += ' ';
+				}
 			}
 		}
 	}
 	whatInterests = encodeURIComponent(whatInterests);
 
-	let whatGoalStrengths = '';
+	let whatGoalStrengt = '';
 	if (goalstrength) {
 		const keys2 = Object.keys(goalstrength);
 		const lastKey2 = keys2[keys2.length - 1];
 		const lastValue2 = goalstrength[lastKey2];
 
 		for (const goalstren in goalstrength) {
-			whatGoalStrengths += goalstrength[goalstren].replace(/\s+/g, '-'); // Replace spaces with dashes
-			if (goalstrength[goalstren] !== lastValue2) {
-				whatGoalStrengths += ' ';
+			const val = goalstrength[goalstren];
+			if (typeof val === 'string') {
+				whatGoalStrengt += val.replace(/\s+/g, '-');
+				if (val !== lastValue2) {
+					whatGoalStrengt += ' ';
+				}
 			}
 		}
 	}
-	whatGoalStrengths = encodeURIComponent(whatGoalStrengths);
+	whatGoalStrengt = encodeURIComponent(whatGoalStrengt);
 
-	const cacheKey = `${jobData.jobType.toLowerCase()}-${jobData.city.toLowerCase()}-${whatInterests}-${whatGoalStrengths}`;
+	const cacheKey = `${jobData.jobType.toLowerCase()}-${jobData.city.toLowerCase()}-${whatInterests}-${whatGoalStrengt}`;
 	if (jobCache[cacheKey]) {
 		console.log('Fetching data from cache...');
 		return jobCache[cacheKey] as JobResult[];
 	}
 
+	const staticInterest = 'computer science';
+
+	const whatOrParams = [staticInterest];
+
+	if (whatInterests) whatOrParams.push(whatInterests);
+	if (whatGoalStrengt) whatOrParams.push(whatGoalStrengt);
+
+	const encodedWhatOr = encodeURIComponent(whatOrParams.join(','));
+	const encodedWhatExclude = ['nurse', 'sales', 'teacher', 'pharmacist'];
+
 	// const URL = `https://api.adzuna.com/v1/api/jobs/us/search/1?app_id=${APP_ID}&app_key=${APP_KEY}&results_per_page=15&what=${JOB_TYPE}&what_or=${whatInterests}&where=
 	// ${LOCATION}&distance=${Math.round(DISTANCE_KM)}&sort_by=${jobData.filterBy}`;
-
-	const URL_BASE = `https://api.adzuna.com/v1/api/jobs/us/search/1?app_id=${APP_ID}&app_key=${APP_KEY}&results_per_page=15&what=${JOB_TYPE}&what_or=${whatInterests}&where=\
-	${LOCATION}&distance=${Math.round(DISTANCE_KM)}`;
+	const URL_BASE = `https://api.adzuna.com/v1/api/jobs/us/search/1?app_id=${APP_ID}&app_key=${APP_KEY}&results_per_page=10&what=${JOB_TYPE}\
+	&what_or=${encodedWhatOr}&what_exclude=${encodedWhatExclude}&where=${LOCATION}&distance=${Math.round(DISTANCE_KM)}`;
 
 	try {
 		const response = await axios.get(jobData.filterBy && jobData.filterBy !== 'default' ? `${URL_BASE}&sort_by=${jobData.filterBy}` : URL_BASE);
