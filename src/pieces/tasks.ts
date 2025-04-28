@@ -148,7 +148,7 @@ async function queryCoordinates(location: string): Promise<{lat: number, lng: nu
 	return coordinates;
 }
 
-function titleCase(jobTitle:string): string {
+export function titleCase(jobTitle:string): string {
 	return jobTitle.toLowerCase().replace(/[()]/g, '').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 }
 
@@ -468,7 +468,7 @@ export async function generateJobPDF(jobForm: [JobData, Interest, JobResult[]]):
 
 		// Draw the bullet points for location, salary, and apply link.
 		const bulletPoints = [
-			{ label: 'Location', value: `${job.location}, ${job.distance} miles from ${jobForm[0].city} ` },
+			{ label: 'Location', value: `${job.location}, ${(job.distance >= 0) ? `${job.distance} miles from ${titleCase(jobForm[0].city)}` : ''} ` },
 			{ label: 'Salary', value: formatSalaryforPDF(job) },
 			{ label: 'Apply Here', value: job.link }
 		];
@@ -523,7 +523,7 @@ export async function generateJobPDF(jobForm: [JobData, Interest, JobResult[]]):
 				});
 
 				if (point.label === 'Salary' && !noValues) {
-					currentPage.drawImage(imageBytes, {
+					currentPage.drawImage(imageBytes, { // Change space check so it doesn't go off the page
 						x: currentPage.getWidth() / 2 - imageDims.width / 2,
 						y: yPosition - imageDims.height - 10,
 						width: imageDims.width,

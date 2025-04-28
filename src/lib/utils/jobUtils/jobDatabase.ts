@@ -1,6 +1,7 @@
 import { Collection, Db } from 'mongodb';
 import { DB } from '@root/config';
 import { validatePreferences } from './validatePreferences';
+import { titleCase } from '@root/src/pieces/tasks';
 
 // Class to store the info of the preferences the user previously put in to match to jobs in the database.
 export class JobPreferenceAPI {
@@ -12,7 +13,7 @@ export class JobPreferenceAPI {
 		this.collection = db.collection(DB.USERS);
 	}
 	// Stores preferences into the database. Returns an error message if success is false.
-	async storeFormResponses(userID: string, answers: string[], questionSet: number): Promise<{ success: boolean; message: string }> {
+	async storeFormResponses(userID: string, answers: string[]): Promise<{ success: boolean; message: string }> {
 		// If user id does not exist, then nothing will be stored.
 		if (!userID?.trim()) {
 			return { success: false, message: 'Invalid User ID' };
@@ -20,27 +21,21 @@ export class JobPreferenceAPI {
 		try {
 			const updateObject = {};
 			// Checks if the answer provided is accuate.
-			const { isValid, errors } = validatePreferences(answers, questionSet, true);
-			if (!isValid) {
-				console.error('Validation failed', errors);
-				return { success: false, message: 'Invalid preferences provided' };
-			}
-			// Adds answers to questions.
-			if (questionSet === 0) {
-				const [city, workType, employmentType, travelDistance] = answers;
-				if (city?.trim()) updateObject['jobPreferences.answers.city'] = city;
-				if (workType?.trim()) updateObject['jobPreferences.answers.workType'] = workType;
-				if (employmentType?.trim()) updateObject['jobPreferences.answers.employmentType'] = employmentType;
-				if (travelDistance?.trim()) updateObject['jobPreferences.answers.travelDistance'] = travelDistance;
-			// Adds answers to interests.
-			} else if (questionSet === 1) {
-				const [interest1, interest2, interest3, interest4, interest5] = answers;
-				if (interest1?.trim()) updateObject['jobPreferences.answers.interest1'] = interest1;
-				if (interest2?.trim()) updateObject['jobPreferences.answers.interest2'] = interest2;
-				if (interest3?.trim()) updateObject['jobPreferences.answers.interest3'] = interest3;
-				if (interest4?.trim()) updateObject['jobPreferences.answers.interest4'] = interest4;
-				if (interest5?.trim()) updateObject['jobPreferences.answers.interest5'] = interest5;
-			}
+
+			const [city, workType, employmentType, travelDistance] = answers[0].split(',').map((a) => titleCase(a.trim()));
+			const [interest1, interest2, interest3, interest4, interest5] = answers[1].split(',').map((a) => titleCase(a.trim()));
+
+			if (city) { updateObject['jobPreferences.answers.city'] = city; }
+			if (workType) { updateObject['jobPreferences.answers.workType'] = workType; }
+			if (employmentType) { updateObject['jobPreferences.answers.employmentType'] = employmentType; }
+			if (travelDistance) { updateObject['jobPreferences.answers.travelDistance'] = travelDistance; }
+			if (interest1) { updateObject['jobPreferences.answers.interest1'] = interest1; }
+			if (interest2) { updateObject['jobPreferences.answers.interest2'] = interest2; }
+			if (interest3) { updateObject['jobPreferences.answers.interest3'] = interest3; }
+			if (interest4) { updateObject['jobPreferences.answers.interest4'] = interest4; }
+			if (interest5) { updateObject['jobPreferences.answers.interest5'] = interest5; }
+
+
 			// Updates preferences with new answers and the new date inputted if the answers length is greater than 0.
 			if (Object.keys(updateObject).length === 0) return { success: false, message: 'No valid answers provided' };
 			if (Object.keys(updateObject).length > 0) {

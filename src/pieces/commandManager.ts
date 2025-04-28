@@ -168,7 +168,7 @@ async function handleModalBuilder(interaction: ModalSubmitInteraction, bot: Clie
 
 				// Create API instance with the database instance directly.
 				const jobPreferenceAPI = new JobPreferenceAPI(interaction.client.mongo);
-				const success = await jobPreferenceAPI.storeFormResponses(interaction.user.id, answers, formNumber);
+				const success = await jobPreferenceAPI.storeFormResponses(interaction.user.id, answers);
 				const isUpdate = customId.replace(/[0-9]/g, '') === 'updateModal';
 				const mess = isUpdate ? `Success: Your preferences have been updated! ${formNumber === 0
 					? 'Please use /update_preferences qset:2 to complete your interests.' : ''}`

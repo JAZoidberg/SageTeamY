@@ -1,7 +1,7 @@
 import { APP_ID, APP_KEY } from '@root/config';
 import { Command } from '@root/src/lib/types/Command';
 import axios from 'axios';
-import { ChatInputCommandInteraction, InteractionResponse } from 'discord.js';
+import { Application, ApplicationCommandOptionData, ApplicationCommandOptionType, ChatInputCommandInteraction, InteractionResponse } from 'discord.js';
 import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
 import fs from 'fs';
 import { ChartConfiguration } from 'chart.js';
@@ -10,15 +10,22 @@ export default class extends Command {
 
 	description = `Get a listing of jobs based on your interests and preferences.`;
 	extendedHelp = `This command will return a listing of jobs based on your interests and preferences.`;
+	options: ApplicationCommandOptionData[] = [
+		{
+			name: 'job',
+			description: 'Input the job title you want salary data for',
+			type: ApplicationCommandOptionType.String,
+			required: true
+		}
+	];
 
 	async run(interaction: ChatInputCommandInteraction): Promise<void | InteractionResponse<boolean>> {
 		await interaction.deferReply(); // Defer the reply first
 
-		const jobTitle = 'Accountant'; // Example job title
+		const jobTitle = interaction.options.getString('job');
+		const encodedJobTitle = encodeURIComponent(jobTitle); // Encode the job title for the URL
 
-		const test = encodeURIComponent(jobTitle); // Encode the job title for the URL
-
-		const URL_BASE = `https://api.adzuna.com/v1/api/jobs/us/histogram?app_id=${APP_ID}&app_key=${APP_KEY}&what=${test}`;
+		const URL_BASE = `https://api.adzuna.com/v1/api/jobs/us/histogram?app_id=${APP_ID}&app_key=${APP_KEY}&what=${encodedJobTitle}`;
 
 		const response = await axios.get(URL_BASE);
 		const data = Object.entries(response.data.histogram).map(([value, frequency]: [string, number]) => ({
