@@ -57,10 +57,16 @@ function checkOptions(
 	list2Option: ApplicationCommandOptionData
 ): boolean {
 	if ('required' in list1Option && 'required' in list2Option) {
-		// see note 1 comment block in help.ts
-		return list2Option.required === list1Option.required;
+		if (list1Option.required !== list2Option.required) return false;
 	}
-	return false;
+	if ('choices' in list1Option && 'choices' in list2Option) {
+		if (
+			JSON.stringify(list1Option.choices) !== JSON.stringify(list2Option.choices)
+		) {
+			return false;
+		}
+	} // Updated so that both checks are done for equality
+	return true;
 }
 
 export function isPermissionEqual(

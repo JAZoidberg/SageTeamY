@@ -11,7 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{CA89C133-1032-EC19-8F42-31354B1BC90F}</ProjectGuid>
+    <ProjectGuid>{ABCF23AD-5F45-31AB-06B0-F71732B5BDE2}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>sage</RootNamespace>
     <IgnoreWarnCompileDuplicatedFilename>true</IgnoreWarnCompileDuplicatedFilename>
@@ -48,8 +48,8 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Users\chris\AppData\Local\node-gyp\Cache\22.14.0\include\node;C:\Users\chris\AppData\Local\node-gyp\Cache\22.14.0\src;C:\Users\chris\AppData\Local\node-gyp\Cache\22.14.0\deps\openssl\config;C:\Users\chris\AppData\Local\node-gyp\Cache\22.14.0\deps\openssl\openssl\include;C:\Users\chris\AppData\Local\node-gyp\Cache\22.14.0\deps\uv\include;C:\Users\chris\AppData\Local\node-gyp\Cache\22.14.0\deps\zlib;C:\Users\chris\AppData\Local\node-gyp\Cache\22.14.0\deps\v8\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>/Zc:__cplusplus -std:c++20 /Zm2000 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>C:\Users\Naz\AppData\Local\node-gyp\Cache\20.12.2\include\node;C:\Users\Naz\AppData\Local\node-gyp\Cache\20.12.2\src;C:\Users\Naz\AppData\Local\node-gyp\Cache\20.12.2\deps\openssl\config;C:\Users\Naz\AppData\Local\node-gyp\Cache\20.12.2\deps\openssl\openssl\include;C:\Users\Naz\AppData\Local\node-gyp\Cache\20.12.2\deps\uv\include;C:\Users\Naz\AppData\Local\node-gyp\Cache\20.12.2\deps\zlib;C:\Users\Naz\AppData\Local\node-gyp\Cache\20.12.2\deps\v8\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/Zc:__cplusplus -std:c++17 %(AdditionalOptions)</AdditionalOptions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <BufferSecurityCheck>true</BufferSecurityCheck>
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
@@ -60,7 +60,7 @@
       <OmitFramePointers>false</OmitFramePointers>
       <Optimization>Disabled</Optimization>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <PreprocessorDefinitions>NODE_GYP_MODULE_NAME=sage;USING_UV_SHARED=1;USING_V8_SHARED=1;V8_DEPRECATION_WARNINGS=1;_GLIBCXX_USE_CXX11_ABI=1;WIN32;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_HAS_EXCEPTIONS=0;NOMINMAX;OPENSSL_NO_PINSHARED;OPENSSL_THREADS;BUILDING_NODE_EXTENSION;HOST_BINARY=&quot;node.exe&quot;;DEBUG;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NODE_GYP_MODULE_NAME=sage;USING_UV_SHARED=1;USING_V8_SHARED=1;V8_DEPRECATION_WARNINGS=1;_GLIBCXX_USE_CXX11_ABI=1;WIN32;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_HAS_EXCEPTIONS=0;OPENSSL_NO_PINSHARED;OPENSSL_THREADS;BUILDING_NODE_EXTENSION;HOST_BINARY=&quot;node.exe&quot;;DEBUG;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <StringPooling>true</StringPooling>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -72,7 +72,7 @@
       <AdditionalOptions>/LTCG:INCREMENTAL %(AdditionalOptions)</AdditionalOptions>
     </Lib>
     <Link>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;DelayImp.lib;&quot;C:\\Users\\chris\\AppData\\Local\\node-gyp\\Cache\\22.14.0\\x64\\node.lib&quot;</AdditionalDependencies>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;DelayImp.lib;&quot;C:\\Users\\Naz\\AppData\\Local\\node-gyp\\Cache\\20.12.2\\x64\\node.lib&quot;</AdditionalDependencies>
       <AdditionalOptions>/LTCG:INCREMENTAL /ignore:4199 %(AdditionalOptions)</AdditionalOptions>
       <DelayLoadDLLs>node.exe;%(DelayLoadDLLs)</DelayLoadDLLs>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -84,14 +84,14 @@
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>C:\Users\chris\AppData\Local\node-gyp\Cache\22.14.0\include\node;C:\Users\chris\AppData\Local\node-gyp\Cache\22.14.0\src;C:\Users\chris\AppData\Local\node-gyp\Cache\22.14.0\deps\openssl\config;C:\Users\chris\AppData\Local\node-gyp\Cache\22.14.0\deps\openssl\openssl\include;C:\Users\chris\AppData\Local\node-gyp\Cache\22.14.0\deps\uv\include;C:\Users\chris\AppData\Local\node-gyp\Cache\22.14.0\deps\zlib;C:\Users\chris\AppData\Local\node-gyp\Cache\22.14.0\deps\v8\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>NODE_GYP_MODULE_NAME=sage;USING_UV_SHARED=1;USING_V8_SHARED=1;V8_DEPRECATION_WARNINGS=1;_GLIBCXX_USE_CXX11_ABI=1;WIN32;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_HAS_EXCEPTIONS=0;NOMINMAX;OPENSSL_NO_PINSHARED;OPENSSL_THREADS;BUILDING_NODE_EXTENSION;HOST_BINARY=&quot;node.exe&quot;;DEBUG;_DEBUG;%(PreprocessorDefinitions);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Users\Naz\AppData\Local\node-gyp\Cache\20.12.2\include\node;C:\Users\Naz\AppData\Local\node-gyp\Cache\20.12.2\src;C:\Users\Naz\AppData\Local\node-gyp\Cache\20.12.2\deps\openssl\config;C:\Users\Naz\AppData\Local\node-gyp\Cache\20.12.2\deps\openssl\openssl\include;C:\Users\Naz\AppData\Local\node-gyp\Cache\20.12.2\deps\uv\include;C:\Users\Naz\AppData\Local\node-gyp\Cache\20.12.2\deps\zlib;C:\Users\Naz\AppData\Local\node-gyp\Cache\20.12.2\deps\v8\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NODE_GYP_MODULE_NAME=sage;USING_UV_SHARED=1;USING_V8_SHARED=1;V8_DEPRECATION_WARNINGS=1;_GLIBCXX_USE_CXX11_ABI=1;WIN32;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_HAS_EXCEPTIONS=0;OPENSSL_NO_PINSHARED;OPENSSL_THREADS;BUILDING_NODE_EXTENSION;HOST_BINARY=&quot;node.exe&quot;;DEBUG;_DEBUG;%(PreprocessorDefinitions);%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Users\chris\AppData\Local\node-gyp\Cache\22.14.0\include\node;C:\Users\chris\AppData\Local\node-gyp\Cache\22.14.0\src;C:\Users\chris\AppData\Local\node-gyp\Cache\22.14.0\deps\openssl\config;C:\Users\chris\AppData\Local\node-gyp\Cache\22.14.0\deps\openssl\openssl\include;C:\Users\chris\AppData\Local\node-gyp\Cache\22.14.0\deps\uv\include;C:\Users\chris\AppData\Local\node-gyp\Cache\22.14.0\deps\zlib;C:\Users\chris\AppData\Local\node-gyp\Cache\22.14.0\deps\v8\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>/Zc:__cplusplus -std:c++20 /Zm2000 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>C:\Users\Naz\AppData\Local\node-gyp\Cache\20.12.2\include\node;C:\Users\Naz\AppData\Local\node-gyp\Cache\20.12.2\src;C:\Users\Naz\AppData\Local\node-gyp\Cache\20.12.2\deps\openssl\config;C:\Users\Naz\AppData\Local\node-gyp\Cache\20.12.2\deps\openssl\openssl\include;C:\Users\Naz\AppData\Local\node-gyp\Cache\20.12.2\deps\uv\include;C:\Users\Naz\AppData\Local\node-gyp\Cache\20.12.2\deps\zlib;C:\Users\Naz\AppData\Local\node-gyp\Cache\20.12.2\deps\v8\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/Zc:__cplusplus -std:c++17 %(AdditionalOptions)</AdditionalOptions>
       <BufferSecurityCheck>true</BufferSecurityCheck>
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
       <DisableSpecificWarnings>4351;4355;4800;4251;4275;4244;4267;%(DisableSpecificWarnings)</DisableSpecificWarnings>
@@ -104,7 +104,7 @@
       <OmitFramePointers>true</OmitFramePointers>
       <Optimization>Full</Optimization>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <PreprocessorDefinitions>NODE_GYP_MODULE_NAME=sage;USING_UV_SHARED=1;USING_V8_SHARED=1;V8_DEPRECATION_WARNINGS=1;_GLIBCXX_USE_CXX11_ABI=1;WIN32;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_HAS_EXCEPTIONS=0;NOMINMAX;OPENSSL_NO_PINSHARED;OPENSSL_THREADS;BUILDING_NODE_EXTENSION;HOST_BINARY=&quot;node.exe&quot;;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NODE_GYP_MODULE_NAME=sage;USING_UV_SHARED=1;USING_V8_SHARED=1;V8_DEPRECATION_WARNINGS=1;_GLIBCXX_USE_CXX11_ABI=1;WIN32;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_HAS_EXCEPTIONS=0;OPENSSL_NO_PINSHARED;OPENSSL_THREADS;BUILDING_NODE_EXTENSION;HOST_BINARY=&quot;node.exe&quot;;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <StringPooling>true</StringPooling>
@@ -117,7 +117,7 @@
       <AdditionalOptions>/LTCG:INCREMENTAL %(AdditionalOptions)</AdditionalOptions>
     </Lib>
     <Link>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;DelayImp.lib;&quot;C:\\Users\\chris\\AppData\\Local\\node-gyp\\Cache\\22.14.0\\x64\\node.lib&quot;</AdditionalDependencies>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;DelayImp.lib;&quot;C:\\Users\\Naz\\AppData\\Local\\node-gyp\\Cache\\20.12.2\\x64\\node.lib&quot;</AdditionalDependencies>
       <AdditionalOptions>/LTCG:INCREMENTAL /ignore:4199 %(AdditionalOptions)</AdditionalOptions>
       <DelayLoadDLLs>node.exe;%(DelayLoadDLLs)</DelayLoadDLLs>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -129,8 +129,8 @@
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>C:\Users\chris\AppData\Local\node-gyp\Cache\22.14.0\include\node;C:\Users\chris\AppData\Local\node-gyp\Cache\22.14.0\src;C:\Users\chris\AppData\Local\node-gyp\Cache\22.14.0\deps\openssl\config;C:\Users\chris\AppData\Local\node-gyp\Cache\22.14.0\deps\openssl\openssl\include;C:\Users\chris\AppData\Local\node-gyp\Cache\22.14.0\deps\uv\include;C:\Users\chris\AppData\Local\node-gyp\Cache\22.14.0\deps\zlib;C:\Users\chris\AppData\Local\node-gyp\Cache\22.14.0\deps\v8\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>NODE_GYP_MODULE_NAME=sage;USING_UV_SHARED=1;USING_V8_SHARED=1;V8_DEPRECATION_WARNINGS=1;_GLIBCXX_USE_CXX11_ABI=1;WIN32;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_HAS_EXCEPTIONS=0;NOMINMAX;OPENSSL_NO_PINSHARED;OPENSSL_THREADS;BUILDING_NODE_EXTENSION;HOST_BINARY=&quot;node.exe&quot;;%(PreprocessorDefinitions);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Users\Naz\AppData\Local\node-gyp\Cache\20.12.2\include\node;C:\Users\Naz\AppData\Local\node-gyp\Cache\20.12.2\src;C:\Users\Naz\AppData\Local\node-gyp\Cache\20.12.2\deps\openssl\config;C:\Users\Naz\AppData\Local\node-gyp\Cache\20.12.2\deps\openssl\openssl\include;C:\Users\Naz\AppData\Local\node-gyp\Cache\20.12.2\deps\uv\include;C:\Users\Naz\AppData\Local\node-gyp\Cache\20.12.2\deps\zlib;C:\Users\Naz\AppData\Local\node-gyp\Cache\20.12.2\deps\v8\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NODE_GYP_MODULE_NAME=sage;USING_UV_SHARED=1;USING_V8_SHARED=1;V8_DEPRECATION_WARNINGS=1;_GLIBCXX_USE_CXX11_ABI=1;WIN32;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_HAS_EXCEPTIONS=0;OPENSSL_NO_PINSHARED;OPENSSL_THREADS;BUILDING_NODE_EXTENSION;HOST_BINARY=&quot;node.exe&quot;;%(PreprocessorDefinitions);%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -138,7 +138,7 @@
     <None Include="..\binding.gyp"/>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="C:\Users\chris\AppData\Roaming\fnm\node-versions\v22.14.0\installation\node_modules\npm\node_modules\node-gyp\src\win_delay_load_hook.cc"/>
+    <ClCompile Include="C:\Users\Naz\AppData\Roaming\npm\node_modules\npm\node_modules\node-gyp\src\win_delay_load_hook.cc"/>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets"/>
   <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets"/>
