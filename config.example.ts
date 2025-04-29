@@ -217,6 +217,9 @@ export const PREFIX = config.PREFIX;
 export const BLACKLIST = [config.BLACKLIST];
 
 export const GITHUB_TOKEN = config.ENV_GITHUB_TOKEN;
+export const APP_ID = config.APP_ID;
+export const APP_KEY = config.APP_KEY;
+export const MAP_KEY = config.MAP_KEY;
 
 // eslint-disable-next-line prefer-destructuring
 export const MONGO = config.MONGO;
