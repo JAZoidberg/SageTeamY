@@ -596,7 +596,7 @@ export default class extends Command {
 			.replace(/\[read more about the job and apply here\]/g, '')
 			.replace(/\((https?:\/\/[^\s)]+)\)/g, '$1')
 			.replace(/\*\*([^*]+)\*\*/g, '$1')
-			.replace(/##+\s*/g, '')
+			.replace(/##+ \s*/g, '')
 			.replace(/###|- \s*/g, '')
 			.trim();
 	}
