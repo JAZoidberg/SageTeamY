@@ -347,8 +347,12 @@ export default class extends Command {
 			userJobData.set(userID, { jobs, index });
 
 			// Update embed and buttons
-
-			await i.update({ embeds: [embed], components: [row] });
+			const newEmbed = this.createJobEmbed(
+				APIResponse[index],
+				index,
+				APIResponse.length
+			);
+			await i.update({ embeds: [newEmbed.embed], components: [newEmbed.row] });
 		});
 
 		collector?.on('end', () => {
