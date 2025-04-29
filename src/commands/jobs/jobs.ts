@@ -347,8 +347,12 @@ export default class extends Command {
 			userJobData.set(userID, { jobs, index });
 
 			// Update embed and buttons
-
-			await i.update({ embeds: [embed], components: [row] });
+			const newEmbed = this.createJobEmbed(
+				APIResponse[index],
+				index,
+				APIResponse.length
+			);
+			await i.update({ embeds: [newEmbed.embed], components: [newEmbed.row] });
 		});
 
 		collector?.on('end', () => {
@@ -596,7 +600,7 @@ export default class extends Command {
 			.replace(/\[read more about the job and apply here\]/g, '')
 			.replace(/\((https?:\/\/[^\s)]+)\)/g, '$1')
 			.replace(/\*\*([^*]+)\*\*/g, '$1')
-			.replace(/##+\s*/g, '')
+			.replace(/##+ \s*/g, '')
 			.replace(/###|- \s*/g, '')
 			.trim();
 	}

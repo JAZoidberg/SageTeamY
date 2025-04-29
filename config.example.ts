@@ -1,4 +1,7 @@
 interface Config {
+	APP_ID: string;
+	APP_KEY: string;
+	MAP_KEY: string;
 	DB_CONNECTION: string;
 	BOT_NAME: string;
 	BOT_TOKEN: string;
@@ -54,6 +57,9 @@ function getEnvVar(name: keyof Config): string {
 }
 
 export const config: Config = {
+	APP_ID: getEnvVar('APP_ID'),
+	APP_KEY: getEnvVar('APP_KEY'),
+	MAP_KEY: getEnvVar('MAP_KEY'),
 	DB_CONNECTION: getEnvVar('DB_CONNECTION'),
 	BOT_NAME: getEnvVar('BOT_NAME'),
 	BOT_TOKEN: getEnvVar('BOT_TOKEN'),
