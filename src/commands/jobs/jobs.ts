@@ -17,7 +17,7 @@ import { JobData } from '@root/src/lib/types/JobData';
 import { Command } from '@lib/types/Command';
 import { DB, BOT, MAP_KEY } from '@root/config';
 import { MongoClient } from 'mongodb';
-import { sendToFile } from '@root/src/lib/utils/generalUtils';
+//import { sendToFile } from '@root/src/lib/utils/generalUtils';
 import axios from 'axios';
 import { JobPreferences } from '@root/src/lib/types/JobPreferences';
 import { PDFDocument, PDFFont, StandardFonts, rgb } from 'pdf-lib';
@@ -63,12 +63,12 @@ export default class extends Command {
 		// Embed a standard font.
 		const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
 		const HelveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-		const Helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
+		//const Helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
 
 		// Draw the title.
 		const lineHeight = 10; // Height of the line
-		const lineWidth = (width - margin * 2) / 3;
+		const lineWidth = (width - (margin * 2)) / 3;
 
 		currentPage.drawRectangle({
 			x: margin,
@@ -89,7 +89,7 @@ export default class extends Command {
 
 		// Draw the third color segment
 		currentPage.drawRectangle({
-			x: margin + lineWidth * 2,
+			x: margin + (lineWidth * 2),
 			y: yPosition + 50,
 			width: lineWidth,
 			height: lineHeight,
@@ -122,18 +122,18 @@ export default class extends Command {
 		for (let i = 0; i < jobs.length; i++) {
 			const job = jobs[i];
 
-			if (yPosition - fontSize * 2 < margin) {
+			if (yPosition - (fontSize * 2) < margin) {
 				currentPage = pdfDoc.addPage();
 				yPosition = currentPage.getHeight() - margin - 20;
 			}
 
-			const maxWidth = width - margin * 2; // Calculate available width
+			const maxWidth = width - (margin * 2); // Calculate available width
 			const wrappedTitle = this.wrapText(`${i + 1}. ${job.title}`, HelveticaBold, fontSize + 10, maxWidth);
 
 
 			for (const line of wrappedTitle) {
 				// Check if there's enough space for the line
-				if (yPosition - fontSize * 2 < margin) {
+				if (yPosition - (fontSize * 2) < margin) {
 					currentPage = pdfDoc.addPage();
 					yPosition = currentPage.getHeight() - margin - 20;
 				}
@@ -158,18 +158,18 @@ export default class extends Command {
 
 			for (const point of bulletPoints) {
 				// Check if there's enough space on the page, and add a new page if needed.
-				if (yPosition - fontSize * 2 < margin) {
+				if (yPosition - (fontSize * 2) < margin) {
 					currentPage = pdfDoc.addPage();
 					yPosition = currentPage.getHeight() - margin - 20;
 				}
 
-				const maxLabelWidth = width - margin * 2 - bulletPointIndent - subBulletPointIndent;
-    			const wrappedLabel = this.wrapText(`• ${point.label}`, HelveticaBold, fontSize + 5, maxLabelWidth);
+				const maxLabelWidth = width - (margin * 2) - bulletPointIndent - subBulletPointIndent;
+				const wrappedLabel = this.wrapText(`• ${point.label}`, HelveticaBold, fontSize + 5, maxLabelWidth);
 
     			// Draw the wrapped label
 				for (const line of wrappedLabel) {
 					// Check if there's enough space for the line
-					if (yPosition - fontSize * 2 < margin) {
+					if (yPosition - (fontSize * 2) < margin) {
 						currentPage = pdfDoc.addPage();
 						yPosition = currentPage.getHeight() - margin - 20;
 					}
@@ -187,13 +187,13 @@ export default class extends Command {
 
 
 				const combinedText = `•${point.value}`;
-				const maxValueWidth = width - margin * 2 - bulletPointIndent - subBulletPointIndent;
+				const maxValueWidth = width - (margin * 2) - bulletPointIndent - subBulletPointIndent;
 				const wrappedValue = this.wrapText(combinedText, HelveticaBold, fontSize + 4, maxValueWidth);
 
 
 				for (const line of wrappedValue) {
 					// Check if there's enough space for the line
-					if (yPosition - fontSize * 2 < margin) {
+					if (yPosition - (fontSize * 2) < margin) {
 						currentPage = pdfDoc.addPage();
 						yPosition = currentPage.getHeight() - margin - 20;
 					}
@@ -296,7 +296,8 @@ export default class extends Command {
 			const userData = userJobData.get(userID);
 			if (!userData) return;
 
-			let { jobs, index } = userData;
+			const { jobs} = userData;
+			let { index } = userData;
 
 			switch (i.customId) {
 				case 'previous':
@@ -346,11 +347,7 @@ export default class extends Command {
 			userJobData.set(userID, { jobs, index });
 
 			// Update embed and buttons
-			const { embed, row } = this.createJobEmbed(
-				jobs[index],
-				index,
-				jobs.length
-			);
+			
 			await i.update({ embeds: [embed], components: [row] });
 		});
 
@@ -630,20 +627,20 @@ export default class extends Command {
 	): number {
 		const toRadians = (degrees: number) => degrees * (Math.PI / 180);
 
-		const R = 3958.8; // Radius of the Earth in miles
+		const Radius = 3958.8; // Radius of the Earth in miles
 		const dLat = toRadians(lat2 - lat1);
 		const dLon = toRadians(lon2 - lon1);
-		const a
+		const equation
 			= Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-			Math.cos(toRadians(lat1))
+			(Math.cos(toRadians(lat1))
 				* Math.cos(toRadians(lat2))
 				* Math.sin(dLon / 2)
-				* Math.sin(dLon / 2);
-		const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+				* Math.sin(dLon / 2));
+		const cLetter = 2 * Math.atan2(Math.sqrt(equation), Math.sqrt(1 - equation));
 		const distance
 			= (lat1 === 0 && lon1 === 0) || (lat2 === 0 && lon2 === 0)
 				? -1
-				: R * c;
+				: (Radius * cLetter);
 		return distance;
 	}
 
