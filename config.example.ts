@@ -10,6 +10,7 @@ interface Config {
 	DB_PVQ: string;
 	DB_QTAGS: string;
 	DB_ASSIGNABLE: string;
+	DB_JOB_FORMS: string;
 	DB_COURSES: string;
 	DB_REMINDERS: string;
 	DB_CLIENT_DATA: string;
@@ -69,6 +70,7 @@ export const config: Config = {
 	DB_QTAGS: getEnvVar('DB_QTAGS'),
 	DB_ASSIGNABLE: getEnvVar('DB_ASSIGNABLE'),
 	DB_COURSES: getEnvVar('DB_COURSES'),
+	DB_JOB_FORMS: getEnvVar('DB_JOB_FORMS'),
 	DB_REMINDERS: getEnvVar('DB_REMINDERS'),
 	DB_CLIENT_DATA: getEnvVar('DB_CLIENT_DATA'),
 	DB_POLLS: getEnvVar('DB_POLLS'),
@@ -153,6 +155,7 @@ export const DB = {
 	CONNECTION: config.DB_CONNECTION,
 	USERS: config.DB_USERS,
 	PVQ: config.DB_PVQ,
+	JOB_FORMS: config.DB_JOB_FORMS,
 	QTAGS: config.DB_QTAGS,
 	ASSIGNABLE: config.DB_ASSIGNABLE,
 	COURSES: config.DB_COURSES,
