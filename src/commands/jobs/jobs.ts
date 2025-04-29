@@ -17,7 +17,7 @@ import { JobData } from '@root/src/lib/types/JobData';
 import { Command } from '@lib/types/Command';
 import { DB, BOT, MAP_KEY } from '@root/config';
 import { MongoClient } from 'mongodb';
-//import { sendToFile } from '@root/src/lib/utils/generalUtils';
+// import { sendToFile } from '@root/src/lib/utils/generalUtils';
 import axios from 'axios';
 import { JobPreferences } from '@root/src/lib/types/JobPreferences';
 import { PDFDocument, PDFFont, StandardFonts, rgb } from 'pdf-lib';
@@ -61,9 +61,9 @@ export default class extends Command {
 
 
 		// Embed a standard font.
-		const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
+		// const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
 		const HelveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-		//const Helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
+		// const Helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
 
 		// Draw the title.
@@ -166,7 +166,7 @@ export default class extends Command {
 				const maxLabelWidth = width - (margin * 2) - bulletPointIndent - subBulletPointIndent;
 				const wrappedLabel = this.wrapText(`• ${point.label}`, HelveticaBold, fontSize + 5, maxLabelWidth);
 
-    			// Draw the wrapped label
+				// Draw the wrapped label
 				for (const line of wrappedLabel) {
 					// Check if there's enough space for the line
 					if (yPosition - (fontSize * 2) < margin) {
@@ -296,7 +296,7 @@ export default class extends Command {
 			const userData = userJobData.get(userID);
 			if (!userData) return;
 
-			const { jobs} = userData;
+			const { jobs } = userData;
 			let { index } = userData;
 
 			switch (i.customId) {
@@ -347,7 +347,7 @@ export default class extends Command {
 			userJobData.set(userID, { jobs, index });
 
 			// Update embed and buttons
-			
+
 			await i.update({ embeds: [embed], components: [row] });
 		});
 
@@ -581,7 +581,7 @@ export default class extends Command {
 			: `${new Intl.NumberFormat('en-US', {
 				style: 'currency',
 				currency: 'USD'
-			  }).format(Number(currency))}`;
+			}).format(Number(currency))}`;
 	}
 
 	stripMarkdown(message: string, owner: string): string {
@@ -597,7 +597,7 @@ export default class extends Command {
 			.replace(/\((https?:\/\/[^\s)]+)\)/g, '$1')
 			.replace(/\*\*([^*]+)\*\*/g, '$1')
 			.replace(/##+\s*/g, '')
-			.replace(/###|-\#\s*/g, '')
+			.replace(/###|- \s*/g, '')
 			.trim();
 	}
 
@@ -613,7 +613,7 @@ export default class extends Command {
 	filterBy && filterBy !== 'default'
 		? ` (filtered based on ${
 			filterBy === 'date' ? 'date posted' : filterBy
-				  }):`
+		}):`
 		: ':'
 }
         `;
@@ -631,7 +631,7 @@ export default class extends Command {
 		const dLat = toRadians(lat2 - lat1);
 		const dLon = toRadians(lon2 - lon1);
 		const equation
-			= Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+			= (Math.sin(dLat / 2) * Math.sin(dLat / 2)) +
 			(Math.cos(toRadians(lat1))
 				* Math.cos(toRadians(lat2))
 				* Math.sin(dLon / 2)
@@ -640,11 +640,11 @@ export default class extends Command {
 		const distance
 			= (lat1 === 0 && lon1 === 0) || (lat2 === 0 && lon2 === 0)
 				? -1
-				: (Radius * cLetter);
+				: Radius * cLetter;
 		return distance;
 	}
 
-	async queryCoordinates(location: string): Promise<any> {
+	async queryCoordinates(location: string): Promise<{ lat: number; lng: number }> {
 		const preferredCity = encodeURIComponent(location);
 
 		const baseURL = `https://maps.google.com/maps/api/geocode/json?address=${preferredCity}&components=country:US&key=${MAP_KEY}`;
