@@ -4,7 +4,6 @@ import { schedule } from 'node-cron';
 import { Reminder } from '@lib/types/Reminder';
 import { Poll, PollResult } from '@lib/types/Poll';
 import { MongoClient } from 'mongodb';
-import { Job } from '../lib/types/Job';
 import fetchJobListings from '../lib/utils/jobUtils/Adzuna_job_search';
 import { sendToFile } from '../lib/utils/generalUtils';
 import { JobData } from '../lib/types/JobData';
@@ -14,7 +13,6 @@ import { JobPreferences } from '../lib/types/JobPreferences';
 import axios from 'axios';
 import { PDFDocument, PDFFont, rgb, StandardFonts } from 'pdf-lib';
 import { generateHistogram } from '../commands/jobs/histogram';
-import jobform from '../commands/jobs/jobform';
 
 async function register(bot: Client): Promise<void> {
 	schedule('0/30 * * * * *', () => {
@@ -90,7 +88,7 @@ async function checkPolls(bot: Client): Promise<void> {
 }
 
 // eslint-disable-next-line no-warning-comments
-async function getJobFormData(userID:string, filterBy: string):Promise<[JobData, Interest, JobResult[]]> {
+async function getJobFormData(userID:string, _filterBy: string):Promise<[JobData, Interest, JobResult[]]> {
 	const client = await MongoClient.connect(DB.CONNECTION, { useUnifiedTopology: true });
 	const db = client.db(BOT.NAME).collection(DB.USERS);
 	const jobformAnswers: JobPreferences | null = (await db.findOne({ discordId: userID }))?.jobPreferences;
@@ -212,7 +210,8 @@ async function listJobs(jobForm: [JobData, Interest, JobResult[]], filterBy: str
 	return jobList || '### Unfortunately, there were no jobs found based on your interests :(. Consider updating your interests or waiting until something is found.';
 }
 
-export async function jobMessage(reminder: Reminder | string, userID: string): Promise<{ message: string, pdfBuffer: Buffer, embed: EmbedBuilder, row: ActionRowBuilder<ButtonBuilder>, jobResults: JobResult[] }> {
+export async function jobMessage(reminder: Reminder | string, userID: string): Promise<{ message: string, pdfBuffer: Buffer,
+	embed: EmbedBuilder, row: ActionRowBuilder<ButtonBuilder>, jobResults: JobResult[] }> {
 	const jobFormData: [JobData, Interest, JobResult[]] = await getJobFormData(userID, typeof reminder === 'object' && 'filterBy' in reminder ? reminder.filterBy : 'default');
 	let filterBy: string;
 	if (typeof reminder === 'object' && 'filterBy' in reminder && reminder.filterBy) {
@@ -234,7 +233,6 @@ export async function jobMessage(reminder: Reminder | string, userID: string): P
 	const { embed, row } = createJobEmbed(jobResults[0], 0, jobResults.length);
 
 	const pdfBuffer = await generateJobPDF(jobFormData);
-	const embedList: EmbedBuilder[] = [];
 
 	const message = `## Hey <@${userID}>!
 		## Here's your list of job/internship recommendations:

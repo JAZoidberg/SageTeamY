@@ -2,26 +2,14 @@ import {
 	ApplicationCommandOptionData,
 	ApplicationCommandOptionType,
 	ChatInputCommandInteraction,
-	EmbedBuilder,
-	ActionRowBuilder,
-	ButtonBuilder,
-	ButtonStyle,
 	ComponentType,
 	InteractionResponse,
 	AttachmentBuilder
 } from 'discord.js';
-import fetchJobListings from '@root/src/lib/utils/jobUtils/Adzuna_job_search';
 import { JobResult } from '@root/src/lib/types/JobResult';
-import { Interest } from '@root/src/lib/types/Interest';
-import { JobData } from '@root/src/lib/types/JobData';
 import { Command } from '@lib/types/Command';
-import { DB, BOT, MAP_KEY } from '@root/config';
-import { MongoClient } from 'mongodb';
 // import { sendToFile } from '@root/src/lib/utils/generalUtils';
-import axios from 'axios';
-import { JobPreferences } from '@root/src/lib/types/JobPreferences';
-import { jobMessage, stripMarkdown, headerMessage, generateJobPDF, createJobEmbed } from '@root/src/pieces/tasks';
-import { sendToFile } from '@root/src/lib/utils/generalUtils';
+import { jobMessage, createJobEmbed } from '@root/src/pieces/tasks';
 
 
 export default class extends Command {
