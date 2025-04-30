@@ -1,9 +1,8 @@
 import { APP_ID, APP_KEY } from '@root/config';
 import { Command } from '@root/src/lib/types/Command';
 import axios from 'axios';
-import { Application, ApplicationCommandOptionData, ApplicationCommandOptionType, ChatInputCommandInteraction, InteractionResponse } from 'discord.js';
+import { ApplicationCommandOptionData, ApplicationCommandOptionType, ChatInputCommandInteraction, InteractionResponse } from 'discord.js';
 import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
-import fs from 'fs';
 import { ChartConfiguration } from 'chart.js';
 
 export default class extends Command {

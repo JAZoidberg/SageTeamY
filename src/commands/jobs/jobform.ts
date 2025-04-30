@@ -1,17 +1,9 @@
 import { Command } from '@root/src/lib/types/Command';
-import {
-	ActionRowBuilder,
-	ApplicationCommandOptionData,
-	ApplicationCommandOptionType,
+import { ApplicationCommandOptionData,
 	ChatInputCommandInteraction,
 	DMChannel,
 	InteractionResponse,
-	MessageFlags,
-	ModalBuilder,
-	ModalSubmitFields,
-	TextInputBuilder,
-	TextInputStyle
-} from 'discord.js';
+	MessageFlags } from 'discord.js';
 import { validatePreferences } from '../../lib/utils/jobUtils/validatePreferences';
 import { JobPreferenceAPI } from '@root/src/lib/utils/jobUtils/jobDatabase';
 
@@ -130,7 +122,7 @@ export default class extends Command {
 
 			// Persist into Mongo
 			const jobPreferenceAPI = new JobPreferenceAPI(interaction.client.mongo);
-			const result = await jobPreferenceAPI.storeFormResponses(userId, answers);
+			await jobPreferenceAPI.storeFormResponses(userId, answers);
 
 			await channel.send(
 				`${`✅ Preferences saved! `}\n` +

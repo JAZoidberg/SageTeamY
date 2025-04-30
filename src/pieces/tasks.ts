@@ -4,7 +4,6 @@ import { schedule } from 'node-cron';
 import { Reminder } from '@lib/types/Reminder';
 import { Poll, PollResult } from '@lib/types/Poll';
 import { MongoClient } from 'mongodb';
-import { Job } from '../lib/types/Job';
 import fetchJobListings from '../lib/utils/jobUtils/Adzuna_job_search';
 import { sendToFile } from '../lib/utils/generalUtils';
 import { JobData } from '../lib/types/JobData';
@@ -14,7 +13,6 @@ import { JobPreferences } from '../lib/types/JobPreferences';
 import axios from 'axios';
 import { PDFDocument, PDFFont, rgb, StandardFonts } from 'pdf-lib';
 import { generateHistogram } from '../commands/jobs/histogram';
-import jobform from '../commands/jobs/jobform';
 
 async function register(bot: Client): Promise<void> {
 	schedule('0/30 * * * * *', () => {
@@ -90,7 +88,7 @@ async function checkPolls(bot: Client): Promise<void> {
 }
 
 // eslint-disable-next-line no-warning-comments
-async function getJobFormData(userID:string, filterBy: string):Promise<[JobData, Interest, JobResult[]]> {
+async function getJobFormData(userID:string, _filterBy: string):Promise<[JobData, Interest, JobResult[]]> {
 	const client = await MongoClient.connect(DB.CONNECTION, { useUnifiedTopology: true });
 	const db = client.db(BOT.NAME).collection(DB.USERS);
 	const jobformAnswers: JobPreferences | null = (await db.findOne({ discordId: userID }))?.jobPreferences;
@@ -124,12 +122,13 @@ function formatCurrency(currency:number): string {
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
 	const toRadians = (degrees: number) => degrees * (Math.PI / 180);
 
+	// eslint-disable-next-line id-length
 	const R = 3958.8; // Radius of the Earth in miles
 	const dLat = toRadians(lat2 - lat1);
 	const dLon = toRadians(lon2 - lon1);
-	const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-		Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2))
-		* Math.sin(dLon / 2) * Math.sin(dLon / 2);
+	const a = (Math.sin(dLat / 2) * Math.sin(dLat / 2)) +
+		(Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2))
+		* Math.sin(dLon / 2) * Math.sin(dLon / 2));
 	const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 	const distance = (lat1 === 0 && lon1 === 0) || (lat2 === 0 && lon2 === 0) ? -1 : R * c;
 	return distance;
@@ -212,7 +211,8 @@ async function listJobs(jobForm: [JobData, Interest, JobResult[]], filterBy: str
 	return jobList || '### Unfortunately, there were no jobs found based on your interests :(. Consider updating your interests or waiting until something is found.';
 }
 
-export async function jobMessage(reminder: Reminder | string, userID: string): Promise<{ message: string, pdfBuffer: Buffer, embed: EmbedBuilder, row: ActionRowBuilder<ButtonBuilder>, jobResults: JobResult[] }> {
+export async function jobMessage(reminder: Reminder | string, userID: string): Promise<{ message: string, pdfBuffer: Buffer,
+	embed: EmbedBuilder, row: ActionRowBuilder<ButtonBuilder>, jobResults: JobResult[] }> {
 	const jobFormData: [JobData, Interest, JobResult[]] = await getJobFormData(userID, typeof reminder === 'object' && 'filterBy' in reminder ? reminder.filterBy : 'default');
 	let filterBy: string;
 	if (typeof reminder === 'object' && 'filterBy' in reminder && reminder.filterBy) {
@@ -234,7 +234,6 @@ export async function jobMessage(reminder: Reminder | string, userID: string): P
 	const { embed, row } = createJobEmbed(jobResults[0], 0, jobResults.length);
 
 	const pdfBuffer = await generateJobPDF(jobFormData);
-	const embedList: EmbedBuilder[] = [];
 
 	const message = `## Hey <@${userID}>!
 		## Here's your list of job/internship recommendations:
@@ -351,14 +350,16 @@ export async function generateJobPDF(jobForm: [JobData, Interest, JobResult[]]):
 
 
 	// Embed a standard font.
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
 	const HelveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const Helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
 
 	// Draw the title.
 	const lineHeight = 10; // Height of the line
-	const lineWidth = (width - margin * 2) / 3;
+	const lineWidth = (width - (margin * 2)) / 3;
 
 	currentPage.drawRectangle({
 		x: margin,
@@ -379,7 +380,7 @@ export async function generateJobPDF(jobForm: [JobData, Interest, JobResult[]]):
 
 	// Draw the third color segment
 	currentPage.drawRectangle({
-		x: margin + lineWidth * 2,
+		x: margin + (lineWidth * 2),
 		y: yPosition + 50,
 		width: lineWidth,
 		height: lineHeight,
@@ -412,18 +413,18 @@ export async function generateJobPDF(jobForm: [JobData, Interest, JobResult[]]):
 	for (let i = 0; i < jobs.length; i++) {
 		const job = jobs[i];
 
-		if (yPosition - fontSize * 2 < margin) {
+		if ((yPosition - (fontSize * 2)) < margin) {
 			currentPage = pdfDoc.addPage();
 			yPosition = currentPage.getHeight() - margin - 20;
 		}
 
-		const maxWidth = width - margin * 2; // Calculate available width
+		const maxWidth = width - (margin * 2); // Calculate available width
 		const wrappedTitle = wrapText(`${i + 1}. ${job.title}`, HelveticaBold, fontSize + 10, maxWidth);
 
 
 		for (const line of wrappedTitle) {
 			// Check if there's enough space for the line
-			if (yPosition - fontSize * 2 < margin) {
+			if (yPosition - (fontSize * 2) < margin) {
 				currentPage = pdfDoc.addPage();
 				yPosition = currentPage.getHeight() - margin - 20;
 			}
@@ -471,18 +472,18 @@ export async function generateJobPDF(jobForm: [JobData, Interest, JobResult[]]):
 
 		for (const point of bulletPoints) {
 			// Check if there's enough space on the page, and add a new page if needed.
-			if (yPosition - fontSize * 2 < margin) {
+			if (yPosition - (fontSize * 2) < margin) {
 				currentPage = pdfDoc.addPage();
 				yPosition = currentPage.getHeight() - margin - 20;
 			}
 
-			const maxLabelWidth = width - margin * 2 - bulletPointIndent - subBulletPointIndent;
+			const maxLabelWidth = width - (margin * 2) - bulletPointIndent - subBulletPointIndent;
 			const wrappedLabel = wrapText(`• ${point.label}`, HelveticaBold, fontSize + 5, maxLabelWidth);
 
 			// Draw the wrapped label
 			for (const line of wrappedLabel) {
 				// Check if there's enough space for the line
-				if (yPosition - fontSize * 2 < margin) {
+				if (yPosition - (fontSize * 2) < margin) {
 					currentPage = pdfDoc.addPage();
 					yPosition = currentPage.getHeight() - margin - 20;
 				}
@@ -497,7 +498,7 @@ export async function generateJobPDF(jobForm: [JobData, Interest, JobResult[]]):
 
 				if (point.label === 'Salary' && !noValues) {
 					currentPage.drawImage(imageBytes, { // Change space check so it doesn't go off the page
-						x: currentPage.getWidth() / 2 - imageDims.width / 2,
+						x: (currentPage.getWidth() / 2) - (imageDims.width / 2),
 						y: yPosition - imageDims.height - 10,
 						width: imageDims.width,
 						height: imageDims.height
@@ -512,13 +513,13 @@ export async function generateJobPDF(jobForm: [JobData, Interest, JobResult[]]):
 
 
 			const combinedText = `•${point.value}`;
-			const maxValueWidth = width - margin * 2 - bulletPointIndent - subBulletPointIndent;
+			const maxValueWidth = width - (margin * 2) - bulletPointIndent - subBulletPointIndent;
 			const wrappedValue = wrapText(combinedText, HelveticaBold, fontSize + 4, maxValueWidth);
 
 
 			for (const line of wrappedValue) {
 				// Check if there's enough space for the line
-				if (yPosition - fontSize * 2 < margin) {
+				if (yPosition - (fontSize * 2) < margin) {
 					currentPage = pdfDoc.addPage();
 					yPosition = currentPage.getHeight() - margin - 20;
 				}
@@ -647,8 +648,6 @@ function formatSalaryforPDF(job: JobResult): string {
 }
 
 async function sortJobResults(jobForm: [JobData, Interest, JobResult[]], filterBy: string): Promise<JobResult[]> {
-	const cityCoordinates = await queryCoordinates(jobForm[0].city);
-
 	if (filterBy === 'salary') {
 		jobForm[2].sort((a, b) => {
 			const avgA = (Number(a.salaryMax) + Number(a.salaryMin)) / 2;
@@ -665,8 +664,6 @@ async function sortJobResults(jobForm: [JobData, Interest, JobResult[]], filterB
 	} else if (filterBy === 'date') {
 		jobForm[2].sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime());
 	} else if (filterBy === 'distance') {
-		// cityCoordinates = await this.queryCoordinates(jobForm[0].city);
-
 		jobForm[2].sort((a, b) => {
 			const distanceA = a.distance;
 			const distanceB = b.distance;
