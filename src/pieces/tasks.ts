@@ -143,7 +143,7 @@ function listJobs(jobData: JobResult[], filterBy: string): string {
 		const formattedSalaryMax = formatCurrency(Number(jobData[i].salaryMax)) !== 'N/A' ? formatCurrency(Number(jobData[i].salaryMax)) : '';
 		const formattedSalaryMin = formatCurrency(Number(jobData[i].salaryMin)) !== 'N/A' ? formatCurrency(Number(jobData[i].salaryMin)) : '';
 
-		const salaryDetails = (formattedSalaryMin && formattedSalaryMax)
+		const salaryDetails = formattedSalaryMin && formattedSalaryMax
 			? `, Min: ${formattedSalaryMin}, Max: ${formattedSalaryMax}`
 			: formattedAvgSalary;
 

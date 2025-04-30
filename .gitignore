@@ -2,8 +2,10 @@
 resources/*
 !resources/.exists
 src/commands/admin/eval.ts
-
+build
 config.ts
+
+
 
 # macOS stuff
 .DS_Store
