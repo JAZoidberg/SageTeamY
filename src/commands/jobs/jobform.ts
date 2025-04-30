@@ -4,13 +4,16 @@ import {
 	ApplicationCommandOptionData,
 	ApplicationCommandOptionType,
 	ChatInputCommandInteraction,
+	DMChannel,
 	InteractionResponse,
+	MessageFlags,
 	ModalBuilder,
 	ModalSubmitFields,
 	TextInputBuilder,
 	TextInputStyle
 } from 'discord.js';
 import { validatePreferences } from '../../lib/utils/jobUtils/validatePreferences';
+import { JobPreferenceAPI } from '@root/src/lib/utils/jobUtils/jobDatabase';
 
 // prettier-ignore
 // Questions users will be asked to input into the API
@@ -42,76 +45,102 @@ const questions = [
 export default class extends Command {
 
 	name = 'jobform';
-	description = 'Form to get your preferences for jobs to be used with the Job Alert System!';
+	description = 'Starts a job preferences form via direct message.';
 
 	// Gives option to command to choose what question set user is answering.
-	options: ApplicationCommandOptionData[] = [
-		{
-			name: 'qset',
-			description: 'Which question set do you want to view (1, 2, or 3).',
-			type: ApplicationCommandOptionType.Number,
-			required: true,
-			choices: [
-				{ name: 'qset 1', value: 1 },
-				{ name: 'qset 2', value: 2 },
-				{ name: 'qset 3', value: 3 }
-			]
-		}
-	];
+	options: ApplicationCommandOptionData[] = [];
 
 	async run(interaction: ChatInputCommandInteraction): Promise<InteractionResponse<boolean> | void> {
-		const questionSet = interaction.options.getNumber('qset') - 1;
+		const dm = await interaction.user.createDM();
+		await interaction.reply({
+			content: 'I’ve sent you a DM with the job form questions.',
+			flags: MessageFlags.Ephemeral
+		});
+		this.collectAnswers(dm, interaction.user.id, interaction);
+	}
 
-		if (questionSet !== 0 && questionSet !== 1 && questionSet !== 2) {
-			await interaction.reply({ content: 'Please enter either 1, 2, or 3' });
-			return;
-		}
+	private async collectAnswers(channel: DMChannel, userId: string, interaction: ChatInputCommandInteraction): Promise<void> {
+		const answers: string[] = [];
+		const splitAnswers: string[] = [];
+		let current = 0;
 
-		// Creates the modal that pops up once the command is run, giving it the correct title and set of questions.
-		const modal = new ModalBuilder()
-			.setCustomId(`jobModal${questionSet}`)
-			.setTitle(`Job Form (${questionSet + 1} of 3)`);
-
-		const askedQuestions = questions[questionSet];
-		const rows = askedQuestions.map((question) =>
-			this.getAnswerField(question, askedQuestions.indexOf(question))
+		await channel.send(
+			'Welcome to the job form!\n' +
+      'Type **skip** to skip a question, **back** to return to the previous one.'
 		);
 
-		for (const row of rows) {
-			// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-			// @ts-ignore
-			modal.addComponents(row);
-		}
+		const ask = () => {
+			channel.send(`**Question ${current + 1}/${questions.length}:** ${questions[current]}`);
+		};
 
-		await interaction.showModal(modal);
-		return;
-	}
-
-	getAnswer(fields: ModalSubmitFields, questionNum: number): string {
-		return fields.getField(`question${questionNum + 1}`).value;
-	}
-	// Creates the interface where the user can anwer the questions.
-	getAnswerField(question: string, questionNum: number): ActionRowBuilder {
-		return new ActionRowBuilder({ components: [new TextInputBuilder()
-			.setCustomId(`question${questionNum + 1}`)
-			.setLabel(`${question}`)
-			.setStyle(TextInputStyle.Short)
-			.setPlaceholder('Input Answer Here')
-			.setRequired(true)
-		] });
-	}
-	// Handles validation for qset1
-	async handleModalSubmit(interaction: ChatInputCommandInteraction, answers: string[], qSet: number): Promise<boolean> {
-		const validation = validatePreferences(answers, qSet, true);
-		if (!validation.isValid) {
-			await interaction.reply({ content: `Form validation failed:\n${validation.errors.join('\n')}`,
-				ephemeral: true });
-			return;
-		}
-		await interaction.reply({
-			content: 'Form submitted successfully!',
-			ephemeral: true
+		const collector = channel.createMessageCollector({
+			filter: (m) => m.author.id === userId,
+			time: 5 * 60 * 1000 // 5 minutes
 		});
+
+		collector.on('collect', async msg => {
+			const content = msg.content.trim();
+
+			if (content.toLowerCase() === 'skip') {
+				answers[current] = '';
+			} else if (content.toLowerCase() === 'back') {
+				if (current > 0) current--;
+				return ask();
+			} else {
+				answers[current] = content;
+				// Validate formatting immediately
+				for (let i = 0; i < questions.length; i++) {
+					if (answers[i]) {
+						const newAnswers = answers[i].split(',').map((a) => a.trim());
+						splitAnswers.push(...newAnswers);
+					}
+
+
+					const { isValid, errors } = validatePreferences(splitAnswers, 0, true);
+					if (!isValid) {
+						// Show errors and re-ask same question
+						await channel.send(`**Formatting error:**\n${errors.join('\n')}`);
+						answers[current] = '';
+						return ask();
+					}
+				}
+			}
+
+			// Move on or finish
+			if (current < questions.length - 1) {
+				current++;
+				ask();
+			} else {
+				collector.stop('completed');
+			}
+		});
+
+		collector.on('end', async (_collected, reason) => {
+			if (reason !== 'completed') {
+				await channel.send('Form timed out. Please run `/jobform` again to restart.');
+				return;
+			}
+
+			// Final validation
+			const { isValid, errors } = validatePreferences(splitAnswers, 0, true);
+			if (!isValid) {
+				await channel.send(`Form validation failed:\n${errors.join('\n')}`);
+				return;
+			}
+
+			// Persist into Mongo
+			const jobPreferenceAPI = new JobPreferenceAPI(interaction.client.mongo);
+			const result = await jobPreferenceAPI.storeFormResponses(userId, answers);
+
+			await channel.send(
+				`${`✅ Preferences saved! `}\n` +
+		`You can now use the /jobs command to find job listings based on your preferences.`
+			);
+		});
+
+		// Kick off the first question
+		ask();
 	}
 
 }
+

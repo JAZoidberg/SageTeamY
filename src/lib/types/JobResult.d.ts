@@ -9,4 +9,5 @@ export interface JobResult {
 	salaryMax: string;
 	salaryMin: string;
 	link: string;
+	distance?: number;
 }
