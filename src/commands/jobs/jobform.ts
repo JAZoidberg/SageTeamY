@@ -22,9 +22,23 @@ const questions = [
 		'What city do you want to be located?',
 		'Remote, hybrid, and/or in-person?',
 		'Full time, Part time, and/or Internship?',
-		'How far are you willing to travel? (in miles)'
+		'How far are you willing to travel? (in miles)',
+		'What are your salary expectations?'
 	],
-	['Interest 1', 'Interest 2', 'Interest 3', 'Interest 4', 'Interest 5']
+	[
+		'Interest 1',
+		'Interest 2',
+		'Interest 3',
+		'Interest 4',
+		'Interest 5'
+	],
+	[
+		'Strength 1',
+		'Strength 2',
+		'Strength 3',
+		'Goal 1',
+		'Goal 2'
+	]
 ];
 
 // prettier-ignore

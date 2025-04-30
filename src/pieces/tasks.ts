@@ -1,5 +1,5 @@
 import { APP_ID, APP_KEY, BOT, CHANNELS, DB, MAP_KEY } from '@root/config';
-import { AttachmentBuilder, ChannelType, Client, EmbedBuilder, TextChannel } from 'discord.js';
+import { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, ChannelType, Client, EmbedBuilder, TextChannel } from 'discord.js';
 import { schedule } from 'node-cron';
 import { Reminder } from '@lib/types/Reminder';
 import { Poll, PollResult } from '@lib/types/Poll';
@@ -212,7 +212,7 @@ async function listJobs(jobForm: [JobData, Interest, JobResult[]], filterBy: str
 	return jobList || '### Unfortunately, there were no jobs found based on your interests :(. Consider updating your interests or waiting until something is found.';
 }
 
-export async function jobMessage(reminder: Reminder | string, userID: string): Promise<{ message: string, pdfBuffer: Buffer }> {
+export async function jobMessage(reminder: Reminder | string, userID: string): Promise<{ message: string, pdfBuffer: Buffer, embed: EmbedBuilder, row: ActionRowBuilder<ButtonBuilder>, jobResults: JobResult[] }> {
 	const jobFormData: [JobData, Interest, JobResult[]] = await getJobFormData(userID, typeof reminder === 'object' && 'filterBy' in reminder ? reminder.filterBy : 'default');
 	let filterBy: string;
 	if (typeof reminder === 'object' && 'filterBy' in reminder && reminder.filterBy) {
@@ -231,37 +231,10 @@ export async function jobMessage(reminder: Reminder | string, userID: string): P
 	}
 
 	const jobResults : JobResult[] = await sortJobResults(jobFormData, filterBy);
-
+	const { embed, row } = createJobEmbed(jobResults[0], 0, jobResults.length);
 
 	const pdfBuffer = await generateJobPDF(jobFormData);
 	const embedList: EmbedBuilder[] = [];
-
-	// for (let i = 0; i < jobFormData[2].length; i++) {
-	// 	const job = jobFormData[2][i];
-	// 	const cityCoordinates = await queryCoordinates(jobFormData[0].city);
-	// 	const distance = Math.round(calculateDistance(cityCoordinates.lat, cityCoordinates.lng, Number(job.latitude), Number(job.longitude)) + Number.EPSILON) * 100 / 100; // Round to 2 decimal places
-
-	// 	const avgSalary = (Number(job.salaryMax) + Number(job.salaryMin)) / 2;
-	// 	const formattedAvgSalary = formatCurrency(avgSalary);
-
-	// 	const postedDate = new Date(job.created).toDateString();
-	// 	const postedTime = new Date(job.created).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-
-	// 	embedList.push(new EmbedBuilder()
-	// 		.setTitle(job.title)
-	// 		.setURL(job.link)
-	// 		.setDescription(`Job oppourtunity found for you!`)
-	// 		.addFields(
-	// 			{ name: 'Salary', value: formattedAvgSalary, inline: true },
-	// 			{ name: 'Location', value: job.location, inline: true },
-	// 			{ name: 'Date Posted', value: `${postedDate} at ${postedTime}`, inline: true },
-	// 			{ name: 'Distance', value: `${distance} miles`, inline: true }
-	// 		)
-	// 		.setColor(0x00AE86)
-	// 		.setFooter({ text: 'Powered by SageBot & Adzuna' })
-	// 	);
-	// }
-
 
 	const message = `## Hey <@${userID}>!
 		## Here's your list of job/internship recommendations:
@@ -280,7 +253,7 @@ export async function jobMessage(reminder: Reminder | string, userID: string): P
 		on external sites. Always verify the authenticity of job applications before proceeding. Additionally, \
 		some job postings may contain inaccuracies due to API limitations, which are beyond our control. We apologize for any inconvenience this may cause and appreciate your understanding.`;
 
-	return { message, pdfBuffer };
+	return { message, pdfBuffer, embed, row, jobResults };
 }
 
 export function stripMarkdown(message: string, owner: string): string {
@@ -468,7 +441,7 @@ export async function generateJobPDF(jobForm: [JobData, Interest, JobResult[]]):
 
 		// Draw the bullet points for location, salary, and apply link.
 		const bulletPoints = [
-			{ label: 'Location', value: `${job.location}, ${(job.distance >= 0) ? `${job.distance} miles from ${titleCase(jobForm[0].city)}` : ''} ` },
+			{ label: 'Location', value: `${job.location}, ${job.distance >= 0 ? `${job.distance} miles from ${titleCase(jobForm[0].city)}` : ''} ` },
 			{ label: 'Salary', value: formatSalaryforPDF(job) },
 			{ label: 'Apply Here', value: job.link }
 		];
@@ -570,6 +543,54 @@ export async function generateJobPDF(jobForm: [JobData, Interest, JobResult[]]):
 
 	const pdfBytes = await pdfDoc.save();
 	return Buffer.from(pdfBytes);
+}
+
+export function createJobEmbed(
+	job: JobResult,
+	index: number,
+	totalJobs: number
+): { embed: EmbedBuilder; row: ActionRowBuilder<ButtonBuilder> } {
+	const embed = new EmbedBuilder()
+		.setTitle(job.title)
+		.setDescription(
+			`**Location:** ${job.location}\n**Date Posted:** ${new Date(
+				job.created
+			).toDateString()}`
+		)
+		.addFields(
+			{ name: 'Salary', value: formatSalaryforPDF(job), inline: true },
+			{
+				name: 'Apply Here',
+				value: `[Click here](${job.link})`,
+				inline: true
+			}
+		)
+		.setFooter({ text: `Job ${index + 1} of ${totalJobs}` })
+		.setColor('#0099ff');
+
+	const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+		new ButtonBuilder()
+			.setCustomId('previous')
+			.setLabel('Previous')
+			.setStyle(ButtonStyle.Primary)
+			.setDisabled(totalJobs === 1),
+		new ButtonBuilder()
+			.setCustomId('remove')
+			.setLabel('Remove')
+			.setStyle(ButtonStyle.Danger)
+			.setDisabled(totalJobs === 1),
+		new ButtonBuilder()
+			.setCustomId('next')
+			.setLabel('Next')
+			.setStyle(ButtonStyle.Primary)
+			.setDisabled(totalJobs === 1),
+		// ----------------ADDED DOWNLOAD BUTTON-------------------
+		new ButtonBuilder()
+			.setCustomId('download')
+			.setLabel('Download')
+			.setStyle(ButtonStyle.Success)
+	);
+	return { embed, row };
 }
 
 function wrapText(text: string, font: PDFFont, fontSize: number, maxWidth: number): string[] {
