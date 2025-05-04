@@ -7,7 +7,7 @@ import {
 } from 'discord.js';
 import { Reminder } from '@lib/types/Reminder';
 import parse from 'parse-duration';
-import { checkJobReminder, reminderTime } from '@root/src/lib/utils/generalUtils';
+import { reminderTime } from '@root/src/lib/utils/generalUtils';
 import { Command } from '@lib/types/Command';
 
 export default class extends Command {
@@ -44,7 +44,6 @@ export default class extends Command {
 				}
 			]
 		},
-		// added by Fried Sage Leaves - handles what happens when /remind jobs is run
 		{
 			name: 'jobs',
 			description: 'Create a job reminder',
@@ -82,10 +81,15 @@ export default class extends Command {
 
 		if (subcommand === 'jobs') {
 			const jobReminderRepeat = interaction.options.getString('job-repeat') as
-					| 'daily'
-					| 'weekly' || null;
+				| 'daily'
+				| 'weekly' || null;
 
-			const filterBy = interaction.options.getString('filter-type') as 'relevance' | 'salary' | 'date' | 'default' | null;
+			const filterBy = interaction.options.getString('filter-type') as
+				| 'relevance'
+				| 'salary'
+				| 'date'
+				| 'default'
+				|| 'default'; // fallback to default if null
 
 			const jobReminder: Reminder = {
 				owner: interaction.user.id,
@@ -95,31 +99,42 @@ export default class extends Command {
 				repeat: jobReminderRepeat,
 				filterBy
 			};
-			// handling duplicate job reminders
-			if (await checkJobReminder(interaction)) {
-				return interaction.reply({
-					content:
-						'You currently already have a job reminder set. To clear your existing job reminder, run `/cancelreminder` and provide the reminder number.',
-					ephemeral: true
+
+			const existing = await interaction.client.mongo
+				.collection(DB.REMINDERS)
+				.findOne({
+					owner: interaction.user.id,
+					content: 'Job Reminder',
+					filterBy
 				});
-			} else {
-				interaction.client.mongo
-					.collection(DB.REMINDERS)
-					.insertOne(jobReminder);
+
+			if (existing) {
 				return interaction.reply({
-					content: `I'll remind you about job offers ${jobReminderRepeat} at ${reminderTime(
-						jobReminder
-					)}.`,
+					content: `You already have a job reminder set with **${filterBy}** as the filter. Use /cancelreminder to remove it first.`,
 					ephemeral: true
 				});
 			}
+
+			await interaction.client.mongo
+				.collection(DB.REMINDERS)
+				.insertOne(jobReminder);
+
+			console.log('[DEBUG] Inserted job reminder:', jobReminder);
+
+			return interaction.reply({
+				content: `I'll remind you about job offers ${jobReminderRepeat} at ${reminderTime(
+					jobReminder
+				)}.`,
+				ephemeral: true
+			});
 		} else {
 			const content = interaction.options.getString('content');
 			const rawDuration = interaction.options.getString('duration');
 			const duration = parse(rawDuration);
 			const repeat = interaction.options.getString('repeat') as
-					| 'daily'
-					| 'weekly' || null;
+				| 'daily'
+				| 'weekly'
+				|| null;
 
 			if (!duration) {
 				return interaction.reply({
@@ -127,6 +142,7 @@ export default class extends Command {
 					ephemeral: true
 				});
 			}
+
 			const reminder: Reminder = {
 				owner: interaction.user.id,
 				content,
@@ -134,16 +150,15 @@ export default class extends Command {
 				expires: new Date(duration + Date.now()),
 				repeat
 			};
-			interaction.client.mongo
+
+			await interaction.client.mongo
 				.collection(DB.REMINDERS)
 				.insertOne(reminder);
+
 			return interaction.reply({
-				content: `I'll remind you about that at ${reminderTime(
-					reminder
-				)}.`,
+				content: `I'll remind you about that at ${reminderTime(reminder)}.`,
 				ephemeral: true
 			});
 		}
 	}
-
 }
