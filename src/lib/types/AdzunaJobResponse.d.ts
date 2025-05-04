@@ -13,4 +13,6 @@ export interface AdzunaJobResponse {
 	salary_max: number | string;
 	salary_min: number | string;
 	redirect_url: string;
+	longitude: number;
+	latitude: number;
 }

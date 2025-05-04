@@ -1,4 +1,7 @@
 interface Config {
+	APP_ID: string;
+	APP_KEY: string;
+	MAP_KEY: string;
 	DB_CONNECTION: string;
 	BOT_NAME: string;
 	BOT_TOKEN: string;
@@ -7,6 +10,7 @@ interface Config {
 	DB_PVQ: string;
 	DB_QTAGS: string;
 	DB_ASSIGNABLE: string;
+	DB_JOB_FORMS: string;
 	DB_COURSES: string;
 	DB_REMINDERS: string;
 	DB_CLIENT_DATA: string;
@@ -54,6 +58,9 @@ function getEnvVar(name: keyof Config): string {
 }
 
 export const config: Config = {
+	APP_ID: getEnvVar('APP_ID'),
+	APP_KEY: getEnvVar('APP_KEY'),
+	MAP_KEY: getEnvVar('MAP_KEY'),
 	DB_CONNECTION: getEnvVar('DB_CONNECTION'),
 	BOT_NAME: getEnvVar('BOT_NAME'),
 	BOT_TOKEN: getEnvVar('BOT_TOKEN'),
@@ -63,6 +70,7 @@ export const config: Config = {
 	DB_QTAGS: getEnvVar('DB_QTAGS'),
 	DB_ASSIGNABLE: getEnvVar('DB_ASSIGNABLE'),
 	DB_COURSES: getEnvVar('DB_COURSES'),
+	DB_JOB_FORMS: getEnvVar('DB_JOB_FORMS'),
 	DB_REMINDERS: getEnvVar('DB_REMINDERS'),
 	DB_CLIENT_DATA: getEnvVar('DB_CLIENT_DATA'),
 	DB_POLLS: getEnvVar('DB_POLLS'),
@@ -147,6 +155,7 @@ export const DB = {
 	CONNECTION: config.DB_CONNECTION,
 	USERS: config.DB_USERS,
 	PVQ: config.DB_PVQ,
+	JOB_FORMS: config.DB_JOB_FORMS,
 	QTAGS: config.DB_QTAGS,
 	ASSIGNABLE: config.DB_ASSIGNABLE,
 	COURSES: config.DB_COURSES,
@@ -211,6 +220,9 @@ export const PREFIX = config.PREFIX;
 export const BLACKLIST = [config.BLACKLIST];
 
 export const GITHUB_TOKEN = config.ENV_GITHUB_TOKEN;
+export const APP_ID = config.APP_ID;
+export const APP_KEY = config.APP_KEY;
+export const MAP_KEY = config.MAP_KEY;
 
 // eslint-disable-next-line prefer-destructuring
 export const MONGO = config.MONGO;

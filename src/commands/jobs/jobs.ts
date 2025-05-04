@@ -1,12 +1,15 @@
-import { ApplicationCommandOptionData, ApplicationCommandOptionType, ChatInputCommandInteraction, EmbedBuilder, InteractionResponse } from 'discord.js';
-import fetchJobListings from '@root/src/lib/utils/jobUtils/Adzuna_job_search';
+import {
+	ApplicationCommandOptionData,
+	ApplicationCommandOptionType,
+	ChatInputCommandInteraction,
+	ComponentType,
+	InteractionResponse,
+	AttachmentBuilder
+} from 'discord.js';
 import { JobResult } from '@root/src/lib/types/JobResult';
-import { Interest } from '@root/src/lib/types/Interest';
-import { JobData } from '@root/src/lib/types/JobData';
 import { Command } from '@lib/types/Command';
-import { DB, BOT } from '@root/config';
-import { Job } from '@root/src/lib/types/Job';
-import { MongoClient } from 'mongodb';
+// import { sendToFile } from '@root/src/lib/utils/generalUtils';
+import { jobMessage, createJobEmbed } from '@root/src/pieces/tasks';
 
 
 export default class extends Command {
@@ -21,148 +24,107 @@ export default class extends Command {
 			type: ApplicationCommandOptionType.String,
 			required: false,
 			choices: [
-				{ name: 'Date Posted', value: 'date' },
-				{ name: 'Salary', value: 'salary' },
-				{ name: 'Alphabetical', value: 'alphabetical' }
+				{ name: 'Date Posted: recent', value: 'date' },
+				{ name: 'Salary: high-low average', value: 'salary' },
+				{ name: 'Alphabetical: A-Z', value: 'alphabetical' },
+				{ name: 'Distance: shortest-longest', value: 'distance' }
 			]
 		}
 	]
 
-	// options: ApplicationCommandOptionData[] = [
-	// 	{
-	// 		name: 'question',
-	// 		description: 'The question you want to ask',
-	// 		type: ApplicationCommandOptionType.String,
-	// 		required: true
-	// 	}
-	// ]
-
-
 	async run(interaction: ChatInputCommandInteraction): Promise<void | InteractionResponse<boolean>> {
-		const userID = interaction.user.id;
+		await interaction.deferReply(); // Defer the reply first
 
-		const client = await MongoClient.connect(DB.CONNECTION, { useUnifiedTopology: true });
-		const db = client.db(BOT.NAME).collection(DB.JOB_FORMS);
-		const jobformAnswers:Job[] = await db.find({ owner: userID }).toArray();
-		// const jobData:JobData = {
-		// 	city: jobformAnswers[0].answers[0],
-		// 	preference: jobformAnswers[0].answers[1],
-		// 	jobType: jobformAnswers[0].answers[2],
-		// 	distance: jobformAnswers[0].answers[3],
-		// 	// filterBy: filterBy ?? 'default'
-		// 	filterBy: 'default'
-		// };
+		const filter = interaction.options.getString('filter') ?? 'default';
+		const result = await jobMessage(filter, interaction.user.id);
+		const { pdfBuffer } = result;
+		const { embed, row } = result;
 
-		// const interests:Interest = {
-		// 	interest1: jobformAnswers[1].answers[0],
-		// 	interest2: jobformAnswers[1].answers[1],
-		// 	interest3: jobformAnswers[1].answers[2],
-		// 	interest4: jobformAnswers[1].answers[3],
-		// 	interest5: jobformAnswers[1].answers[4]
-		// };
+		interaction.followUp({ embeds: [embed], components: [row] });
+		const userID = interaction.user.id; // Define userID from interaction.user.id
+		const userJobData = new Map<string, { jobs: JobResult[]; index: number }>(); // Store user job data in a map
+		userJobData.set(userID, { jobs: result.jobResults, index: 0 }); // Initialize user job data
+		const collector = interaction.channel?.createMessageComponentCollector({
+			componentType: ComponentType.Button,
+			time: 60000 // 1 minute timeout
+		});
 
-		const jobData: JobData = {
-			city: 'New York',
-			preference: 'Software Engineer',
-			jobType: 'Full Time',
-			distance: '10',
-			filterBy: 'date'
-		};
+		collector?.on('collect', async (i) => {
+			if (i.user.id !== userID) {
+				await i.reply({
+					content: 'This is not your interaction!',
+					ephemeral: true
+				});
+				return;
+			}
 
-		const interests: Interest = {
-			interest1: 'Software',
-			interest2: 'Engineer',
-			interest3: 'Full Time',
-			interest4: 'New York',
-			interest5: '10'
-		};
+			const userData = userJobData.get(userID);
+			if (!userData) return;
+
+			const { jobs } = userData;
+			let { index } = userData;
+
+			switch (i.customId) {
+				case 'previous':
+					await i.deferUpdate(); // Acknowledge the button press
+					index = index > 0 ? index - 1 : jobs.length - 1;
+					break;
+				case 'next':
+					await i.deferUpdate(); // Acknowledge the button press
+					index = index < jobs.length - 1 ? index + 1 : 0;
+					break;
+				case 'remove':
+					jobs.splice(index, 1);
+					if (jobs.length === 0) {
+						await i.update({
+							content: 'No more jobs to display.',
+							embeds: [],
+							components: []
+						});
+						userJobData.delete(userID);
+						return;
+					}
+					index = index >= jobs.length ? 0 : index;
+					break;
+				// ----------------ADDED DOWNLOAD BUTTON--------------------
+				case 'download':
+					await i.deferReply({ ephemeral: true });
+					try {
+						const attachment = new AttachmentBuilder(
+							pdfBuffer
+						).setName('jobs.pdf');
+						await i.editReply({
+							content:
+								'Here is your PDF file with all job listings:',
+							files: [attachment]
+						});
+					} catch (error) {
+						console.error('Error generating PDF:', error);
+						await i.editReply({
+							content:
+								'An error occurred while generating the PDF. Please try again later.'
+						});
+					}
+					return; // Exit early so we don't update the embed.
+			}
+
+			// Update user data
+			userJobData.set(userID, { jobs, index });
+			console.log('User job data:', userJobData);
 
 
-		const APIResponse:JobResult[] = await fetchJobListings(jobData, interests);
-		const results = [jobData, interests, APIResponse];
-		const jobFormData: [JobData, Interest, JobResult[]] = [jobData, interests, APIResponse];
-		const filterBy = interaction.options.getString('filter') ?? 'default';
+			// Update embed and buttons
+			const newEmbed = createJobEmbed(
+				jobs[index],
+				index,
+				jobs.length
+			);
+			await i.followUp({ embeds: [newEmbed.embed], components: [newEmbed.row] });
+		});
 
-		let message = `## Hey <@${userID}>!  
-			## Here's your list of job/internship recommendations:  
-Based on your interests in **${jobFormData[1].interest1}**, **${jobFormData[1].interest2}**, \
-**${jobFormData[1].interest3}**, **${jobFormData[1].interest4}**, and **${jobFormData[1].interest5}**, I've found these jobs you may find interesting. Please note that while you may get\
-job/internship recommendations from the same company,\
-their positions/details/applications/salary WILL be different and this is not a glitch/bug!
-Here's your personalized list:
-
-			${this.listJobs(jobFormData[2], filterBy)}
-			
-			---  
-			### **Disclaimer:**  
-			-# Please be aware that the job listings displayed are retrieved from a third-party API. \
-			While we strive to provide accurate information, we cannot guarantee the legitimacy or security\
-			of all postings. Exercise caution when sharing personal information, submitting resumes, or registering\
-			on external sites. Always verify the authenticity of job applications before proceeding. Additionally, \
-			some job postings may contain inaccuracies due to API limitations, which are beyond our control. We apologize for any inconvenience this may cause and appreciate your understanding.
-			`;
-
-		if (message.length > 2000) {
-			message = `${message.substring(0, 1997)}...`;
-		}
-
-		const pubChan = interaction.channel;
-		if (pubChan) {
-			pubChan.send({ content: message });
-		} else {
-			console.error('Channel not found');
-		}
+		collector?.on('end', () => {
+			userJobData.delete(userID);
+		});
 	}
-
-	listJobs(jobData: JobResult[], filterBy: string): string {
-		// Conditionally sort jobs by salary if sortBy is 'salary'
-		if (filterBy === 'salary') {
-			jobData.sort((a, b) => {
-				const avgA = (Number(a.salaryMax) + Number(a.salaryMin)) / 2;
-				const avgB = (Number(b.salaryMax) + Number(b.salaryMin)) / 2;
-	
-				// Handle cases where salaryMax or salaryMin is "Not listed"
-				if (isNaN(avgA)) return 1; // Treat jobs with no salary info as lowest
-				if (isNaN(avgB)) return -1;
-	
-				return avgB - avgA; // Descending order
-			});
-		} else if (filterBy === 'alphabetical') {
-			jobData.sort((a, b) => (a.title > b.title ? 1 : -1));
-		}
-		else if (filterBy === 'date') {
-			jobData.sort((a, b) => new Date(a.created).getTime() - new Date(b.created).getTime());
-		}
-
-
-		let jobList = '';
-		for (let i = 0; i < jobData.length; i++) {
-			const avgSalary = (Number(jobData[i].salaryMax) + Number(jobData[i].salaryMin)) / 2;
-			const formattedAvgSalary = this.formatCurrency(avgSalary);
-			const formattedSalaryMax = this.formatCurrency(Number(jobData[i].salaryMax)) !== 'N/A' ? this.formatCurrency(Number(jobData[i].salaryMax)) : '';
-			const formattedSalaryMin = this.formatCurrency(Number(jobData[i].salaryMin)) !== 'N/A' ? this.formatCurrency(Number(jobData[i].salaryMin)) : '';
-	
-			const salaryDetails = (formattedSalaryMin && formattedSalaryMax)
-				? `, Min: ${formattedSalaryMin}, Max: ${formattedSalaryMax}`
-				: formattedAvgSalary;
-	
-			jobList += `${i + 1}. **${jobData[i].title}**  
-			  \t\t* **Salary Average:** ${formattedAvgSalary}${salaryDetails}  
-			  \t\t* **Location:** ${jobData[i].location}  
-			  \t\t* **Date Posted:** ${new Date(jobData[i].created).toDateString()} at ${new Date(jobData[i].created).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-			  \t\t* **Apply here:** [read more about the job and apply here](${jobData[i].link})  
-			  ${i !== jobData.length - 1 ? '\n' : ''}`;
-		}
-	
-		return jobList || '### Unfortunately, there were no jobs found based on your interests :(. Consider updating your interests or waiting until something is found.';
-	}
-
-	formatCurrency(currency: number): string {
-		return isNaN(currency) ? 'N/A' : `${new Intl.NumberFormat('en-US', {
-			style: 'currency',
-			currency: 'USD'
-		}).format(Number(currency))}`;
-	}
-	
 
 }

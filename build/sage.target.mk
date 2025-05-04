@@ -21,7 +21,8 @@ DEFS_Debug := \
 CFLAGS_Debug := \
 	-O0 \
 	-gdwarf-2 \
-	-mmacosx-version-min=10.15 \
+	-fno-strict-aliasing \
+	-mmacosx-version-min=11.0 \
 	-arch arm64 \
 	-Wall \
 	-Wendif-labels \
@@ -29,16 +30,14 @@ CFLAGS_Debug := \
 	-Wno-unused-parameter
 
 # Flags passed to only C files.
-CFLAGS_C_Debug := \
-	-fno-strict-aliasing
+CFLAGS_C_Debug :=
 
 # Flags passed to only C++ files.
 CFLAGS_CC_Debug := \
-	-std=gnu++17 \
+	-std=gnu++20 \
 	-stdlib=libc++ \
 	-fno-rtti \
-	-fno-exceptions \
-	-fno-strict-aliasing
+	-fno-exceptions
 
 # Flags passed to only ObjC files.
 CFLAGS_OBJC_Debug :=
@@ -47,13 +46,13 @@ CFLAGS_OBJC_Debug :=
 CFLAGS_OBJCC_Debug :=
 
 INCS_Debug := \
-	-I/Users/karansingh/Library/Caches/node-gyp/20.11.0/include/node \
-	-I/Users/karansingh/Library/Caches/node-gyp/20.11.0/src \
-	-I/Users/karansingh/Library/Caches/node-gyp/20.11.0/deps/openssl/config \
-	-I/Users/karansingh/Library/Caches/node-gyp/20.11.0/deps/openssl/openssl/include \
-	-I/Users/karansingh/Library/Caches/node-gyp/20.11.0/deps/uv/include \
-	-I/Users/karansingh/Library/Caches/node-gyp/20.11.0/deps/zlib \
-	-I/Users/karansingh/Library/Caches/node-gyp/20.11.0/deps/v8/include
+	-I/Users/karansingh/Library/Caches/node-gyp/23.11.0/include/node \
+	-I/Users/karansingh/Library/Caches/node-gyp/23.11.0/src \
+	-I/Users/karansingh/Library/Caches/node-gyp/23.11.0/deps/openssl/config \
+	-I/Users/karansingh/Library/Caches/node-gyp/23.11.0/deps/openssl/openssl/include \
+	-I/Users/karansingh/Library/Caches/node-gyp/23.11.0/deps/uv/include \
+	-I/Users/karansingh/Library/Caches/node-gyp/23.11.0/deps/zlib \
+	-I/Users/karansingh/Library/Caches/node-gyp/23.11.0/deps/v8/include
 
 DEFS_Release := \
 	'-DNODE_GYP_MODULE_NAME=sage' \
@@ -72,7 +71,8 @@ DEFS_Release := \
 CFLAGS_Release := \
 	-O3 \
 	-gdwarf-2 \
-	-mmacosx-version-min=10.15 \
+	-fno-strict-aliasing \
+	-mmacosx-version-min=11.0 \
 	-arch arm64 \
 	-Wall \
 	-Wendif-labels \
@@ -80,16 +80,14 @@ CFLAGS_Release := \
 	-Wno-unused-parameter
 
 # Flags passed to only C files.
-CFLAGS_C_Release := \
-	-fno-strict-aliasing
+CFLAGS_C_Release :=
 
 # Flags passed to only C++ files.
 CFLAGS_CC_Release := \
-	-std=gnu++17 \
+	-std=gnu++20 \
 	-stdlib=libc++ \
 	-fno-rtti \
-	-fno-exceptions \
-	-fno-strict-aliasing
+	-fno-exceptions
 
 # Flags passed to only ObjC files.
 CFLAGS_OBJC_Release :=
@@ -98,13 +96,13 @@ CFLAGS_OBJC_Release :=
 CFLAGS_OBJCC_Release :=
 
 INCS_Release := \
-	-I/Users/karansingh/Library/Caches/node-gyp/20.11.0/include/node \
-	-I/Users/karansingh/Library/Caches/node-gyp/20.11.0/src \
-	-I/Users/karansingh/Library/Caches/node-gyp/20.11.0/deps/openssl/config \
-	-I/Users/karansingh/Library/Caches/node-gyp/20.11.0/deps/openssl/openssl/include \
-	-I/Users/karansingh/Library/Caches/node-gyp/20.11.0/deps/uv/include \
-	-I/Users/karansingh/Library/Caches/node-gyp/20.11.0/deps/zlib \
-	-I/Users/karansingh/Library/Caches/node-gyp/20.11.0/deps/v8/include
+	-I/Users/karansingh/Library/Caches/node-gyp/23.11.0/include/node \
+	-I/Users/karansingh/Library/Caches/node-gyp/23.11.0/src \
+	-I/Users/karansingh/Library/Caches/node-gyp/23.11.0/deps/openssl/config \
+	-I/Users/karansingh/Library/Caches/node-gyp/23.11.0/deps/openssl/openssl/include \
+	-I/Users/karansingh/Library/Caches/node-gyp/23.11.0/deps/uv/include \
+	-I/Users/karansingh/Library/Caches/node-gyp/23.11.0/deps/zlib \
+	-I/Users/karansingh/Library/Caches/node-gyp/23.11.0/deps/v8/include
 
 OBJS :=
 
@@ -116,7 +114,7 @@ all_deps += $(OBJS)
 LDFLAGS_Debug := \
 	-undefined dynamic_lookup \
 	-Wl,-search_paths_first \
-	-mmacosx-version-min=10.15 \
+	-mmacosx-version-min=11.0 \
 	-arch arm64 \
 	-L$(builddir) \
 	-stdlib=libc++
@@ -128,7 +126,7 @@ LIBTOOLFLAGS_Debug := \
 LDFLAGS_Release := \
 	-undefined dynamic_lookup \
 	-Wl,-search_paths_first \
-	-mmacosx-version-min=10.15 \
+	-mmacosx-version-min=11.0 \
 	-arch arm64 \
 	-L$(builddir) \
 	-stdlib=libc++

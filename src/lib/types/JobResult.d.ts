@@ -1,4 +1,6 @@
 export interface JobResult {
+	latitude: number
+	longitude: number
 	company: string;
 	title: string;
 	description: string;
@@ -7,4 +9,5 @@ export interface JobResult {
 	salaryMax: string;
 	salaryMin: string;
 	link: string;
+	distance?: number;
 }
