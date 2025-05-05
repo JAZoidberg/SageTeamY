@@ -13,7 +13,7 @@ import {
 	TextInputBuilder,
 	TextInputStyle,
 	ModalSubmitInteraction,
-	User,	
+	User,
 } from "discord.js";
 import fetchJobListings from "@root/src/lib/utils/jobUtils/Adzuna_job_search";
 import { JobResult } from "@root/src/lib/types/JobResult";
