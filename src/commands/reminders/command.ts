@@ -1,4 +1,5 @@
-// Main Command class for the reminder system
+// This file contains the command handler for the reminder system of a Discord bot.
+
 import { BOT } from '@root/config';
 import { ChatInputCommandInteraction } from 'discord.js';
 import { Command } from '@lib/types/Command';
