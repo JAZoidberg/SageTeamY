@@ -49,7 +49,7 @@ export default class extends Command {
 		interaction: ChatInputCommandInteraction
 	): Promise<InteractionResponse<boolean> | void> {
 		const filterBy = interaction.options.getString('filter-type') as 'relevance' | 'salary' | 'date' | 'default';
-	
+
 		// Check if user already has a job reminder with that filter
 		if (!await checkJobReminder(interaction, filterBy)) {
 			await interaction.reply({
@@ -64,4 +64,5 @@ export default class extends Command {
 			});
 		}
 	}
-}	
+
+}

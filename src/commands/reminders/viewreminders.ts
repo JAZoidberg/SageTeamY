@@ -12,7 +12,7 @@ export default class extends Command {
 
 	description = 'See your upcoming reminders.';
 	extendedHelp =
-		'Don\'t worry, private reminders will be hidden if you use this command publicly.';
+	'Don\'t worry, private reminders will be hidden if you use this command publicly.';
 
 	async run(
 		interaction: ChatInputCommandInteraction
@@ -89,4 +89,5 @@ export default class extends Command {
 
 		return interaction.reply({ embeds });
 	}
+
 }

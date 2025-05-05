@@ -45,7 +45,14 @@ export default async function fetchJobListings(jobData: JobData, interests?: Int
 		return jobCache[cacheKey] as JobResult[];
 	}
 
-	const URL_BASE = `https://api.adzuna.com/v1/api/jobs/us/search/1?app_id=${APP_ID}&app_key=${APP_KEY}&results_per_page=15&what=${JOB_TYPE}&what_or=${whatInterests}&where=${LOCATION}&distance=${Math.round(DISTANCE_KM)}`;
+	const URL_BASE
+	= `https://api.adzuna.com/v1/api/jobs/us/search/1?app_id=${APP_ID}` +
+	`&app_key=${APP_KEY}` +
+	`&results_per_page=15` +
+	`&what=${JOB_TYPE}` +
+	`&what_or=${whatInterests}` +
+	`&where=${LOCATION}` +
+	`&distance=${Math.round(DISTANCE_KM)}`;
 
 	try {
 		// Append sorting only if it's not 'default'

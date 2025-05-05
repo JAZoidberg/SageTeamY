@@ -89,7 +89,7 @@ async function checkPolls(bot: Client): Promise<void> {
 
 // eslint-disable-next-line no-warning-comments
 // Retrieves job form data from the DB for a given user and builds the necessary payload for job search
-async function getJobFormData(userID: string, _filterBy: string): Promise<[JobData, Interest, JobResult[]]> {
+async function getJobFormData(userID: string): Promise<[JobData, Interest, JobResult[]]> {
 	const client = await MongoClient.connect(DB.CONNECTION, { useUnifiedTopology: true });
 	const db = client.db(BOT.NAME).collection(DB.USERS);
 
@@ -101,7 +101,7 @@ async function getJobFormData(userID: string, _filterBy: string): Promise<[JobDa
 		throw new Error(`No job preferences found for user ${userID}`);
 	}
 
-	const answers = jobformAnswers.answers;
+	const { answers } = jobformAnswers;
 
 	// Build the main job search query payload from the user's saved answers
 	const jobData: JobData = {
@@ -235,7 +235,7 @@ async function listJobs(jobForm: [JobData, Interest, JobResult[]], filterBy: str
 
 export async function jobMessage(reminder: Reminder | string, userID: string): Promise<{ message: string, pdfBuffer: Buffer,
 	embed: EmbedBuilder, row: ActionRowBuilder<ButtonBuilder>, jobResults: JobResult[] }> {
-	const jobFormData: [JobData, Interest, JobResult[]] = await getJobFormData(userID, typeof reminder === 'object' && 'filterBy' in reminder ? reminder.filterBy : 'default');
+	const jobFormData: [JobData, Interest, JobResult[]] = await getJobFormData(userID);
 	let filterBy: string;
 	if (typeof reminder === 'object' && 'filterBy' in reminder && reminder.filterBy) {
 		filterBy = String(reminder.filterBy);
