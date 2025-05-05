@@ -293,14 +293,17 @@ export function calcNeededExp(levelExp: number, direction: string): number {
 }
 
 export async function checkJobReminder(
-	interaction: ChatInputCommandInteraction
+	interaction: ChatInputCommandInteraction,
+	filterBy: string
 ): Promise<boolean> {
 	const reminders: Array<Reminder> = await interaction.client.mongo
 		.collection(DB.REMINDERS)
-		.find({ owner: interaction.user.id })
+		.find({
+			owner: interaction.user.id,
+			content: 'Job Reminder',
+			filterBy // <-- Now checks per filter type!
+		})
 		.toArray();
 
-	return reminders.some(
-		(reminder: Reminder) => reminder.content === 'Job Reminder'
-	);
+	return reminders.length > 0;
 }
