@@ -29,7 +29,7 @@ import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
 // Temporary storage for user job data
 const userJobData = new Map<string, { jobs: JobResult[]; index: number }>();
-
+//adding something
 export default class extends Command {
 	description = `Get a listing of jobs based on your interests and preferences.`;
 	extendedHelp = `This command will return a listing of jobs based on your interests and preferences.`;
