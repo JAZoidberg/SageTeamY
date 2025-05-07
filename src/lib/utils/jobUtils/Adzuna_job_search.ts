@@ -13,39 +13,52 @@ type JobCache = {
 const jobCache: JobCache = {};
 
 export default async function fetchJobListings(jobData: JobData, interests?: Interest): Promise<JobResult[]> {
-	const LOCATION = encodeURIComponent(jobData.city);
-	const JOB_TYPE = encodeURIComponent(jobData.jobType);
-	const DISTANCE_KM = Number(jobData.distance) * 1.609; // Convert miles to kilometers
+	// Safely encode jobData fields, falling back to defaults if they're missing
+	const city = jobData.city ?? 'new york';
+	const jobType = jobData.jobType ?? 'software';
+	const distance = jobData.distance ?? '10';
+	const filterBy = jobData.filterBy ?? 'default';
+
+	const LOCATION = encodeURIComponent(city);
+	const JOB_TYPE = encodeURIComponent(jobType);
+	const DISTANCE_KM = Number(distance) * 1.609; // Convert miles to kilometers
 
 	let whatInterests = '';
 	if (interests) {
+		// Turn user interests into dash-separated keywords
 		const keys = Object.keys(interests);
 		const lastKey = keys[keys.length - 1];
 		const lastValue = interests[lastKey];
 
-		for (const interest in interests) {
-			whatInterests += interests[interest].replace(/\s+/g, '-'); // Replace spaces with dashes
-			if (interests[interest] !== lastValue) {
-				whatInterests += ' ';
-			}
+		for (const interest of keys) {
+			const value = interests[interest];
+			whatInterests += value.replace(/\s+/g, '-'); // Replace spaces with dashes
+			if (value !== lastValue) whatInterests += ' ';
 		}
 	}
 	whatInterests = encodeURIComponent(whatInterests);
 
-	const cacheKey = `${jobData.jobType.toLowerCase()}-${jobData.city.toLowerCase()}-${whatInterests}`;
+	// Prevent crashes by defaulting undefined fields before toLowerCase()
+	const cacheKey = `${jobType.toLowerCase()}-${city.toLowerCase()}-${whatInterests}`;
 	if (jobCache[cacheKey]) {
 		console.log('Fetching data from cache...');
 		return jobCache[cacheKey] as JobResult[];
 	}
 
-	// const URL = `https://api.adzuna.com/v1/api/jobs/us/search/1?app_id=${APP_ID}&app_key=${APP_KEY}&results_per_page=15&what=${JOB_TYPE}&what_or=${whatInterests}&where=
-	// ${LOCATION}&distance=${Math.round(DISTANCE_KM)}&sort_by=${jobData.filterBy}`;
-
-	const URL_BASE = `https://api.adzuna.com/v1/api/jobs/us/search/1?app_id=${APP_ID}&app_key=${APP_KEY}&results_per_page=15&what=${JOB_TYPE}&what_or=${whatInterests}&where=\
-	${LOCATION}&distance=${Math.round(DISTANCE_KM)}`;
+	const URL_BASE
+	= `https://api.adzuna.com/v1/api/jobs/us/search/1?app_id=${APP_ID}` +
+	`&app_key=${APP_KEY}` +
+	`&results_per_page=15` +
+	`&what=${JOB_TYPE}` +
+	`&what_or=${whatInterests}` +
+	`&where=${LOCATION}` +
+	`&distance=${Math.round(DISTANCE_KM)}`;
 
 	try {
-		const response = await axios.get(jobData.filterBy && jobData.filterBy !== 'default' ? `${URL_BASE}&sort_by=${jobData.filterBy}` : URL_BASE);
+		// Append sorting only if it's not 'default'
+		const url = filterBy !== 'default' ? `${URL_BASE}&sort_by=${filterBy}` : URL_BASE;
+
+		const response = await axios.get(url);
 		const jobResults: JobResult[] = response.data.results.map((job: AdzunaJobResponse) => ({
 			company: job.company?.display_name || 'Not Provided',
 			title: job.title,
@@ -55,7 +68,6 @@ export default async function fetchJobListings(jobData: JobData, interests?: Int
 			salaryMax: job.salary_max || 'Not listed',
 			salaryMin: job.salary_min || 'Not listed',
 			link: job.redirect_url || 'No link available',
-			// Added latitude and longitude
 			longitude: job.longitude || 0,
 			latitude: job.latitude || 0
 		}));
@@ -66,3 +78,4 @@ export default async function fetchJobListings(jobData: JobData, interests?: Int
 		throw error;
 	}
 }
+
