@@ -641,7 +641,7 @@ export default class extends Command {
 	): number {
 		const toRadians = (degrees: number) => degrees * (Math.PI / 180);
 
-		const R = 3958.8; // Radius of the Earth in miles
+		const Radius = 3958.8; // Radius of the Earth in miles
 		const dLat = toRadians(lat2 - lat1);
 		const dLon = toRadians(lon2 - lon1);
 		const a =
@@ -654,7 +654,7 @@ export default class extends Command {
 		const distance =
 			(lat1 === 0 && lon1 === 0) || (lat2 === 0 && lon2 === 0)
 				? -1
-				: R * c;
+				: Radius * c;
 		return distance;
 	}
 

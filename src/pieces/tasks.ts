@@ -1,4 +1,4 @@
-import { APP_ID, APP_KEY, BOT, CHANNELS, DB, MAP_KEY } from '@root/config';
+import { APP_ID, APP_KEY, BOT, CHANNELS, DB, GMAIL, MAP_KEY } from '@root/config';
 import { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, ChannelType, Client, EmbedBuilder, TextChannel } from 'discord.js';
 import { schedule } from 'node-cron';
 import { Reminder } from '@lib/types/Reminder';
@@ -9,6 +9,7 @@ import { sendToFile } from '../lib/utils/generalUtils';
 import { JobData } from '../lib/types/JobData';
 import { Interest } from '../lib/types/Interest';
 import { JobResult } from '../lib/types/JobResult';
+import nodemailer from 'nodemailer';
 import { JobPreferences } from '../lib/types/JobPreferences';
 import axios from 'axios';
 import { PDFDocument, PDFFont, rgb, StandardFonts } from 'pdf-lib';
@@ -301,11 +302,75 @@ some job postings may contain inaccuracies due to API limitations, which are bey
 	`;
 }
 
+// Function to send an email notification for a reminder
+async function sendEmailNotification(reminder: Reminder): Promise<void> {
+    // Skip if email notification isn't enabled for this reminder
+    if (!reminder.emailNotification || !reminder.emailAddress) {
+        return;
+    }
+
+    // Create Gmail transporter using credentials from config
+    const mailer = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: GMAIL.USER,
+            pass: GMAIL.APP_PASSWORD
+        }
+    });
+
+    try {
+        // Determine subject and content based on reminder type
+        let subject: string;
+        let htmlContent: string;
+
+        const isJobReminder = reminder.content === 'Job Reminder';
+        
+        if (isJobReminder) {
+            subject = `Job Alert from ${BOT.NAME}`;
+            // For job reminders, we could create a simplified version of the job listing
+            // This would need to be developed further to extract job data properly
+            htmlContent = `
+                <h2>Your Job Alert from ${BOT.NAME}</h2>
+                <p>This is your scheduled job alert. New job opportunities matching your interests are available!</p>
+                <p>Please check your Discord messages for the full list of job opportunities.</p>
+                <p>Frequency: ${reminder.repeat}</p>
+                <p>Filter: ${reminder.filterBy}</p>
+                <hr>
+                <p><em>This is an automated message from the ${BOT.NAME} Discord bot.</em></p>
+            `;
+        } else {
+            subject = `Reminder from ${BOT.NAME}`;
+            htmlContent = `
+                <h2>Your Reminder from ${BOT.NAME}</h2>
+                <p><strong>Reminder content:</strong> ${reminder.content}</p>
+                <p><em>This is an automated message from the ${BOT.NAME} Discord bot.</em></p>
+            `;
+        }
+
+        // Send the email
+        await mailer.sendMail({
+            from: GMAIL.USER,
+            to: reminder.emailAddress,
+            subject: subject,
+            html: htmlContent
+        });
+
+        console.log(`Email notification sent to ${reminder.emailAddress} for reminder: ${reminder.content}`);
+    } catch (error) {
+        console.error('Failed to send email notification:', error);
+    }
+}
+
 async function checkReminders(bot: Client): Promise<void> {
 	const reminders: Reminder[] = await bot.mongo.collection(DB.REMINDERS).find({ expires: { $lte: new Date() } }).toArray();
 	const pubChan = (await bot.channels.fetch(CHANNELS.SAGE)) as TextChannel;
 
-	reminders.forEach((reminder) => {
+	reminders.forEach(async (reminder) => {
+        // Send email notification if enabled
+        if (reminder.emailNotification && reminder.emailAddress) {
+            await sendEmailNotification(reminder);
+        }
+
 		if (reminder.mode === 'public') {
 			pubChan.send(`<@${reminder.owner}>, here's the reminder you asked for: **${reminder.content}**`);
 		} else {
@@ -338,7 +403,10 @@ async function checkReminders(bot: Client): Promise<void> {
 			expires: new Date(reminder.expires),
 			mode: reminder.mode,
 			repeat: reminder.repeat,
-			owner: reminder.owner
+			owner: reminder.owner,
+            // Preserve email notification settings for repeated reminders
+            emailNotification: reminder.emailNotification,
+            emailAddress: reminder.emailAddress
 		};
 
 		if (reminder.repeat === 'daily') {
