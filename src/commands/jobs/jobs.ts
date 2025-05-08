@@ -1,3 +1,5 @@
+/* eslint-disable no-mixed-operators */
+/* eslint-disable no-control-regex */
 import {
 	ApplicationCommandOptionData,
 	ApplicationCommandOptionType,
@@ -14,6 +16,11 @@ import {
 	TextInputStyle,
 	ModalSubmitInteraction,
 	User,
+	TextBasedChannel,
+	TextChannel,
+	DMChannel,
+	NewsChannel,
+	ThreadChannel,
 } from "discord.js";
 import fetchJobListings from "@root/src/lib/utils/jobUtils/Adzuna_job_search";
 import { JobResult } from "@root/src/lib/types/JobResult";
@@ -29,6 +36,7 @@ import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
 // Temporary storage for user job data
 const userJobData = new Map<string, { jobs: JobResult[]; index: number }>();
+
 export default class extends Command {
 	description = `Get a listing of jobs based on your interests and preferences.`;
 	extendedHelp = `This command will return a listing of jobs based on your interests and preferences.`;
@@ -50,14 +58,15 @@ export default class extends Command {
 
 	private sanitizeText(text: string): string {
 		return text
-			.replace(/[^\x00-\x7F]/g, "") // Remove non-ASCII characters
-			.replace(/[•]/g, "*") // Replace bullet points
-			.replace(/[“”]/g, '"') // Replace smart quotes
+			.replace(/[^\u0000-\u007F]/gu, "") // Remove non-ASCII (U+0000 through U+007F)
+			.replace(/•/g, "*") // Replace bullet points
+			.replace(/[“”]/g, '"') // Replace smart double quotes
 			.replace(/[‘’]/g, "'") // Replace smart single quotes
-			.replace(/\s+/g, " ") // Collapse multiple spaces
+			.replace(/\s+/g, " ") // Collapse multiple whitespace
 			.trim();
 	}
 
+	// Ensure variable names are clear
 	private async generateJobPDF(jobs: JobResult[]): Promise<Buffer> {
 		const pdfDoc = await PDFDocument.create();
 		let currentPage = pdfDoc.addPage([600, 800]);
@@ -114,6 +123,7 @@ export default class extends Command {
 		});
 		yPosition -= 40;
 
+		// Draw separator line
 		currentPage.drawRectangle({
 			x: margin,
 			y: yPosition + 50,
@@ -123,7 +133,7 @@ export default class extends Command {
 		});
 		yPosition -= 10;
 
-		// Add jobs
+		// Add jobs to the PDF
 		for (let i = 0; i < jobs.length; i++) {
 			const job = jobs[i];
 			const sanitizedJob = {
@@ -171,7 +181,6 @@ export default class extends Command {
 			];
 
 			for (const detail of details) {
-				// Label
 				const labelLines = this.wrapText(
 					`• ${detail.label}`,
 					helveticaBold,
@@ -198,7 +207,6 @@ export default class extends Command {
 					yPosition -= fontSize + 10;
 				}
 
-				// Value
 				const valueLines = this.wrapText(
 					`•${detail.value}`,
 					helvetica,
@@ -385,7 +393,9 @@ export default class extends Command {
 						});
 					}
 					break;
-				case "share":
+				case "share": {
+					// Show the modal
+					console.log("🔹 [share] button clicked, showing modal");
 					await i.showModal(
 						new ModalBuilder()
 							.setCustomId("shareJobModal")
@@ -409,24 +419,55 @@ export default class extends Command {
 								)
 							)
 					);
+
+					console.log("🔹 [share] awaiting modal submit");
+					try {
+						const modalInteraction = await i.awaitModalSubmit({
+							filter: (mi) =>
+								mi.customId === "shareJobModal" &&
+								mi.user.id === userID,
+							time: 60_000,
+						});
+						console.log("🔹 [share] modal submitted with fields:", {
+							recipient:
+								modalInteraction.fields.getTextInputValue(
+									"recipient"
+								),
+							message:
+								modalInteraction.fields.getTextInputValue(
+									"message"
+								),
+						});
+
+						const userData = userJobData.get(userID);
+						console.log(
+							"🔹 [share] userData for user:",
+							userID,
+							userData
+						);
+						if (!userData) {
+							return modalInteraction.reply({
+								content:
+									"⚠️ Session expired—please restart your job search.",
+								ephemeral: true,
+							});
+						}
+
+						await this.handleShareModal(
+							modalInteraction,
+							userData.jobs[userData.index]
+						);
+						console.log("🔹 [share] handleShareModal completed");
+					} catch (err) {
+						console.log(
+							"🔹 [share] awaitModalSubmit timed out or threw:",
+							err
+						);
+					}
+
 					return;
-			}
-			interaction.client.on(
-				"interactionCreate",
-				async (modalInteraction) => {
-					if (!modalInteraction.isModalSubmit()) return;
-					if (modalInteraction.customId !== "shareJobModal") return;
-
-					const userData = userJobData.get(modalInteraction.user.id);
-					if (!userData) return;
-
-					await this.handleShareModal(
-						modalInteraction,
-						userData.jobs[userData.index]
-					);
 				}
-			);
-
+			}
 			// Update user data
 			userJobData.set(userID, { jobs, index });
 
@@ -445,61 +486,99 @@ export default class extends Command {
 	}
 
 	private async handleShareModal(
-		interaction: ModalSubmitInteraction,
+		modal: ModalSubmitInteraction,
 		job: JobResult
 	) {
-		const recipient = interaction.fields.getTextInputValue("recipient");
-		const message =
-			interaction.fields.getTextInputValue("message") ||
-			"Check out this job opportunity!";
+		// Ack the modal immediately so Discord stops showing the spinner
+		await modal.deferReply({ ephemeral: true });
+
+		const raw = modal.fields.getTextInputValue("recipient").trim();
+		let targetUser: User | null = null;
+		// Only these channel classes have .send()
+		let targetChannel:
+			| TextChannel
+			| DMChannel
+			| NewsChannel
+			| ThreadChannel
+			| null = null;
+
+		// Try mention (<@...>), channel mention (<#...>), or raw ID
+		const idMatch = raw.match(/^<@!?(\d+)>$|^<#(\d+)>$|^(\d{17,19})$/);
+		if (idMatch) {
+			const id = idMatch[1] || idMatch[2] || idMatch[3];
+
+			//as a User
+			targetUser = await modal.client.users.fetch(id).catch(() => null);
+
+			// as a TextChannel/DMChannel/NewsChannel/ThreadChannel
+			if (!targetUser && modal.guild) {
+				const ch = modal.guild.channels.cache.get(id);
+				if (
+					ch instanceof TextChannel ||
+					ch instanceof DMChannel ||
+					ch instanceof NewsChannel ||
+					ch instanceof ThreadChannel
+				) {
+					targetChannel = ch;
+				}
+			}
+		}
+
+		// Fallback: look up username#discriminator in cache
+		if (!targetUser && !targetChannel && raw.includes("#")) {
+			const lowerTag = raw.toLowerCase();
+			targetUser =
+				modal.client.users.cache.find(
+					(u) => u.tag.toLowerCase() === lowerTag
+				) || null;
+		}
+
+		if (!targetUser && !targetChannel) {
+			return modal.editReply({
+				content:
+					"❌ Couldn’t resolve that as a user or channel. Please use a user mention (`<@ID>`), channel mention (`<#ID>`), raw ID, or a cached `username#1234`.",
+			});
+		}
+
+		// 5) Build the embed to share
+		const shareEmbed = new EmbedBuilder()
+			.setTitle(`Job Shared: ${job.title}`)
+			.setDescription(
+				`${
+					modal.fields.getTextInputValue("message") || ""
+				}\n\n**Shared by:** <@${modal.user.id}>`
+			)
+			.addFields(
+				{ name: "Location", value: job.location, inline: true },
+				{
+					name: "Posted",
+					value: new Date(job.created).toDateString(),
+					inline: true,
+				},
+				{ name: "Apply Here", value: `[Click here](${job.link})` }
+			)
+			.setColor("#4CAF50");
 
 		try {
-			// Try to parse as user/channel mention
-			const targetId = recipient.replace(/[<@#>]/g, "");
-			const target =
-				(await interaction.client.users.fetch(targetId)) ||
-				interaction.guild?.channels.cache.get(targetId);
-
-			if (!target) throw new Error("Invalid target");
-
-			const shareEmbed = new EmbedBuilder()
-				.setTitle(`Job Shared: ${job.title}`)
-				.setDescription(
-					`${message}\n\n**Shared by:** ${interaction.user}`
-				)
-				.addFields(
-					{ name: "Location", value: job.location, inline: true },
-					{
-						name: "Posted",
-						value: new Date(job.created).toDateString(),
-						inline: true,
-					},
-					{ name: "Apply Here", value: `[Click here](${job.link})` }
-				)
-				.setColor("#4CAF50");
-
-			if (target instanceof User) {
-				await target.send({ embeds: [shareEmbed] });
-				await interaction.reply({
-					content: `✅ Job shared with ${target}!`,
-					ephemeral: true,
+			if (targetUser) {
+				await targetUser.send({ embeds: [shareEmbed] });
+				await modal.editReply({
+					content: `✅ Job shared with <@${targetUser.id}>!`,
 				});
-			} else if (target?.isTextBased()) {
-				await target.send({ embeds: [shareEmbed] });
-				await interaction.reply({
-					content: `✅ Job shared in ${target}!`,
-					ephemeral: true,
+			} else {
+				await targetChannel!.send({ embeds: [shareEmbed] });
+				await modal.editReply({
+					content: `✅ Job shared in <#${targetChannel!.id}>!`,
 				});
 			}
-		} catch (error) {
-			await interaction.reply({
+		} catch (err) {
+			console.error("Failed to deliver shared job:", err);
+			await modal.editReply({
 				content:
-					"❌ Couldn't share. Make sure you entered a valid user/channel!",
-				ephemeral: true,
+					"⚠️ Couldn’t deliver the share—perhaps the user has DMs closed or I lack permission in that channel.",
 			});
 		}
 	}
-
 	createJobEmbed(
 		job: JobResult,
 		index: number,
