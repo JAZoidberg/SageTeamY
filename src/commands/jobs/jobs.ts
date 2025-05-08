@@ -1,3 +1,5 @@
+/* eslint-disable no-mixed-operators */
+/* eslint-disable no-control-regex */
 import {
 	ApplicationCommandOptionData,
 	ApplicationCommandOptionType,
@@ -13,51 +15,54 @@ import {
 	TextInputBuilder,
 	TextInputStyle,
 	ModalSubmitInteraction,
-	User,
-} from "discord.js";
-import fetchJobListings from "@root/src/lib/utils/jobUtils/Adzuna_job_search";
-import { JobResult } from "@root/src/lib/types/JobResult";
-import { Interest } from "@root/src/lib/types/Interest";
-import { JobData } from "@root/src/lib/types/JobData";
-import { Command } from "@lib/types/Command";
-import { DB, BOT, MAP_KEY } from "@root/config";
-import { MongoClient } from "mongodb";
-import { sendToFile } from "@root/src/lib/utils/generalUtils";
-import axios from "axios";
-import { JobPreferences } from "@root/src/lib/types/JobPreferences";
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+	User
+} from 'discord.js';
+import fetchJobListings from '@root/src/lib/utils/jobUtils/Adzuna_job_search';
+import { JobResult } from '@root/src/lib/types/JobResult';
+import { Interest } from '@root/src/lib/types/Interest';
+import { JobData } from '@root/src/lib/types/JobData';
+import { Command } from '@lib/types/Command';
+import { DB, BOT, MAP_KEY } from '@root/config';
+import { MongoClient } from 'mongodb';
+import { sendToFile } from '@root/src/lib/utils/generalUtils';
+import axios from 'axios';
+import { JobPreferences } from '@root/src/lib/types/JobPreferences';
+import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 
 // Temporary storage for user job data
 const userJobData = new Map<string, { jobs: JobResult[]; index: number }>();
+
 export default class extends Command {
+
 	description = `Get a listing of jobs based on your interests and preferences.`;
 	extendedHelp = `This command will return a listing of jobs based on your interests and preferences.`;
 
 	options: ApplicationCommandOptionData[] = [
 		{
-			name: "filter",
-			description: "Filter options for job listings",
+			name: 'filter',
+			description: 'Filter options for job listings',
 			type: ApplicationCommandOptionType.String,
 			required: false,
 			choices: [
-				{ name: "Date Posted: recent", value: "date" },
-				{ name: "Salary: high-low average", value: "salary" },
-				{ name: "Alphabetical: A-Z", value: "alphabetical" },
-				{ name: "Distance: shortest-longest", value: "distance" },
-			],
-		},
+				{ name: 'Date Posted: recent', value: 'date' },
+				{ name: 'Salary: high-low average', value: 'salary' },
+				{ name: 'Alphabetical: A-Z', value: 'alphabetical' },
+				{ name: 'Distance: shortest-longest', value: 'distance' }
+			]
+		}
 	];
 
 	private sanitizeText(text: string): string {
 		return text
-			.replace(/[^\x00-\x7F]/g, "") // Remove non-ASCII characters
-			.replace(/[•]/g, "*") // Replace bullet points
-			.replace(/[“”]/g, '"') // Replace smart quotes
+			.replace(/[^\u0000-\u007F]/gu, '') // Remove non-ASCII (U+0000 through U+007F)
+			.replace(/•/g, '*') // Replace bullet points
+			.replace(/[“”]/g, '"') // Replace smart double quotes
 			.replace(/[‘’]/g, "'") // Replace smart single quotes
-			.replace(/\s+/g, " ") // Collapse multiple spaces
+			.replace(/\s+/g, ' ') // Collapse multiple whitespace
 			.trim();
 	}
 
+	// Ensure variable names are clear
 	private async generateJobPDF(jobs: JobResult[]): Promise<Buffer> {
 		const pdfDoc = await PDFDocument.create();
 		let currentPage = pdfDoc.addPage([600, 800]);
@@ -83,7 +88,7 @@ export default class extends Command {
 			y: yPosition + 50,
 			width: lineWidth,
 			height: lineHeight,
-			color: rgb(135 / 255, 59 / 255, 29 / 255),
+			color: rgb(135 / 255, 59 / 255, 29 / 255)
 		});
 
 		currentPage.drawRectangle({
@@ -91,7 +96,7 @@ export default class extends Command {
 			y: yPosition + 50,
 			width: lineWidth,
 			height: lineHeight,
-			color: rgb(237 / 255, 118 / 255, 71 / 255),
+			color: rgb(237 / 255, 118 / 255, 71 / 255)
 		});
 
 		currentPage.drawRectangle({
@@ -99,38 +104,39 @@ export default class extends Command {
 			y: yPosition + 50,
 			width: lineWidth,
 			height: lineHeight,
-			color: rgb(13 / 255, 158 / 255, 198 / 255),
+			color: rgb(13 / 255, 158 / 255, 198 / 255)
 		});
 
 		yPosition -= 40;
 
 		// Draw title
-		currentPage.drawText("Your Job Listings", {
+		currentPage.drawText('Your Job Listings', {
 			x: margin,
 			y: yPosition + 50,
 			size: titleFontSize,
 			font: helveticaBold,
-			color: rgb(114 / 255, 53 / 255, 9 / 255),
+			color: rgb(114 / 255, 53 / 255, 9 / 255)
 		});
 		yPosition -= 40;
 
+		// Draw separator line
 		currentPage.drawRectangle({
 			x: margin,
 			y: yPosition + 50,
 			width: lineWidth / 2,
 			height: lineHeight - 8,
-			color: rgb(135 / 255, 59 / 255, 29 / 255),
+			color: rgb(135 / 255, 59 / 255, 29 / 255)
 		});
 		yPosition -= 10;
 
-		// Add jobs
+		// Add jobs to the PDF
 		for (let i = 0; i < jobs.length; i++) {
 			const job = jobs[i];
 			const sanitizedJob = {
 				title: this.sanitizeText(job.title),
 				location: this.sanitizeText(job.location),
 				salary: this.sanitizeText(this.formatSalaryforPDF(job)),
-				link: job.link, // URLs should be ASCII already
+				link: job.link // URLs should be ASCII already
 			};
 
 			// Add new page if needed
@@ -158,20 +164,19 @@ export default class extends Command {
 					y: yPosition + 30,
 					size: fontSize + 10,
 					font: helveticaBold,
-					color: rgb(241 / 255, 113 / 255, 34 / 255),
+					color: rgb(241 / 255, 113 / 255, 34 / 255)
 				});
 				yPosition -= 30;
 			}
 
 			// Add job details
 			const details = [
-				{ label: "Location", value: sanitizedJob.location },
-				{ label: "Salary", value: sanitizedJob.salary },
-				{ label: "Apply Here", value: sanitizedJob.link },
+				{ label: 'Location', value: sanitizedJob.location },
+				{ label: 'Salary', value: sanitizedJob.salary },
+				{ label: 'Apply Here', value: sanitizedJob.link }
 			];
 
 			for (const detail of details) {
-				// Label
 				const labelLines = this.wrapText(
 					`• ${detail.label}`,
 					helveticaBold,
@@ -193,12 +198,11 @@ export default class extends Command {
 						y: yPosition + 25,
 						size: fontSize + 5,
 						font: helveticaBold,
-						color: rgb(94 / 255, 74 / 255, 74 / 255),
+						color: rgb(94 / 255, 74 / 255, 74 / 255)
 					});
 					yPosition -= fontSize + 10;
 				}
 
-				// Value
 				const valueLines = this.wrapText(
 					`•${detail.value}`,
 					helvetica,
@@ -220,7 +224,7 @@ export default class extends Command {
 						y: yPosition + 20,
 						size: fontSize + 3,
 						font: helvetica,
-						color: rgb(13 / 255, 158 / 255, 198 / 255),
+						color: rgb(13 / 255, 158 / 255, 198 / 255)
 					});
 					yPosition -= fontSize + 5;
 				}
@@ -241,9 +245,9 @@ export default class extends Command {
 		fontSize: number,
 		maxWidth: number
 	): string[] {
-		const words = text.split(" ");
+		const words = text.split(' ');
 		const lines: string[] = [];
-		let currentLine = "";
+		let currentLine = '';
 
 		for (const word of words) {
 			const testLine = currentLine ? `${currentLine} ${word}` : word;
@@ -270,10 +274,10 @@ export default class extends Command {
 		interaction: ChatInputCommandInteraction
 	): Promise<void | InteractionResponse<boolean>> {
 		const userID = interaction.user.id;
-		const filterBy = interaction.options.getString("filter") ?? "salary";
+		const filterBy = interaction.options.getString('filter') ?? 'salary';
 
 		const client = await MongoClient.connect(DB.CONNECTION, {
-			useUnifiedTopology: true,
+			useUnifiedTopology: true
 		});
 		const db = client.db(BOT.NAME).collection(DB.USERS);
 		const jobformAnswers: JobPreferences | null = (
@@ -292,7 +296,7 @@ export default class extends Command {
 			preference: jobformAnswers.answers.employmentType,
 			jobType: jobformAnswers.answers.workType,
 			distance: jobformAnswers.answers.travelDistance,
-			filterBy: filterBy,
+			filterBy: filterBy
 		};
 
 		const interests: Interest = {
@@ -300,7 +304,7 @@ export default class extends Command {
 			interest2: jobformAnswers.answers.interest2,
 			interest3: jobformAnswers.answers.interest3,
 			interest4: jobformAnswers.answers.interest4,
-			interest5: jobformAnswers.answers.interest5,
+			interest5: jobformAnswers.answers.interest5
 		};
 
 		const APIResponse: JobResult[] = await fetchJobListings(
@@ -309,7 +313,7 @@ export default class extends Command {
 		);
 
 		if (APIResponse.length === 0) {
-			await interaction.reply("No jobs found based on your interests.");
+			await interaction.reply('No jobs found based on your interests.');
 			return;
 		}
 
@@ -327,14 +331,14 @@ export default class extends Command {
 		// Listen for button interactions
 		const collector = interaction.channel?.createMessageComponentCollector({
 			componentType: ComponentType.Button,
-			time: 60000,
+			time: 60000
 		});
 
-		collector?.on("collect", async (i) => {
+		collector?.on('collect', async (i) => {
 			if (i.user.id !== userID) {
 				await i.reply({
-					content: "This is not your interaction!",
-					ephemeral: true,
+					content: 'This is not your interaction!',
+					ephemeral: true
 				});
 				return;
 			}
@@ -345,65 +349,65 @@ export default class extends Command {
 			let { jobs, index } = userData;
 
 			switch (i.customId) {
-				case "previous":
+				case 'previous':
 					index = index > 0 ? index - 1 : jobs.length - 1;
 					break;
-				case "next":
+				case 'next':
 					index = index < jobs.length - 1 ? index + 1 : 0;
 					break;
-				case "remove":
+				case 'remove':
 					jobs.splice(index, 1);
 					if (jobs.length === 0) {
 						await i.update({
-							content: "No more jobs to display.",
+							content: 'No more jobs to display.',
 							embeds: [],
-							components: [],
+							components: []
 						});
 						userJobData.delete(userID);
 						return;
 					}
 					index = index >= jobs.length ? 0 : index;
 					break;
-				case "download":
+				case 'download':
 					await i.deferReply({ ephemeral: true });
 					try {
 						const pdfBuffer = await this.generateJobPDF(jobs);
 						const attachment = new AttachmentBuilder(
 							pdfBuffer
-						).setName("job_listings.pdf");
+						).setName('job_listings.pdf');
 
 						await i.editReply({
 							content:
-								"Here are your job listings in PDF format:",
-							files: [attachment],
+								'Here are your job listings in PDF format:',
+							files: [attachment]
 						});
 					} catch (error) {
-						console.error("Error generating PDF:", error);
+						console.error('Error generating PDF:', error);
 						await i.editReply({
 							content:
-								"Failed to generate PDF. The job listings may contain unsupported characters.",
+								'Failed to generate PDF. The job listings may contain unsupported characters.'
 						});
 					}
 					break;
-				case "share":
+				case 'share':
 					await i.showModal(
 						new ModalBuilder()
-							.setCustomId("shareJobModal")
-							.setTitle("Share Job")
+							.setCustomId('shareJobModal')
+							.setTitle('Share Job')
 							.addComponents(
 								new ActionRowBuilder<TextInputBuilder>().addComponents(
 									new TextInputBuilder()
-										.setCustomId("recipient")
+										.setCustomId('recipient')
 										.setLabel(
-											"Tag user or enter channel ID"
+											'Tag user or enter channel ID'
 										)
 										.setStyle(TextInputStyle.Short)
 										.setRequired(true)
 								),
 								new ActionRowBuilder<TextInputBuilder>().addComponents(
 									new TextInputBuilder()
-										.setCustomId("message")
-										.setLabel("Add a message (optional)")
+										.setCustomId('message')
+										.setLabel('Add a message (optional)')
 										.setStyle(TextInputStyle.Paragraph)
 										.setRequired(false)
 								)
@@ -412,10 +416,10 @@ export default class extends Command {
 					return;
 			}
 			interaction.client.on(
-				"interactionCreate",
+				'interactionCreate',
 				async (modalInteraction) => {
 					if (!modalInteraction.isModalSubmit()) return;
-					if (modalInteraction.customId !== "shareJobModal") return;
+					if (modalInteraction.customId !== 'shareJobModal') return;
 
 					const userData = userJobData.get(modalInteraction.user.id);
 					if (!userData) return;
@@ -439,7 +443,7 @@ export default class extends Command {
 			await i.update({ embeds: [embed], components: [row] });
 		});
 
-		collector?.on("end", () => {
+		collector?.on('end', () => {
 			userJobData.delete(userID);
 		});
 	}
@@ -448,19 +452,19 @@ export default class extends Command {
 		interaction: ModalSubmitInteraction,
 		job: JobResult
 	) {
-		const recipient = interaction.fields.getTextInputValue("recipient");
-		const message =
-			interaction.fields.getTextInputValue("message") ||
-			"Check out this job opportunity!";
+		const recipient = interaction.fields.getTextInputValue('recipient');
+		const message
+			= interaction.fields.getTextInputValue('message')
+			|| 'Check out this job opportunity!';
 
 		try {
 			// Try to parse as user/channel mention
-			const targetId = recipient.replace(/[<@#>]/g, "");
-			const target =
-				(await interaction.client.users.fetch(targetId)) ||
-				interaction.guild?.channels.cache.get(targetId);
+			const targetId = recipient.replace(/[<@#>]/g, '');
+			const target
+				= await interaction.client.users.fetch(targetId)
+				|| interaction.guild?.channels.cache.get(targetId);
 
-			if (!target) throw new Error("Invalid target");
+			if (!target) throw new Error('Invalid target');
 
 			const shareEmbed = new EmbedBuilder()
 				.setTitle(`Job Shared: ${job.title}`)
@@ -468,34 +472,34 @@ export default class extends Command {
 					`${message}\n\n**Shared by:** ${interaction.user}`
 				)
 				.addFields(
-					{ name: "Location", value: job.location, inline: true },
+					{ name: 'Location', value: job.location, inline: true },
 					{
-						name: "Posted",
+						name: 'Posted',
 						value: new Date(job.created).toDateString(),
-						inline: true,
+						inline: true
 					},
-					{ name: "Apply Here", value: `[Click here](${job.link})` }
+					{ name: 'Apply Here', value: `[Click here](${job.link})` }
 				)
-				.setColor("#4CAF50");
+				.setColor('#4CAF50');
 
 			if (target instanceof User) {
 				await target.send({ embeds: [shareEmbed] });
 				await interaction.reply({
 					content: `✅ Job shared with ${target}!`,
-					ephemeral: true,
+					ephemeral: true
 				});
 			} else if (target?.isTextBased()) {
 				await target.send({ embeds: [shareEmbed] });
 				await interaction.reply({
 					content: `✅ Job shared in ${target}!`,
-					ephemeral: true,
+					ephemeral: true
 				});
 			}
 		} catch (error) {
 			await interaction.reply({
 				content:
 					"❌ Couldn't share. Make sure you entered a valid user/channel!",
-				ephemeral: true,
+				ephemeral: true
 			});
 		}
 	}
@@ -513,42 +517,42 @@ export default class extends Command {
 				).toDateString()}`
 			)
 			.addFields(
-				{ name: "Salary", value: this.formatSalary(job), inline: true },
+				{ name: 'Salary', value: this.formatSalary(job), inline: true },
 				{
-					name: "Apply Here",
+					name: 'Apply Here',
 					value: `[Click here](${job.link})`,
-					inline: true,
+					inline: true
 				}
 			)
 			.setFooter({ text: `Job ${index + 1} of ${totalJobs}` })
-			.setColor("#0099ff");
+			.setColor('#0099ff');
 
 		const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
 			new ButtonBuilder()
-				.setCustomId("previous")
-				.setLabel("Previous")
+				.setCustomId('previous')
+				.setLabel('Previous')
 				.setStyle(ButtonStyle.Primary)
 				.setDisabled(totalJobs === 1),
 			new ButtonBuilder()
-				.setCustomId("remove")
-				.setLabel("Remove")
+				.setCustomId('remove')
+				.setLabel('Remove')
 				.setStyle(ButtonStyle.Danger)
 				.setDisabled(totalJobs === 1),
 			new ButtonBuilder()
-				.setCustomId("next")
-				.setLabel("Next")
+				.setCustomId('next')
+				.setLabel('Next')
 				.setStyle(ButtonStyle.Primary)
 				.setDisabled(totalJobs === 1),
 			new ButtonBuilder()
-				.setCustomId("download")
-				.setLabel("Download PDF")
+				.setCustomId('download')
+				.setLabel('Download PDF')
 				.setStyle(ButtonStyle.Success)
-				.setEmoji("📄"),
+				.setEmoji('📄'),
 			new ButtonBuilder()
-				.setCustomId("share")
-				.setLabel("Share")
+				.setCustomId('share')
+				.setLabel('Share')
 				.setStyle(ButtonStyle.Secondary)
-				.setEmoji("↗️")
+				.setEmoji('↗️')
 		);
 
 		return { embed, row };
@@ -558,14 +562,14 @@ export default class extends Command {
 	formatSalary(job: JobResult): string {
 		const avgSalary = (Number(job.salaryMax) + Number(job.salaryMin)) / 2;
 		const formattedAvgSalary = this.formatCurrency(avgSalary);
-		const formattedSalaryMax =
-			this.formatCurrency(Number(job.salaryMax)) !== "N/A"
+		const formattedSalaryMax
+			= this.formatCurrency(Number(job.salaryMax)) !== 'N/A'
 				? this.formatCurrency(Number(job.salaryMax))
-				: "";
-		const formattedSalaryMin =
-			this.formatCurrency(Number(job.salaryMin)) !== "N/A"
+				: '';
+		const formattedSalaryMin
+			= this.formatCurrency(Number(job.salaryMin)) !== 'N/A'
 				? this.formatCurrency(Number(job.salaryMin))
-				: "";
+				: '';
 
 		return formattedSalaryMin && formattedSalaryMax
 			? `Avg: ${formattedAvgSalary}\nMin: ${formattedSalaryMin}\nMax: ${formattedSalaryMax}`
@@ -575,14 +579,14 @@ export default class extends Command {
 	formatSalaryforPDF(job: JobResult): string {
 		const avgSalary = (Number(job.salaryMax) + Number(job.salaryMin)) / 2;
 		const formattedAvgSalary = this.formatCurrency(avgSalary);
-		const formattedSalaryMax =
-			this.formatCurrency(Number(job.salaryMax)) !== "N/A"
+		const formattedSalaryMax
+			= this.formatCurrency(Number(job.salaryMax)) !== 'N/A'
 				? this.formatCurrency(Number(job.salaryMax))
-				: "";
-		const formattedSalaryMin =
-			this.formatCurrency(Number(job.salaryMin)) !== "N/A"
+				: '';
+		const formattedSalaryMin
+			= this.formatCurrency(Number(job.salaryMin)) !== 'N/A'
 				? this.formatCurrency(Number(job.salaryMin))
-				: "";
+				: '';
 
 		return formattedSalaryMin && formattedSalaryMax
 			? `Avg: ${formattedAvgSalary}, Min: ${formattedSalaryMin}, Max: ${formattedSalaryMax}`
@@ -591,10 +595,10 @@ export default class extends Command {
 
 	formatCurrency(currency: number): string {
 		return isNaN(currency)
-			? "N/A"
-			: `${new Intl.NumberFormat("en-US", {
-					style: "currency",
-					currency: "USD",
+			? 'N/A'
+			: `${new Intl.NumberFormat('en-US', {
+				style: 'currency',
+				currency: 'USD'
 			  }).format(Number(currency))}`;
 	}
 
@@ -603,15 +607,15 @@ export default class extends Command {
 			.replace(
 				new RegExp(
 					`## Hey <@${owner}>!\\s*## Here's your list of job/internship recommendations:?`,
-					"g"
+					'g'
 				),
-				""
+				''
 			)
-			.replace(/\[read more about the job and apply here\]/g, "")
-			.replace(/\((https?:\/\/[^\s)]+)\)/g, "$1")
-			.replace(/\*\*([^*]+)\*\*/g, "$1")
-			.replace(/##+\s*/g, "")
-			.replace(/###|-\#\s*/g, "")
+			.replace(/\[read more about the job and apply here\]/g, '')
+			.replace(/\((https?:\/\/[^\s)]+)\)/g, '$1')
+			.replace(/\*\*([^*]+)\*\*/g, '$1')
+			.replace(/##+\s*/g, '')
+			.replace(/###|-\#\s*/g, '')
 			.trim();
 	}
 
@@ -624,12 +628,12 @@ export default class extends Command {
         on external sites. Always verify the authenticity of job applications before proceeding. Additionally, \
         some job postings may contain inaccuracies due to API limitations, which are beyond our control. We apologize for any inconvenience this may cause and appreciate your understanding.
         ## Here's your list of job/internship recommendations${
-			filterBy && filterBy !== "default"
-				? ` (filtered based on ${
-						filterBy === "date" ? "date posted" : filterBy
+	filterBy && filterBy !== 'default'
+		? ` (filtered based on ${
+			filterBy === 'date' ? 'date posted' : filterBy
 				  }):`
-				: ":"
-		}
+		: ':'
+}
         `;
 	}
 
@@ -644,15 +648,15 @@ export default class extends Command {
 		const R = 3958.8; // Radius of the Earth in miles
 		const dLat = toRadians(lat2 - lat1);
 		const dLon = toRadians(lon2 - lon1);
-		const a =
-			Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-			Math.cos(toRadians(lat1)) *
-				Math.cos(toRadians(lat2)) *
-				Math.sin(dLon / 2) *
-				Math.sin(dLon / 2);
+		const a
+			= Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+			Math.cos(toRadians(lat1))
+				* Math.cos(toRadians(lat2))
+				* Math.sin(dLon / 2)
+				* Math.sin(dLon / 2);
 		const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-		const distance =
-			(lat1 === 0 && lon1 === 0) || (lat2 === 0 && lon2 === 0)
+		const distance
+			= (lat1 === 0 && lon1 === 0) || (lat2 === 0 && lon2 === 0)
 				? -1
 				: R * c;
 		return distance;
@@ -665,9 +669,10 @@ export default class extends Command {
 		const response = await axios.get(baseURL);
 		const coordinates: { lat: number; lng: number } = {
 			lat: response.data.results[0].geometry.location.lat,
-			lng: response.data.results[0].geometry.location.lng,
+			lng: response.data.results[0].geometry.location.lng
 		};
 
 		return coordinates;
 	}
+
 }
