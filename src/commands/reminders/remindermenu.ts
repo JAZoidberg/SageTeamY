@@ -1,4 +1,4 @@
-// This file contains the command handler for the reminder system of a Discord bot.
+// This file contains the command handler for the NEW reminder system of the Discord bot.
 
 import { BOT } from '@root/config';
 import { ChatInputCommandInteraction } from 'discord.js';
