@@ -1,5 +1,5 @@
 // Main export file for the reminders system
-import ReminderCommand from './command';
+import ReminderCommand from '../commands/reminders/remindermenu';
 
 // Export the main command class
 export default ReminderCommand;
