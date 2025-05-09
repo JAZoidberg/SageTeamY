@@ -12,7 +12,7 @@ import { JobPreferenceAPI } from '@root/src/lib/utils/jobUtils/jobDatabase';
 const questions = [
 	[
 		'What city do you want to be located?',
-		'Remote, hybrid, and/or in-person?',
+		'What type of job would you like?',
 		'Full time, Part time, and/or Internship?',
 		'How far are you willing to travel? (in miles)',
 		'What are your salary expectations?'
@@ -88,13 +88,13 @@ export default class extends Command {
 					}
 
 
-					const { isValid, errors } = validatePreferences(splitAnswers, 0, true);
+					/* const { isValid, errors } = validatePreferences(splitAnswers, 0, true);
 					if (!isValid) {
 						// Show errors and re-ask same question
 						await channel.send(`**Formatting error:**\n${errors.join('\n')}`);
 						answers[current] = '';
 						return ask();
-					}
+					} */
 				}
 			}
 
