@@ -18,6 +18,8 @@ import { DB } from "@root/config";
 import { Reminder } from "@lib/types/Reminder";
 import { createErrorEmbed, getReminderIcon } from "./utils";
 import { reminderTime } from "@root/src/lib/utils/generalUtils";
+// Import the email handlers
+import { showEmailModal, showJobEmailModal } from "./email-handlers";
 
 /**
  * Display the main menu for the reminder system
@@ -81,7 +83,12 @@ export function createButtonCollector(response: any): void {
                 await showMainMenu(buttonInteraction);
                 break;
             case 'email_yes':
-                // Email yes handlers are implemented in email-handlers.ts
+                // Actually call the showEmailModal function when the email_yes button is clicked
+                await showEmailModal(buttonInteraction);
+                break;
+            case 'job_email_yes':
+                // Call the job email modal function when the job_email_yes button is clicked
+                await showJobEmailModal(buttonInteraction);
                 break;
             case 'email_no':
                 // Handle no for email notification - retrieve the reminder data
@@ -99,6 +106,10 @@ export function createButtonCollector(response: any): void {
                         components: [createBackButton()]
                     });
                 }
+                break;
+            case 'job_email_no':
+                // Handle no for job email notification
+                await completeReminderCreation(buttonInteraction, false, null);
                 break;
         }
     });
