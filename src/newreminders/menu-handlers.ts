@@ -138,8 +138,6 @@ export async function handleViewReminders(buttonInteraction: ButtonInteraction):
         .find({ owner: buttonInteraction.user.id })
         .toArray();
     
-    reminders.sort((a, b) => a.expires.valueOf() - b.expires.valueOf());
-    
     if (reminders.length < 1) {
         const noRemindersEmbed = new EmbedBuilder()
             .setColor(COLORS.INFO)
@@ -156,16 +154,38 @@ export async function handleViewReminders(buttonInteraction: ButtonInteraction):
         return;
     }
     
+    // Split reminders into job reminders and regular reminders
+    const jobReminders = reminders.filter(r => r.content === 'Job Reminder');
+    const normalReminders = reminders.filter(r => r.content !== 'Job Reminder');
+    
+    // Sort job reminders by filter priority
+    const priorityOrder = { salary: 1, date: 2, relevance: 3, default: 4 };
+    jobReminders.sort((a, b) => {
+        // Use default for undefined filter values
+        const filterA = a.filterBy || 'default';
+        const filterB = b.filterBy || 'default';
+        
+        const aVal = priorityOrder[filterA] || 4; // Default to lowest priority if unknown
+        const bVal = priorityOrder[filterB] || 4;
+        return aVal - bVal;
+    });
+    
+    // Sort regular reminders by expiration date
+    normalReminders.sort((a, b) => a.expires.valueOf() - b.expires.valueOf());
+    
+    // Combine the sorted lists with job reminders first
+    const sortedReminders = [...jobReminders, ...normalReminders];
+    
     const embeds: Array<EmbedBuilder> = [];
-    reminders.forEach((reminder, i) => {
+    sortedReminders.forEach((reminder, i) => {
         if (i % 10 === 0) { // Reduced to 10 reminders per embed for better readability
             embeds.push(
                 new EmbedBuilder()
-                    .setTitle(`${EMOJI.VIEW} Your Reminders (${reminders.length})`)
+                    .setTitle(`${EMOJI.VIEW} Your Reminders (${sortedReminders.length})`)
                     .setColor(COLORS.INFO)
                     .setDescription('Here are all your pending reminders:')
                     .setFooter({ 
-                        text: `Page ${Math.floor(i / 10) + 1}/${Math.ceil(reminders.length / 10)}` 
+                        text: `Page ${Math.floor(i / 10) + 1}/${Math.ceil(sortedReminders.length / 10)}` 
                     })
                     .setTimestamp()
             );
@@ -175,16 +195,19 @@ export async function handleViewReminders(buttonInteraction: ButtonInteraction):
         const isJobReminder = reminder.content === 'Job Reminder';
         const icon = getReminderIcon(reminder);
         
+        // Make sure the filter is displayed correctly
+        const filterDisplay = reminder.filterBy || 'default';
+        
         embeds[Math.floor(i / 10)].addFields({
             name: `${i + 1}. ${icon} ${
                 hidden
                     ? isJobReminder
-                        ? 'Job Alert'
+                        ? `Job Alert (${filterDisplay})`
                         : 'Private Reminder'
                     : reminder.content
             }`,
             value: hidden
-                ? `${EMOJI.REPEAT} **${reminder.repeat}** job reminder filtered by **${reminder.filterBy}**${
+                ? `${EMOJI.REPEAT} **${reminder.repeat}** job reminder filtered by **${filterDisplay}**${
                     reminder.emailNotification ? `\n${EMOJI.EMAIL} Email notifications to: ${reminder.emailAddress}` : ''
                 }`
                 : `${EMOJI.TIME} Due: **${reminderTime(reminder)}**${
@@ -192,6 +215,19 @@ export async function handleViewReminders(buttonInteraction: ButtonInteraction):
                 }`
         });
     });
+    
+    // Add sorting explanation at the top of the first embed
+    if (embeds.length > 0 && jobReminders.length > 0) {
+        embeds[0].setDescription('Your reminders are listed below. Job reminders are sorted based on filter priority.');
+    }
+    
+    // Add sorting logic at the bottom of the last embed
+    if (embeds.length > 0) {
+        embeds[embeds.length - 1].addFields({
+            name: '\u200B',
+            value: '**Job Reminder Sorting:** salary > date > relevance > default'
+        });
+    }
     
     // Add back button to the response
     const backButton = createBackButton();
@@ -244,20 +280,40 @@ export async function handleCancelReminder(buttonInteraction: ButtonInteraction)
             return;
         }
 
-        // Get user's reminders and sort them
+        // Get user's reminders and sort them THE SAME WAY as in handleViewReminders
         const reminders: Array<Reminder> = await modalInteraction.client.mongo
             .collection(DB.REMINDERS)
             .find({ owner: modalInteraction.user.id })
             .toArray();
         
-        reminders.sort((a, b) => a.expires.valueOf() - b.expires.valueOf());
+        // Split reminders into job reminders and regular reminders
+        const jobReminders = reminders.filter(r => r.content === 'Job Reminder');
+        const normalReminders = reminders.filter(r => r.content !== 'Job Reminder');
         
-        // Check if the reminder exists
-        const reminder = reminders[reminderNum];
+        // Sort job reminders by filter priority
+        const priorityOrder = { salary: 1, date: 2, relevance: 3, default: 4 };
+        jobReminders.sort((a, b) => {
+            // Use default for undefined filter values
+            const filterA = a.filterBy || 'default';
+            const filterB = b.filterBy || 'default';
+            
+            const aVal = priorityOrder[filterA] || 4; // Default to lowest priority if unknown
+            const bVal = priorityOrder[filterB] || 4;
+            return aVal - bVal;
+        });
+        
+        // Sort regular reminders by expiration date
+        normalReminders.sort((a, b) => a.expires.valueOf() - b.expires.valueOf());
+        
+        // Combine the sorted lists with job reminders first - THIS MUST MATCH handleViewReminders exactly
+        const sortedReminders = [...jobReminders, ...normalReminders];
+        
+        // Check if the reminder exists in the SORTED list
+        const reminder = sortedReminders[reminderNum];
         if (!reminder) {
             const notFoundEmbed = createErrorEmbed(
                 "Reminder Not Found",
-                `I couldn't find reminder **#${reminderNum + 1}**.`
+                `I couldn't find reminder **#${reminderNum + 1}**. Please check the number and try again.`
             ).setFooter({ text: 'Use the VIEW REMINDERS button to see your current reminders' });
             
             // Defer the modal reply to acknowledge it without sending a visible message
@@ -272,13 +328,42 @@ export async function handleCancelReminder(buttonInteraction: ButtonInteraction)
             return;
         }
 
+        // Create a query to exactly match this reminder
+        const reminderQuery = {
+            owner: reminder.owner,
+            content: reminder.content,
+            expires: reminder.expires
+        };
+        
+        // If it's a job reminder, include the filter type in the query
+        if (reminder.content === 'Job Reminder' && reminder.filterBy) {
+            reminderQuery['filterBy'] = reminder.filterBy;
+        }
+        
         // Delete the reminder
-        await modalInteraction.client.mongo
+        const deleteResult = await modalInteraction.client.mongo
             .collection(DB.REMINDERS)
-            .findOneAndDelete(reminder);
+            .deleteOne(reminderQuery);
 
+        // Make sure we deleted something
+        if (deleteResult.deletedCount === 0) {
+            const errorEmbed = createErrorEmbed(
+                "Deletion Failed",
+                `There was a problem deleting reminder **#${reminderNum + 1}**. Please try again or check if it has already been deleted.`
+            );
+            
+            await modalInteraction.deferUpdate();
+            await buttonInteraction.editReply({
+                embeds: [errorEmbed],
+                components: [createBackButton()]
+            });
+            return;
+        }
+
+        // Create success message
         const hidden = reminder.mode === 'private';
         const isJobReminder = reminder.content === 'Job Reminder';
+        const filterDisplay = reminder.filterBy || 'default';
         const emailInfo = reminder.emailNotification ? `\nEmail notifications to ${reminder.emailAddress} have been canceled.` : '';
         
         const successEmbed = new EmbedBuilder()
@@ -287,7 +372,7 @@ export async function handleCancelReminder(buttonInteraction: ButtonInteraction)
             .setDescription(
                 `Successfully cancelled reminder **#${reminderNum + 1}**: ${
                     hidden 
-                        ? (isJobReminder ? 'Job Alert' : 'Private Reminder') 
+                        ? (isJobReminder ? `Job Alert (${filterDisplay})` : 'Private Reminder') 
                         : `"${reminder.content}"`
                 }${emailInfo}`
             )

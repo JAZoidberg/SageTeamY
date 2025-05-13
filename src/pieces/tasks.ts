@@ -504,96 +504,133 @@ async function sendEmailNotification(reminder: Reminder): Promise<void> {
 }
 
 async function checkReminders(bot: Client): Promise<void> {
-	const reminders: Reminder[] = await bot.mongo
-		.collection(DB.REMINDERS)
-		.find({ expires: { $lte: new Date() } })
-		.toArray();
-	const pubChan = (await bot.channels.fetch(CHANNELS.SAGE)) as TextChannel;
+    const reminders: Reminder[] = await bot.mongo
+        .collection(DB.REMINDERS)
+        .find({ expires: { $lte: new Date() } })
+        .toArray();
+    const pubChan = (await bot.channels.fetch(CHANNELS.SAGE)) as TextChannel;
 
-	reminders.forEach(async (reminder) => {
-		// Send email notification if enabled
-		if (reminder.emailNotification && reminder.emailAddress) {
-			await sendEmailNotification(reminder);
-		}
+    for (const reminder of reminders) {
+        // Process the notification part first
+        try {
+            // Send email notification if enabled
+            if (reminder.emailNotification && reminder.emailAddress) {
+                await sendEmailNotification(reminder);
+            }
 
-		if (reminder.mode === "public") {
-			pubChan.send(
-				`<@${reminder.owner}>, here's the reminder you asked for: **${reminder.content}**`
-			);
-		} else {
-			bot.users
-				.fetch(reminder.owner)
-				.then(async (user) => {
-					const result = await jobMessage(reminder, user.id);
-					// const { message } = result;
-					const message = "placeholder"; // Placeholder for the message variable
-					const { pdfBuffer } = result;
-					if (message.length < 2000) {
-						user.send(message).catch((err) => {
-							console.log("ERROR:", err);
-							pubChan.send(
-								`<@${reminder.owner}>, I tried to send you a DM about your private reminder but it looks like you have DMs closed. Please enable DMs in the future if 
-							you'd like to get private reminders.`
-							);
-						});
-					} else {
-						const attachments: AttachmentBuilder[] = [];
-						attachments.push(
-							await sendToFile(
-								stripMarkdown(
-									message.split("---")[0],
-									reminder.owner
-								),
-								"txt",
-								"list-of-jobs-internships",
-								false
-							)
-						);
-						user.send({
-							content: headerMessage(
-								reminder.owner,
-								reminder.filterBy
-							),
-							files: attachments as AttachmentBuilder[],
-						});
-					}
-				})
-				.catch((error) => {
-					console.log(
-						"ERROR CALLED ----------------------------------------------------"
-					);
-					console.error(
-						`Failed to fetch user with ID: ${reminder.owner}`,
-						error
-					);
-				});
-		}
+            if (reminder.mode === "public") {
+                await pubChan.send(
+                    `<@${reminder.owner}>, here's the reminder you asked for: **${reminder.content}**`
+                );
+            } else {
+                const user = await bot.users.fetch(reminder.owner);
+                
+                if (reminder.content === "Job Reminder") {
+                    // Make sure to pass the filter value properly
+                    const filterToUse = reminder.filterBy || 'default';
+                    const result = await jobMessage(reminder, user.id);
+                    const { message, pdfBuffer } = result;
+                    
+                    if (message.length < 2000) {
+                        await user.send(message).catch(() => {
+                            pubChan.send(
+                                `<@${reminder.owner}>, I tried to send you a DM about your private reminder but it looks like you have DMs closed. Please enable DMs in the future if you'd like to get private reminders.`
+                            );
+                        });
+                    } else {
+                        const attachments: AttachmentBuilder[] = [];
+                        attachments.push(
+                            await sendToFile(
+                                stripMarkdown(
+                                    message.split("---")[0],
+                                    reminder.owner
+                                ),
+                                "txt",
+                                "list-of-jobs-internships",
+                                false
+                            )
+                        );
+                        await user.send({
+                            content: headerMessage(
+                                reminder.owner,
+                                filterToUse
+                            ),
+                            files: attachments as AttachmentBuilder[],
+                        }).catch(() => {
+                            pubChan.send(
+                                `<@${reminder.owner}>, I tried to send you a DM about your job reminder but it looks like you have DMs closed.`
+                            );
+                        });
+                    }
+                } else {
+                    // Handle regular private reminders
+                    await user.send(`Reminder: ${reminder.content}`).catch(() => {
+                        pubChan.send(
+                            `<@${reminder.owner}>, I tried to send you a DM about your private reminder but it looks like you have DMs closed.`
+                        );
+                    });
+                }
+            }
+        } catch (error) {
+            console.error(`Error processing reminder notification:`, error);
+        }
 
-		const newReminder: Reminder = {
-			content: reminder.content,
-			expires: new Date(reminder.expires),
-			mode: reminder.mode,
-			repeat: reminder.repeat,
-			owner: reminder.owner,
-			// Preserve email notification settings for repeated reminders
-			emailNotification: reminder.emailNotification,
-			emailAddress: reminder.emailAddress,
-		};
+        // Now handle the reminder rescheduling/deletion
+        try {
+            // Create a duplicate reminder with updated expiry for repeating reminders
+            if (reminder.repeat === "daily" || reminder.repeat === "weekly") {
+                const newReminder: Reminder = {
+                    content: reminder.content,
+                    expires: new Date(reminder.expires),
+                    mode: reminder.mode,
+                    repeat: reminder.repeat,
+                    owner: reminder.owner,
+                    // IMPORTANT: Preserve the filter value for job reminders
+                    filterBy: reminder.filterBy,
+                    // Preserve email notification settings
+                    emailNotification: reminder.emailNotification,
+                    emailAddress: reminder.emailAddress,
+                };
 
-		if (reminder.repeat === "daily") {
-			newReminder.expires.setDate(reminder.expires.getDate() + 1);
-			bot.mongo
-				.collection(DB.REMINDERS)
-				.findOneAndReplace(reminder, newReminder);
-		} else if (reminder.repeat === "weekly") {
-			newReminder.expires.setDate(reminder.expires.getDate() + 7);
-			bot.mongo
-				.collection(DB.REMINDERS)
-				.findOneAndReplace(reminder, newReminder);
-		} else {
-			bot.mongo.collection(DB.REMINDERS).findOneAndDelete(reminder);
-		}
-	});
+                // Set new expiry date based on repeat type
+                if (reminder.repeat === "daily") {
+                    newReminder.expires.setDate(reminder.expires.getDate() + 1);
+                } else { // weekly
+                    newReminder.expires.setDate(reminder.expires.getDate() + 7);
+                }
+                
+                // Log what we're doing to help debug
+                console.log(`Processing reminder: owner=${reminder.owner}, content=${reminder.content}, filterBy=${reminder.filterBy || 'default'}`);
+                
+                // MongoDB will add _id field automatically
+                await bot.mongo.collection(DB.REMINDERS).insertOne(newReminder);
+                
+                // Log the new reminder's details
+                console.log(`Created new reminder: owner=${newReminder.owner}, content=${newReminder.content}, filterBy=${newReminder.filterBy || 'default'}, expires=${newReminder.expires}`);
+            }
+            
+            // Delete the original reminder that triggered
+            // Use only the fields we know are present in every reminder
+            // Use a more precise query that avoids filter issues
+            const deleteQuery = {
+                owner: reminder.owner,
+                content: reminder.content,
+                expires: reminder.expires
+            };
+            
+            // If it's a job reminder, make sure to include filterBy in the query
+            if (reminder.content === "Job Reminder" && reminder.filterBy) {
+                deleteQuery['filterBy'] = reminder.filterBy;
+            }
+            
+            const deleteResult = await bot.mongo.collection(DB.REMINDERS).deleteOne(deleteQuery);
+            
+            // Log what was deleted
+            console.log(`Deleted reminder: owner=${reminder.owner}, content=${reminder.content}, filterBy=${reminder.filterBy || 'default'}, count=${deleteResult.deletedCount}`);
+        } catch (error) {
+            console.error(`Error rescheduling reminder:`, error);
+        }
+    }
 }
 
 export async function generateJobPDF(

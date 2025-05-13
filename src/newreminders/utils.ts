@@ -67,7 +67,7 @@ export function createJobReminderSuccessEmbed(
         .setColor(COLORS.SECONDARY)
         .setTitle(`${EMOJI.JOB} Job Alert Created`)
         .setDescription(
-            `I'll send you job opportunities **${repeatValue}** starting at **${expiryTime}**.`
+            `I'll send you job opportunities filtered by **${filterValue}** **${repeatValue}** starting at **${expiryTime}**.`
         )
         .addFields(
             { name: 'Frequency', value: `${repeatValue.charAt(0).toUpperCase() + repeatValue.slice(1)}`, inline: true },
@@ -82,7 +82,7 @@ export function createJobReminderSuccessEmbed(
         });
     }
     
-    embed.setFooter({ text: 'You can update your preferences anytime' })
+    embed.setFooter({ text: 'You can have multiple job alerts with different filter types' })
          .setTimestamp();
          
     return embed;
@@ -102,14 +102,27 @@ export function getReminderIcon(reminder: Reminder): string {
  * Helper for checking job reminder that accepts ButtonInteraction
  * This wraps the original checkJobReminder function to handle ButtonInteraction
  */
-export async function checkJobReminderForButton(buttonInteraction: ButtonInteraction): Promise<boolean> {
+export async function checkJobReminderForButton(
+    buttonInteraction: ButtonInteraction, 
+    filterValue?: string
+): Promise<boolean> {
     const DB = (await import('@root/config')).DB;
     const reminders = await buttonInteraction.client.mongo
         .collection(DB.REMINDERS)
         .find({ owner: buttonInteraction.user.id })
         .toArray();
 
+    // If no filter specified, we're just checking if ANY job reminder exists
+    if (!filterValue) {
+        return reminders.some(
+            (reminder) => reminder.content === 'Job Reminder'
+        );
+    }
+    
+    // Otherwise, check if a job reminder with this SPECIFIC filter exists
     return reminders.some(
-        (reminder) => reminder.content === 'Job Reminder'
+        (reminder) => 
+            reminder.content === 'Job Reminder' && 
+            reminder.filterBy === filterValue
     );
 }

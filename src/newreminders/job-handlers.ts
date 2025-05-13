@@ -23,20 +23,6 @@ import { showJobEmailModal } from "./email-handlers";
  * Handle creating a job reminder
  */
 export async function handleCreateJobReminder(buttonInteraction: ButtonInteraction): Promise<void> {
-    // Check for existing job reminder using our utility that works with ButtonInteraction
-    if (await checkJobReminderForButton(buttonInteraction)) {
-        const errorEmbed = createErrorEmbed(
-            "Job Reminder Already Exists",
-            "You currently already have a job reminder set. To clear your existing job reminder, use the CANCEL button and provide the reminder number."
-        );
-            
-        await buttonInteraction.update({
-            embeds: [errorEmbed],
-            components: [createBackButton()], // Add back button
-        });
-        return;
-    }
-
     // Create modal for job reminder settings
     const modal = createJobReminderModal();
 
@@ -79,6 +65,21 @@ export async function handleCreateJobReminder(buttonInteraction: ButtonInteracti
         const validFilters = ['default', 'relevance', 'salary', 'date'];
         if (!validFilters.includes(filterValue)) {
             filterValue = 'default'; // Fallback to default if invalid
+        }
+        
+        // Check if a job reminder with this specific filter already exists
+        if (await checkJobReminderForButton(buttonInteraction, filterValue)) {
+            const errorEmbed = createErrorEmbed(
+                "Job Reminder Already Exists",
+                `You already have a job reminder with filter type **${filterValue}**. To clear your existing job reminder with this filter, use the CANCEL button and provide the reminder number.`
+            );
+                
+            await modalInteraction.deferUpdate();
+            await buttonInteraction.editReply({
+                embeds: [errorEmbed],
+                components: [createBackButton()], // Add back button
+            });
+            return;
         }
         
         // Store job reminder data
@@ -181,7 +182,7 @@ export async function completeJobReminderCreation(
         const jobReminderData = buttonInteraction.client.jobReminderTemp;
         
         // Check if we have valid job reminder data
-        if (!jobReminderData || !jobReminderData.repeatValue || !jobReminderData.filterValue) {
+        if (!jobReminderData || !jobReminderData.repeatValue) {
             const errorEmbed = createErrorEmbed(
                 "Error Creating Job Alert",
                 "Missing job alert information. Please try creating your job alert again."
@@ -213,6 +214,9 @@ export async function completeJobReminderCreation(
         
         const { repeatValue, filterValue } = jobReminderData;
         
+        // Set default filter value if undefined or null
+        const actualFilterValue = filterValue || 'default';
+        
         // Create the job reminder object
         const jobReminder: Reminder = {
             owner: buttonInteraction.user.id,
@@ -220,12 +224,12 @@ export async function completeJobReminderCreation(
             mode: 'private',
             expires: new Date(), // Set to now, will be handled by the job scheduler
             repeat: repeatValue as 'daily' | 'weekly',
-            filterBy: filterValue as 'default' | 'relevance' | 'salary' | 'date',
+            filterBy: actualFilterValue as 'default' | 'relevance' | 'salary' | 'date',
             emailNotification: withEmail,
             emailAddress: withEmail ? email : null
         };
    
-        // Store the job reminder in the database
+        // Store the job reminder in the database - using insertOne instead of findOneAndReplace to avoid overwriting
         await buttonInteraction.client.mongo
             .collection(DB.REMINDERS)
             .insertOne(jobReminder);
@@ -233,7 +237,7 @@ export async function completeJobReminderCreation(
         // Create success embed
         const successEmbed = createJobReminderSuccessEmbed(
             repeatValue,
-            filterValue,
+            actualFilterValue, // Use our validated filter value
             reminderTime(jobReminder),
             withEmail,
             email
