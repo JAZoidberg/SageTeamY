@@ -43,10 +43,10 @@ export async function handleCreateJobReminder(buttonInteraction: ButtonInteracti
         let filterValue = modalInteraction.fields.getTextInputValue('filter').toLowerCase();
         
         // Validate repeat input
-        if (repeatValue !== 'daily' && repeatValue !== 'weekly' && repeatValue !== 'monthly') {
+        if (repeatValue !== 'daily' && repeatValue !== 'weekly') {
             const errorEmbed = createErrorEmbed(
                 "Invalid Repeat Option",
-                `**"${repeatValue}"** is not a valid repeat option. Please use "daily", "weekly", or "monthly".`
+                `**"${repeatValue}"** is not a valid repeat option. Please use "daily" or "weekly".`
             );
                
             // Defer the modal reply to acknowledge it without sending a visible message

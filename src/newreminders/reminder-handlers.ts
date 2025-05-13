@@ -44,6 +44,33 @@ export async function handleCreateReminder(buttonInteraction: ButtonInteraction)
         // Process modal submission
         const content = modalInteraction.fields.getTextInputValue('content');
         const rawDuration = modalInteraction.fields.getTextInputValue('duration');
+        const repeatInput = modalInteraction.fields.getTextInputValue('repeat').toLowerCase();
+        
+        // Validate repeat value
+        let repeatValue: 'daily' | 'weekly' | null = null;
+        if (repeatInput) {
+            if (repeatInput === 'daily' || repeatInput === 'weekly') {
+                repeatValue = repeatInput as 'daily' | 'weekly';
+            } else {
+                // Show error for invalid repeat value
+                const errorEmbed = createErrorEmbed(
+                    "Invalid Repeat Option",
+                    `**"${repeatInput}"** is not a valid repeat option. Please use "daily", "weekly", or leave blank.`
+                );
+                
+                // Defer the modal reply to acknowledge it without sending a visible message
+                await modalInteraction.deferUpdate();
+                
+                // Update the original message with the error
+                await buttonInteraction.editReply({
+                    embeds: [errorEmbed],
+                    components: [createBackButton()]
+                });
+                
+                return;
+            }
+        }
+
         const duration = parse(rawDuration);
 
         if (!duration) {
@@ -71,6 +98,7 @@ export async function handleCreateReminder(buttonInteraction: ButtonInteraction)
         const reminderData: ReminderData = {
             content,
             expiryDate,
+            repeatValue,
             buttonInteraction,
             modalInteraction
         };
@@ -93,6 +121,7 @@ export async function handleCreateReminder(buttonInteraction: ButtonInteraction)
         });
     }
 }
+
 
 /**
  * Ask if the user wants email notifications for standard reminders
@@ -156,15 +185,15 @@ export async function completeReminderCreation(
             return;
         }
         
-        const { content, expiryDate } = reminderData;
+        const { content, expiryDate, repeatValue } = reminderData;
         
-        // Create the reminder object
+        // Create the reminder object with proper type handling for repeat
         const reminder: Reminder = {
             owner: buttonInteraction.user.id,
             content,
             mode: 'public', // could be changed to private if needed
             expires: expiryDate,
-            repeat: null, // No repeat by default
+            repeat: (repeatValue === 'daily' || repeatValue === 'weekly') ? repeatValue : null,
             emailNotification: withEmail,
             emailAddress: withEmail ? email : null
         };
@@ -174,12 +203,13 @@ export async function completeReminderCreation(
             .collection(DB.REMINDERS)
             .insertOne(reminder);
    
-        // Create success embed
+        // Create success embed with repeat information
         const successEmbed = createReminderSuccessEmbed(
             content,
             reminderTime(reminder),
             withEmail,
-            email
+            email,
+            repeatValue
         );
             
         // Handle the response based on which interaction is available

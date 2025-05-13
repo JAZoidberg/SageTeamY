@@ -5,6 +5,7 @@ import { ButtonInteraction, ChatInputCommandInteraction, ModalSubmitInteraction,
 export interface ReminderData {
     content: string;
     expiryDate: Date;
+    repeatValue?: 'daily' | 'weekly' | null; // Properly typed repeat field
     buttonInteraction: ButtonInteraction;
     modalInteraction: ModalSubmitInteraction;
 }

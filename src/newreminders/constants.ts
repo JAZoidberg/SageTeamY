@@ -7,7 +7,7 @@ export const EMOJI = {
     VIEW: '📋',
     CANCEL: '✖️',
     TIME: '🕒',
-    REPEAT: '🔄',
+    REPEAT: '🔄', // Make sure the REPEAT emoji is defined
     BACK: '↩️',
     EMAIL: '📧'
 };

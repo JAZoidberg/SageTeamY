@@ -82,13 +82,22 @@ export function createReminderModal(): ModalBuilder {
         .setPlaceholder('e.g. 1 hour, 30 minutes, 2 days, tomorrow at 3pm')
         .setStyle(TextInputStyle.Short)
         .setRequired(true);
+    
+    // Add repeat input
+    const repeatInput = new TextInputBuilder()
+        .setCustomId('repeat')
+        .setLabel("Repeat frequency (optional)")
+        .setPlaceholder('Type "daily", "weekly", or leave blank for no repeat')
+        .setStyle(TextInputStyle.Short)
+        .setRequired(false);
 
     // Create action rows with inputs
     const contentRow = new ActionRowBuilder<TextInputBuilder>().addComponents(contentInput);
     const durationRow = new ActionRowBuilder<TextInputBuilder>().addComponents(durationInput);
+    const repeatRow = new ActionRowBuilder<TextInputBuilder>().addComponents(repeatInput);
 
     // Add action rows to the modal
-    modal.addComponents(contentRow, durationRow);
+    modal.addComponents(contentRow, durationRow, repeatRow);
     
     return modal;
 }
@@ -105,7 +114,7 @@ export function createJobReminderModal(): ModalBuilder {
     const repeatInput = new TextInputBuilder()
         .setCustomId('repeat')
         .setLabel('How often would you like to receive alerts?')
-        .setPlaceholder('Type "daily", "weekly", or "monthly"')
+        .setPlaceholder('Type "daily" or "weekly"')
         .setStyle(TextInputStyle.Short)
         .setRequired(true);
 

@@ -198,19 +198,24 @@ export async function handleViewReminders(buttonInteraction: ButtonInteraction):
         // Make sure the filter is displayed correctly
         const filterDisplay = reminder.filterBy || 'default';
         
+        // Create the field name with repeat indicator when applicable
+        const repeatInfo = reminder.repeat ? ` (${EMOJI.REPEAT} ${reminder.repeat})` : '';
+        
         embeds[Math.floor(i / 10)].addFields({
             name: `${i + 1}. ${icon} ${
                 hidden
                     ? isJobReminder
-                        ? `Job Alert (${filterDisplay})`
-                        : 'Private Reminder'
-                    : reminder.content
+                        ? `Job Alert (${filterDisplay})${repeatInfo}`
+                        : `Private Reminder${repeatInfo}`
+                    : `${reminder.content}${repeatInfo}`
             }`,
             value: hidden
                 ? `${EMOJI.REPEAT} **${reminder.repeat}** job reminder filtered by **${filterDisplay}**${
                     reminder.emailNotification ? `\n${EMOJI.EMAIL} Email notifications to: ${reminder.emailAddress}` : ''
                 }`
                 : `${EMOJI.TIME} Due: **${reminderTime(reminder)}**${
+                    reminder.repeat ? `\n${EMOJI.REPEAT} Repeats: **${reminder.repeat}**` : ''
+                }${
                     reminder.emailNotification ? `\n${EMOJI.EMAIL} Email notifications to: ${reminder.emailAddress}` : ''
                 }`
         });
@@ -225,7 +230,8 @@ export async function handleViewReminders(buttonInteraction: ButtonInteraction):
     if (embeds.length > 0) {
         embeds[embeds.length - 1].addFields({
             name: '\u200B',
-            value: '**Job Reminder Sorting:** salary > date > relevance > default'
+            value: '**Job Reminder Sorting:** salary > date > relevance > default\n' +
+                   `Use the ${EMOJI.REPEAT} icon to see which reminders are set to repeat.`
         });
     }
     
@@ -238,7 +244,6 @@ export async function handleViewReminders(buttonInteraction: ButtonInteraction):
         components: [backButton], // Add back button
     });
 }
-
 /**
  * Handle the cancel reminder button
  */

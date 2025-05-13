@@ -29,12 +29,15 @@ export function createReminderSuccessEmbed(
     content: string, 
     expiryTime: string, 
     withEmail: boolean = false, 
-    email: string = null
+    email: string = null,
+    repeatValue: 'daily' | 'weekly' | null = null
 ): EmbedBuilder {
     const embed = new EmbedBuilder()
         .setColor(COLORS.SUCCESS)
         .setTitle(`${EMOJI.REMINDER} Reminder Set!`)
-        .setDescription(`I'll remind you about that at **${expiryTime}**.`)
+        .setDescription(`I'll remind you about that at **${expiryTime}**.${
+            repeatValue ? `\nThis reminder will repeat **${repeatValue}**.` : ''
+        }`)
         .addFields({ 
             name: 'Reminder Content', 
             value: `> ${content}` 
@@ -45,6 +48,16 @@ export function createReminderSuccessEmbed(
         embed.addFields({
             name: 'Email Notification',
             value: `You'll also receive an email at **${email}** when this reminder triggers.`
+        });
+    }
+    
+    // Add repeat info if applicable
+    if (repeatValue) {
+        embed.addFields({
+            name: 'Repeat Schedule',
+            value: `This reminder will repeat **${repeatValue}**${
+                withEmail ? ' with email notifications' : ''
+            }.`
         });
     }
     
