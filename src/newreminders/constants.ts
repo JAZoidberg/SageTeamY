@@ -12,7 +12,7 @@ export const EMOJI = {
     EMAIL: '📧'
 };
 
-// Color constants for embeds (using Discord.js ColorResolvable)
+// Color constants for embeds
 export const COLORS = {
     PRIMARY: 0x5865F2,    // Discord Blurple
     SUCCESS: 0x57F287,    // Green
